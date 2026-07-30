@@ -1,0 +1,55 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Accounts with the `admin` custom claim (granted server-side via the
+    // Firebase Admin SDK) get admin access to rules below that check this.
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    // ── Users collection ──────────────────────────────────────────────────
+    match /users/{userId} {
+
+      // Only the authenticated user can read their own document
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // Allow create only during signup (balance must start at 0)
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.balance == 0
+        && request.resource.data.uid == userId;
+
+      // Allow updates only by the owner
+      // Balance can never go negative
+      // Balance can never increase by more than ₦5,000,000 in a single write
+      //   (protects against a client trying to set an arbitrary balance)
+      allow update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.balance >= 0
+        && (request.resource.data.balance - resource.data.balance) <= 5000000;
+
+      // No deletes allowed from the client
+      allow delete: if false;
+    }
+
+    // ── Support chat ─────────────────────────────────────────────────────
+    // /chats/{uid} is a summary doc (lastMessage, lastMessageAt, unread
+    // flags); /chats/{uid}/messages/{messageId} is the thread itself. Only
+    // the owning user and admins can read or write a given thread — nobody
+    // else, including other regular users, can see it.
+    match /chats/{uid} {
+      allow read, write: if isAdmin() || (request.auth != null && request.auth.uid == uid);
+
+      match /messages/{messageId} {
+        allow read, write: if isAdmin() || (request.auth != null && request.auth.uid == uid);
+      }
+    }
+
+    // Block all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
