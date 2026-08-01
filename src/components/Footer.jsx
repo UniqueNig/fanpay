@@ -1,7 +1,32 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { FiInstagram, FiTwitter, FiFacebook, FiLinkedin } from "react-icons/fi";
+import { FiMapPin, FiPhone, FiMail } from "react-icons/fi";
 import fanpayLogo from "../assets/abopay-logo.svg";
+
+const COLUMNS = [
+  {
+    title: "Products",
+    links: [
+      { label: "Fund Wallet", to: "/deposit" },
+      { label: "Buy Airtime", to: "/recharge?type=airtime" },
+      { label: "Buy Data", to: "/recharge?type=data" },
+      { label: "Pay Bills", to: "/bills" },
+    ],
+  },
+  {
+    title: "Company",
+    links: [{ label: "About Us", to: "/about" }],
+  },
+  {
+    title: "Support",
+    links: [
+      { label: "Help Center", to: "/help" },
+      { label: "Contact Us", to: "/contact" },
+      { label: "Privacy Policy", to: "/privacy" },
+      { label: "Terms of Service", to: "/terms" },
+    ],
+  },
+];
 
 const Footer = () => (
   <footer className="border-t border-line py-16">
@@ -11,43 +36,31 @@ const Footer = () => (
           <Link to="/" className="flex items-center mb-4">
             <img src={fanpayLogo} alt="FanPay" className="h-9 w-auto" />
           </Link>
-          <p className="text-ink/40 font-dm text-sm leading-relaxed mb-2 italic">
-            Pay Easy, Live More
-          </p>
           <p className="text-ink/40 font-dm text-sm leading-relaxed mb-5">
-            Smart payments for every Nigerian. Secure, fast, and always available.
+            Fund your wallet, buy airtime and data, and pay your bills — all in one simple app.
           </p>
-          <div className="flex gap-3">
-            {[FiInstagram, FiTwitter, FiFacebook, FiLinkedin].map((Icon, i) => (
-              <a key={i} href="#" className="w-8 h-8 rounded-lg bg-surface border border-line flex items-center justify-center text-ink/50 hover:text-iris hover:border-iris/30 transition-all">
-                <Icon size={14} />
-              </a>
-            ))}
+          <div className="flex flex-col gap-2 text-ink/40 font-dm text-xs">
+            <span className="flex items-center gap-2">
+              <FiMapPin size={13} className="shrink-0" /> Abeokuta, Ogun State
+            </span>
+            <span className="flex items-center gap-2">
+              <FiPhone size={13} className="shrink-0" /> 08147261388
+            </span>
+            <span className="flex items-center gap-2">
+              <FiMail size={13} className="shrink-0" /> fanpay@gmail.com
+            </span>
           </div>
         </div>
 
-        {[
-          {
-            title: "Products",
-            links: ["Transfer Money", "Pay Bills", "Buy Airtime", "Savings", "Cards"],
-          },
-          {
-            title: "Company",
-            links: ["About Us", "Careers", "Blog", "Press", "Partners"],
-          },
-          {
-            title: "Support",
-            links: ["Help Center", "Contact Us", "Privacy Policy", "Terms of Service", "CBN Compliance"],
-          },
-        ].map((col, i) => (
+        {COLUMNS.map((col, i) => (
           <div key={i}>
             <h4 className="font-syne font-semibold text-ink text-sm mb-4">{col.title}</h4>
             <ul className="flex flex-col gap-2.5">
               {col.links.map((l, j) => (
                 <li key={j}>
-                  <a href="#" className="text-ink/40 font-dm text-sm hover:text-iris transition-colors">
-                    {l}
-                  </a>
+                  <Link to={l.to} className="text-ink/40 font-dm text-sm hover:text-iris transition-colors">
+                    {l.label}
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -57,12 +70,16 @@ const Footer = () => (
 
       <div className="pt-8 border-t border-line flex flex-col sm:flex-row items-center justify-between gap-4">
         <p className="text-ink/30 font-dm text-xs">
-          © 2026 FanPay. All rights reserved. Licensed by the Central Bank of Nigeria.
+          © 2026 FanPay. All rights reserved.
         </p>
-        <div className="flex items-center gap-4">
-          <img src="https://img.shields.io/badge/Paystack-00C3F7?style=flat&logo=paystack&logoColor=white" alt="Paystack" className="h-5 opacity-60" />
-          <img src="https://img.shields.io/badge/Firebase-FFCA28?style=flat&logo=firebase&logoColor=black" alt="Firebase" className="h-5 opacity-60" />
-        </div>
+        <a
+          href="https://emmanuelfaniyi.vercel.app/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-ink/30 font-dm text-xs hover:text-iris transition-colors"
+        >
+          Developed by tech_with_dami
+        </a>
       </div>
     </div>
   </footer>

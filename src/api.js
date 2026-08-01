@@ -30,3 +30,14 @@ export const api = {
   post: (path, body) => request(path, { method: "POST", body }),
   patch: (path, body) => request(path, { method: "PATCH", body }),
 };
+
+// For the handful of endpoints that are deliberately public (no Firebase
+// user required) — the marketing homepage's plans teaser, for example.
+// Never sends an Authorization header, so it only works against routes that
+// don't call requireAuth/requireAdmin on the backend.
+export async function publicGet(path) {
+  const res = await fetch(`${API_URL}/api${path}`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Request failed. Please try again.");
+  return data;
+}

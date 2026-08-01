@@ -19,6 +19,11 @@ import Savings from "./pages/Savings";
 import Settings from "./pages/Settings";
 import Kyc from "./pages/Kyc";
 import SetPin from "./pages/SetPin";
+import AboutUs from "./pages/AboutUs";
+import HelpCenter from "./pages/HelpCenter";
+import ContactUs from "./pages/ContactUs";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminUserDetail from "./pages/admin/AdminUserDetail";
@@ -61,6 +66,11 @@ function App() {
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/kyc" element={<ProtectedRoute><Kyc /></ProtectedRoute>} />
           <Route path="/set-pin" element={<ProtectedRoute><SetPin /></ProtectedRoute>} />
+          <Route path="/about" element={<AboutUs />} />
+          <Route path="/help" element={<HelpCenter />} />
+          <Route path="/contact" element={<ContactUs />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
 
           {/* Admin routes — require the `admin` custom claim on the Firebase ID token */}
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

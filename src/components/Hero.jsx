@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { FiArrowRight, FiShield, FiZap } from "react-icons/fi";
+import { FiArrowRight, FiLock, FiZap } from "react-icons/fi";
 
 const Hero = () => {
   return (
@@ -18,18 +18,18 @@ const Hero = () => {
             <div className="inline-flex items-center gap-2 bg-iris/10 border border-iris/20 rounded-full px-4 py-1.5 w-fit">
               <div className="w-1.5 h-1.5 rounded-full bg-iris pulse-dot" />
               <span className="text-iris font-dm text-xs font-medium tracking-wide">
-                Nigeria's Fastest Payment App
+                Airtime, Data & Bills — Sorted
               </span>
             </div>
 
             <h1 className="font-syne font-extrabold text-4xl sm:text-5xl lg:text-6xl text-ink leading-[1.1]">
-              Pay Easy,<br />
-              <span className="text-gradient">Live More</span>
+              Fund Your Wallet,<br />
+              <span className="text-gradient">Sort Every Bill.</span>
             </h1>
 
             <p className="section-sub max-w-md text-base leading-relaxed">
-              Pay bills, buy airtime, transfer money, and grow your savings — all
-              in one place. Powered by Paystack. Secured by Firebase.
+              Buy airtime and data, pay electricity and cable TV bills — all from one simple wallet.
+              Fund it by card, bank transfer, or a dedicated account number.
             </p>
 
             <div className="flex flex-col xs:flex-row gap-3 pt-2">
@@ -44,16 +44,12 @@ const Hero = () => {
             {/* Trust badges */}
             <div className="flex items-center gap-6 pt-4">
               <div className="flex items-center gap-2 text-ink/50 text-xs font-dm">
-                <FiShield className="text-iris" size={14} />
-                CBN Compliant
+                <FiLock className="text-iris" size={14} />
+                PIN-Protected Wallet
               </div>
               <div className="flex items-center gap-2 text-ink/50 text-xs font-dm">
                 <FiZap className="text-iris" size={14} />
-                Instant Transfers
-              </div>
-              <div className="flex items-center gap-2 text-ink/50 text-xs font-dm">
-                <span className="text-iris text-base leading-none">₦</span>
-                <span>Zero Fees*</span>
+                Instant Delivery
               </div>
             </div>
           </div>
@@ -65,9 +61,9 @@ const Hero = () => {
               <div className="card-flat p-6 glow-accent">
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <p className="text-ink/50 font-dm text-xs">Total Balance</p>
+                    <p className="text-ink/50 font-dm text-xs">Wallet Balance</p>
                     <p className="font-syne font-bold text-2xl text-ink mt-1">
-                      ₦<span className="text-gradient">847,520</span>.00
+                      ₦<span className="text-gradient">24,520</span>.00
                     </p>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-iris/15 flex items-center justify-center">
@@ -77,10 +73,10 @@ const Hero = () => {
 
                 {/* Quick action pills */}
                 <div className="grid grid-cols-4 gap-2 mb-6">
-                  {["Send", "Bills", "Recharge", "Save"].map((a, i) => (
+                  {["Deposit", "Airtime", "Data", "Bills"].map((a, i) => (
                     <div key={i} className="flex flex-col items-center gap-1.5">
                       <div className="w-10 h-10 rounded-xl bg-surface border border-line flex items-center justify-center text-lg">
-                        {["↗️", "📋", "📱", "🏦"][i]}
+                        {["➕", "📱", "📶", "📋"][i]}
                       </div>
                       <span className="text-ink/50 text-[10px] font-dm">{a}</span>
                     </div>
@@ -92,13 +88,13 @@ const Hero = () => {
                   <p className="text-ink/40 text-xs font-dm">Recent Transactions</p>
                   {[
                     { name: "DSTV Subscription", amount: "-₦19,000", color: "text-red-400" },
-                    { name: "Salary Credit", amount: "+₦350,000", color: "text-iris" },
+                    { name: "Wallet Deposit", amount: "+₦10,000", color: "text-iris" },
                     { name: "MTN Airtime", amount: "-₦1,000", color: "text-red-400" },
                   ].map((tx, i) => (
                     <div key={i} className="flex items-center justify-between py-2 border-b border-line last:border-0">
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 rounded-lg bg-surface flex items-center justify-center text-xs">
-                          {["📺", "💰", "📱"][i]}
+                          {["📺", "💳", "📱"][i]}
                         </div>
                         <span className="text-ink/70 font-dm text-xs">{tx.name}</span>
                       </div>
@@ -110,30 +106,25 @@ const Hero = () => {
                 </div>
               </div>
 
-              {/* Floating savings card */}
+              {/* Floating badge */}
               <div className="absolute -bottom-4 -right-4 card-flat p-3 flex items-center gap-3 shadow-xl">
                 <div className="w-8 h-8 rounded-lg bg-iris/15 flex items-center justify-center text-sm">⚡</div>
                 <div>
-                  <p className="text-ink/50 text-[10px] font-dm">Savings Goal</p>
-                  <p className="text-iris font-syne font-bold text-sm">₦120,000</p>
-                </div>
-                <div className="ml-2">
-                  <div className="w-1.5 h-8 rounded-full bg-surface">
-                    <div className="w-full h-3/5 rounded-full bg-iris" />
-                  </div>
+                  <p className="text-ink/50 text-[10px] font-dm">Delivery Speed</p>
+                  <p className="text-iris font-syne font-bold text-sm">Instant</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Stats row */}
+        {/* Coverage row — real numbers, not usage stats we don't have yet */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-20 pt-12 border-t border-line">
           {[
-            { val: "2M+", label: "Active Users" },
-            { val: "₦50B+", label: "Transactions" },
-            { val: "99.9%", label: "Uptime" },
-            { val: "4.8★", label: "App Rating" },
+            { val: "4", label: "Networks Supported" },
+            { val: "11", label: "Electricity Discos" },
+            { val: "3", label: "Cable TV Providers" },
+            { val: "24/7", label: "Available" },
           ].map((s, i) => (
             <div key={i} className="text-center">
               <p className="font-syne font-bold text-2xl text-gradient">{s.val}</p>

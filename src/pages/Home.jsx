@@ -2,9 +2,9 @@ import React from "react";
 import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
 import Features from "../components/Features";
+import PlansShowcase from "../components/PlansShowcase";
+import FAQAccordion from "../components/FAQAccordion";
 import Footer from "../components/Footer";
-import { Link } from "react-router-dom";
-import { FiArrowRight } from "react-icons/fi";
 
 const HowItWorks = () => (
   <section id="how" className="py-24 relative">
@@ -15,58 +15,25 @@ const HowItWorks = () => (
           Simple Process
         </span>
         <h2 className="section-title mt-3 mb-4">
-          Get Started in <span className="text-gradient">3 Steps</span>
+          Get Started in <span className="text-gradient">4 Steps</span>
         </h2>
       </div>
-      <div className="grid md:grid-cols-3 gap-8">
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { step: "01", title: "Create Account", desc: "Sign up with your email, BVN and phone number. Verification takes under 2 minutes.", icon: "👤" },
-          { step: "02", title: "Fund Your Wallet", desc: "Add money via bank transfer or card payment. Paystack ensures every kobo is safe.", icon: "💳" },
-          { step: "03", title: "Start Banking", desc: "Pay bills, send money, buy airtime, and grow your savings — all from your dashboard.", icon: "🚀" },
+          { step: "01", title: "Create Account", desc: "Sign up with your email and phone number in under a minute.", icon: "👤" },
+          { step: "02", title: "Verify Your Identity", desc: "Add your NIN to unlock higher spending limits — takes a couple of minutes.", icon: "🪪" },
+          { step: "03", title: "Fund Your Wallet", desc: "Top up by card, bank transfer, or your own dedicated account number.", icon: "💳" },
+          { step: "04", title: "Start Spending", desc: "Buy airtime, data, and pay bills — delivered instantly from your dashboard.", icon: "🚀" },
         ].map((s, i) => (
-          <div key={i} className="relative flex flex-col items-center text-center card-flat p-8">
-            <div className="absolute -top-4 left-6 font-syne font-extrabold text-6xl text-ink/5 select-none">
+          <div key={i} className="relative flex flex-col items-center text-center card-flat p-6">
+            <div className="absolute -top-4 left-5 font-syne font-extrabold text-5xl text-ink/5 select-none">
               {s.step}
             </div>
             <div className="text-4xl mb-4">{s.icon}</div>
-            <h3 className="font-syne font-bold text-ink text-lg mb-2">{s.title}</h3>
+            <h3 className="font-syne font-bold text-ink text-base mb-2">{s.title}</h3>
             <p className="text-ink/50 font-dm text-sm leading-relaxed">{s.desc}</p>
           </div>
         ))}
-      </div>
-    </div>
-  </section>
-);
-
-const Security = () => (
-  <section id="security" className="py-24">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="card-flat p-10 md:p-16 flex flex-col md:flex-row items-center justify-between gap-10 glow-accent">
-        <div className="max-w-lg">
-          <span className="text-iris font-dm text-sm font-medium tracking-widest uppercase">Bank-Grade Security</span>
-          <h2 className="section-title mt-3 mb-4">
-            Your Money is <span className="text-gradient">Safe With Us</span>
-          </h2>
-          <p className="section-sub mb-6">
-            We use 256-bit SSL encryption, two-factor authentication, and real-time fraud
-            monitoring to keep your account protected around the clock.
-          </p>
-          <div className="grid grid-cols-2 gap-4">
-            {["256-bit Encryption", "2FA Enabled", "NDIC Insured", "CBN Licensed", "24/7 Monitoring", "Zero Data Breach"].map((b, i) => (
-              <div key={i} className="flex items-center gap-2 text-ink/60 font-dm text-sm">
-                <span className="text-iris">✓</span> {b}
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="flex-shrink-0 text-center">
-          <div className="w-36 h-36 rounded-3xl bg-iris/10 border border-iris/20 flex items-center justify-center mx-auto mb-4">
-            <span className="text-6xl">🔐</span>
-          </div>
-          <Link to="/signup" className="btn-iris flex items-center gap-2 w-fit mx-auto">
-            Open Account <FiArrowRight size={14} />
-          </Link>
-        </div>
       </div>
     </div>
   </section>
@@ -78,7 +45,8 @@ const Home = () => (
     <Hero />
     <Features />
     <HowItWorks />
-    <Security />
+    <PlansShowcase />
+    <FAQAccordion />
     <Footer />
   </div>
 );

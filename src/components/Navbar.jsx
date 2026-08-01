@@ -39,15 +39,13 @@ const Navbar = () => {
   const navLinks = user
     ? [
         { to: "/dashboard", label: "Dashboard" },
-        { to: "/transfer", label: "Transfer" },
         { to: "/bills", label: "Pay Bills" },
         { to: "/recharge", label: "Recharge" },
-        { to: "/savings", label: "Savings" },
       ]
     : [
         { to: "/#features", label: "Features" },
         { to: "/#how", label: "How It Works" },
-        { to: "/#security", label: "Security" },
+        { to: "/#faq", label: "FAQ" },
       ];
 
   return (

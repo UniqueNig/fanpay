@@ -117,15 +117,6 @@ const Dashboard = () => {
               )
             )}
           </div>
-          {balance === 0 && (
-            <Link
-              to="/deposit"
-              className="btn-iris w-full flex items-center justify-center gap-2 text-sm mt-3"
-            >
-              <FiPlusCircle size={15} />
-              Add Money
-            </Link>
-          )}
           <p className="text-ink/30 font-dm text-[11px] mt-3">Transfer to either account above to fund your wallet — instant, any time.</p>
         </div>
 
