@@ -1,0 +1,26 @@
+User-agent: *
+Allow: /
+Allow: /about
+Allow: /help
+Allow: /contact
+Allow: /privacy
+Allow: /terms
+Allow: /login
+Allow: /signup
+
+# Authenticated app pages and the admin panel have no public content to
+# index, and shouldn't turn up in search results for anyone browsing for them.
+Disallow: /dashboard
+Disallow: /transactions
+Disallow: /deposit
+Disallow: /transfer
+Disallow: /bills
+Disallow: /recharge
+Disallow: /pricing
+Disallow: /savings
+Disallow: /settings
+Disallow: /kyc
+Disallow: /set-pin
+Disallow: /admin
+
+Sitemap: https://fanpay-peach.vercel.app/sitemap.xml

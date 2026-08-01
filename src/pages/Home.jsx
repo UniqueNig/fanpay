@@ -6,6 +6,7 @@ import PlansShowcase from "../components/PlansShowcase";
 import FAQAccordion from "../components/FAQAccordion";
 import Footer from "../components/Footer";
 import BackToTop from "../components/BackToTop";
+import SEO from "../components/SEO";
 
 const HowItWorks = () => (
   <section id="how" className="py-24 relative">
@@ -40,8 +41,25 @@ const HowItWorks = () => (
   </section>
 );
 
+const ORG_SCHEMA = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "FanPay",
+  description: "Fund your wallet, buy airtime and data, and pay electricity and cable TV bills — all in one simple app.",
+  url: "https://fanpay-peach.vercel.app/",
+  email: "fanpay@gmail.com",
+  telephone: "+2348147261388",
+  address: { "@type": "PostalAddress", addressLocality: "Abeokuta", addressRegion: "Ogun State", addressCountry: "NG" },
+};
+
 const Home = () => (
   <div className="bg-surface min-h-screen">
+    <SEO
+      title="FanPay – Fund Your Wallet, Sort Every Bill"
+      description="Buy airtime and data, pay electricity and cable TV bills — all from one simple wallet."
+      path="/"
+    />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ORG_SCHEMA) }} />
     <Navbar />
     <Hero />
     <Features />

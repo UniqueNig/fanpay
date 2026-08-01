@@ -2,6 +2,7 @@ import React from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import BackToTop from "../components/BackToTop";
+import SEO from "../components/SEO";
 import { FiMapPin, FiPhone, FiMail, FiMessageCircle } from "react-icons/fi";
 
 const CONTACTS = [
@@ -12,6 +13,11 @@ const CONTACTS = [
 
 const ContactUs = () => (
   <div className="bg-surface min-h-screen">
+    <SEO
+      title="Contact Us"
+      description="Get in touch with FanPay — phone, email, and address, or live chat right in the app."
+      path="/contact"
+    />
     <Navbar />
     <div className="pt-32 pb-20 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
       <span className="text-iris font-dm text-sm font-medium tracking-widest uppercase">Contact Us</span>

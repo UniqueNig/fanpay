@@ -5,6 +5,7 @@ import { useToast } from "../context/ToastContext";
 import { FiUser, FiMail, FiLock, FiPhone, FiArrowRight, FiEye, FiEyeOff } from "react-icons/fi";
 import FanPayLogo from "../components/FanPayLogo";
 import PasswordChecklist, { isPasswordValid } from "../components/PasswordChecklist";
+import SEO from "../components/SEO";
 
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -80,6 +81,11 @@ const Signup = () => {
 
   return (
     <div className="min-h-screen bg-surface mesh-bg flex items-center justify-center px-4 py-12">
+      <SEO
+        title="Create Your Free Account"
+        description="Open a free FanPay account — fund your wallet, buy airtime and data, and pay bills in minutes."
+        path="/signup"
+      />
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-iris to-transparent" />
 
       <div className="w-full max-w-md">

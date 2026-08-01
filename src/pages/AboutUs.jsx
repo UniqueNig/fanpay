@@ -2,11 +2,17 @@ import React from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import BackToTop from "../components/BackToTop";
+import SEO from "../components/SEO";
 import { Link } from "react-router-dom";
 import { FiArrowRight } from "react-icons/fi";
 
 const AboutUs = () => (
   <div className="bg-surface min-h-screen">
+    <SEO
+      title="About Us"
+      description="FanPay is a wallet app built for the payments Nigerians make every day — airtime, data, electricity, and cable TV bills."
+      path="/about"
+    />
     <Navbar />
     <div className="pt-32 pb-20 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
       <span className="text-iris font-dm text-sm font-medium tracking-widest uppercase">About Us</span>

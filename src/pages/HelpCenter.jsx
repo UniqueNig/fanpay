@@ -3,11 +3,17 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import FAQAccordion from "../components/FAQAccordion";
 import BackToTop from "../components/BackToTop";
+import SEO from "../components/SEO";
 import { Link } from "react-router-dom";
 import { FiMessageCircle, FiMail } from "react-icons/fi";
 
 const HelpCenter = () => (
   <div className="bg-surface min-h-screen">
+    <SEO
+      title="Help Center"
+      description="Answers to the most common FanPay questions — funding your wallet, buying airtime and data, paying bills, and more."
+      path="/help"
+    />
     <Navbar />
     <div className="pt-32 pb-10 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
       <span className="text-iris font-dm text-sm font-medium tracking-widest uppercase">Help Center</span>

@@ -2,6 +2,7 @@ import React from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import BackToTop from "../components/BackToTop";
+import SEO from "../components/SEO";
 
 const SECTIONS = [
   {
@@ -36,6 +37,11 @@ const SECTIONS = [
 
 const TermsOfService = () => (
   <div className="bg-surface min-h-screen">
+    <SEO
+      title="Terms of Service"
+      description="The terms that govern using FanPay — your account, fees, refunds, and spending limits."
+      path="/terms"
+    />
     <Navbar />
     <div className="pt-32 pb-20 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
       <span className="text-iris font-dm text-sm font-medium tracking-widest uppercase">Legal</span>

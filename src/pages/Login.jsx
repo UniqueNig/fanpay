@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { FiMail, FiLock, FiArrowRight, FiEye, FiEyeOff } from "react-icons/fi";
 import FanPayLogo from "../components/FanPayLogo";
+import SEO from "../components/SEO";
 
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -79,6 +80,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-surface mesh-bg flex items-center justify-center px-4 py-12">
+      <SEO title="Login" description="Sign in to your FanPay account." path="/login" noindex />
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-iris to-transparent" />
 
       <div className="w-full max-w-md">

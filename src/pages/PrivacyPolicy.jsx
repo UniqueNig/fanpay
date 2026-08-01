@@ -2,6 +2,7 @@ import React from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import BackToTop from "../components/BackToTop";
+import SEO from "../components/SEO";
 
 const SECTIONS = [
   {
@@ -32,6 +33,11 @@ const SECTIONS = [
 
 const PrivacyPolicy = () => (
   <div className="bg-surface min-h-screen">
+    <SEO
+      title="Privacy Policy"
+      description="How FanPay collects, uses, and protects your information."
+      path="/privacy"
+    />
     <Navbar />
     <div className="pt-32 pb-20 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
       <span className="text-iris font-dm text-sm font-medium tracking-widest uppercase">Legal</span>
