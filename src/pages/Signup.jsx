@@ -31,10 +31,10 @@ const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (form.password !== form.confirm) {
-      setError("Passwords do not match.");
-      return;
-    }
+    // No top-banner message here — the live "Passwords do not match" text
+    // under Confirm Password already covers it, right where the user's
+    // looking, without needing to scroll up to find out why nothing happened.
+    if (form.password !== form.confirm) return;
     if (!isPasswordValid(form.password)) {
       setError("Password doesn't meet all the requirements below.");
       return;
@@ -165,6 +165,11 @@ const Signup = () => {
                   required
                 />
               </div>
+              {form.confirm && (
+                <p className={`font-dm text-xs mt-1.5 ${form.confirm === form.password ? "text-iris" : "text-red-400"}`}>
+                  {form.confirm === form.password ? "Passwords match" : "Passwords do not match"}
+                </p>
+              )}
             </div>
 
             <p className="text-ink/30 font-dm text-xs">
