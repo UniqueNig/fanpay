@@ -1,129 +1,64 @@
-# Abopay — Deployment Guide
+# FanPay — Deployment Guide
 
 ## Architecture
 
 | Layer | Platform | What it does |
 |---|---|---|
-| **Frontend** | Vercel | React/Vite app — upload this repo to Vercel |
-| **Backend functions** | Firebase Cloud Functions | Payment logic, VTpass, wallet |
-| **Database** | Firebase Firestore | User balances, transactions |
-
-VTpass sandbox keys are **already embedded** in `functions/index.js` — no setup needed.
-When you're ready for production, swap them for live keys (see Step 5).
+| **Frontend** | Vercel | React/Vite app — repo root |
+| **Backend** | Render | Express API — `server/` folder |
+| **Database** | MongoDB Atlas | Users, wallets, transactions |
+| **Auth + support chat** | Firebase (Auth + Firestore) | Sign-in, live chat threads |
 
 ---
 
-## Step 1 — Deploy Frontend to Vercel
+## Step 1 — Deploy the backend to Render
 
-1. Push this repo to GitHub (or upload the zip directly on vercel.com)
-2. Go to [vercel.com](https://vercel.com) → **New Project** → Import your repo
-3. Vercel auto-detects Vite. Set these **Environment Variables** in the Vercel dashboard:
-
-```
-VITE_PAYSTACK_PUBLIC_KEY    = pk_live_b3bc8e41bdd37be19d1f0cf30ba44b32cbd86082
-VITE_FIREBASE_API_KEY       = AIzaSyDFNkPhGrIMfkFAPKMYuOf46T9jw8RUVlA
-VITE_FIREBASE_AUTH_DOMAIN   = abopay-53bc4.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID    = abopay-53bc4
-VITE_FIREBASE_STORAGE_BUCKET= abopay-53bc4.firebasestorage.app
-VITE_FIREBASE_MESSAGING_SENDER_ID = 923181784158
-VITE_FIREBASE_APP_ID        = 1:923181784158:web:2404543da727d44c53a8cf
-VITE_FIREBASE_MEASUREMENT_ID= G-MBH4KPHK5Z
-```
-
-4. Click **Deploy** — done. Your frontend is live.
+1. New **Web Service** → connect the `fanpay` repo.
+2. **Root Directory**: `server`
+3. **Build Command**: `npm install`
+4. **Start Command**: `npm start`
+5. Environment variables (see `server/.env.example` for the full list):
+   - `ALLOWED_ORIGIN` — set this once you have the Vercel URL (step 2)
+   - `MONGODB_URI` — Atlas connection string
+   - `FIREBASE_SERVICE_ACCOUNT_JSON` — full service account JSON, one line
+   - `PAYSTACK_SECRET_KEY`, `MASKAWASUB_API_KEY`, `ASPFIY_SECRET_KEY`, `ANTHROPIC_API_KEY`
+   - `PUBLIC_API_URL` — set to this Render service's own URL, so Aspfiy's funding webhooks can actually reach it
+6. Deploy, then note the resulting URL (e.g. `https://fanpay-api.onrender.com`).
 
 ---
 
-## Step 2 — Deploy Firebase Backend (2 secrets only)
+## Step 2 — Deploy the frontend to Vercel
 
-The VTpass keys are already in the code. You only need to set the Paystack keys:
+1. New Project → import the `fanpay` repo.
+2. **Root Directory**: `.` (repo root)
+3. Vercel auto-detects Vite — build command `npm run build`, output `dist`.
+4. Environment variables (see `.env.example` for the full list):
+   - `VITE_API_URL` — the Render URL from Step 1
+   - `VITE_PAYSTACK_PUBLIC_KEY`
+   - `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID`, `VITE_FIREBASE_MEASUREMENT_ID`
+5. Deploy, then note the resulting URL (e.g. `https://fanpay.vercel.app`).
+
+---
+
+## Step 3 — Close the loop
+
+Go back to Render and set `ALLOWED_ORIGIN` to the real Vercel URL from Step 2, then redeploy the backend — until this is set, the frontend's API requests will be rejected by CORS.
+
+---
+
+## Step 4 — Firestore rules (one-time, if not already done)
 
 ```bash
-# Install Firebase CLI if you haven't
 npm install -g firebase-tools
 firebase login
-
-# Set only 2 secrets (VTpass is already baked in for sandbox)
-firebase functions:secrets:set PAYSTACK_SECRET_KEY
-# Paste your Paystack secret key: sk_live_...
-
-firebase functions:secrets:set PAYSTACK_WEBHOOK_SECRET
-# Paste the webhook secret from Paystack dashboard
-
-# Deploy functions + Firestore rules
-cd functions && npm install && cd ..
-firebase deploy --only functions,firestore
+firebase use --add   # select the FanPay Firebase project
+firebase deploy --only firestore:rules,firestore:indexes
 ```
 
 ---
 
-## Step 3 — Set Paystack Webhook URL
+## Step 5 — Set the Paystack and Aspfiy webhook URLs
 
-In **Paystack Dashboard → Settings → API Keys & Webhooks → Webhook URL**, paste:
-
-```
-https://us-central1-abopay-53bc4.cloudfunctions.net/paystackWebhook
-```
-
----
-
-## Step 4 — Test (Sandbox Mode)
-
-VTpass is already in **sandbox mode**. Use Paystack test cards to deposit,
-then test airtime/data/bills — no real money moves.
-
-VTpass sandbox test numbers: https://www.vtpass.com/documentation/mtn-airtime-vtu-api/
-
----
-
-## Step 5 — Go Live
-
-When ready for production, open `functions/index.js` and make two changes:
-
-```js
-// 1. Switch URL from sandbox to production:
-const VTPASS_BASE = "https://vtpass.com/api";  // was sandbox.vtpass.com
-
-// 2. Update the 3 VTpass key constants to your LIVE keys:
-const _VTPASS_API_KEY    = "YOUR_LIVE_API_KEY";
-const _VTPASS_PUBLIC_KEY = "YOUR_LIVE_PUBLIC_KEY";
-const _VTPASS_SECRET_KEY = "YOUR_LIVE_SECRET_KEY";
-```
-
-Then redeploy functions:
-```bash
-firebase deploy --only functions
-```
-
----
-
-## Cloud Functions Summary
-
-| Function | Triggered by | What it does |
-|---|---|---|
-| `verifyDeposit` | Frontend (after Paystack onSuccess) | Verifies payment, credits wallet |
-| `paystackWebhook` | Paystack HTTP POST | Handles async payments, refunds failed transfers |
-| `initiateTransfer` | Frontend (Transfer page) | Real bank transfer via Paystack Transfers API |
-| `purchaseAirtime` | Frontend (Recharge page) | Debits wallet → VTpass delivers airtime |
-| `purchaseData` | Frontend (Recharge page) | Debits wallet → VTpass activates data bundle |
-| `payBill` | Frontend (Bills page) | Debits wallet → VTpass pays electricity/cable bill |
-
----
-
-## Money Flow
-
-```
-DEPOSIT:   User → Paystack popup → verifyDeposit Cloud Fn → Firestore (balance +)
-
-TRANSFER:  User → initiateTransfer Cloud Fn → Paystack Transfers API → bank account
-                                            → Firestore (balance -)
-
-AIRTIME:   User → purchaseAirtime Cloud Fn → VTpass API → phone credited
-                                           → Firestore (balance -)
-
-DATA:      User → purchaseData Cloud Fn → VTpass API → data activated
-                                        → Firestore (balance -)
-
-BILLS:     User → payBill Cloud Fn → VTpass API → bill paid / electricity token returned
-                                   → Firestore (balance -)
-```
+- **Paystack Dashboard → Settings → API Keys & Webhooks → Webhook URL**:
+  `https://<your-render-url>/api/webhooks/paystack`
+- **Aspfiy dashboard** — webhook URL is set automatically per-account at reservation time via `PUBLIC_API_URL` (Step 1), nothing to paste manually here.
