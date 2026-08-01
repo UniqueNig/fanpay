@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { FiUser, FiMail, FiLock, FiPhone, FiArrowRight, FiEye, FiEyeOff } from "react-icons/fi";
 import fanpayLogo from "../assets/abopay-logo.svg";
+import PasswordChecklist, { isPasswordValid } from "../components/PasswordChecklist";
 
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -34,8 +35,8 @@ const Signup = () => {
       setError("Passwords do not match.");
       return;
     }
-    if (form.password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (!isPasswordValid(form.password)) {
+      setError("Password doesn't meet all the requirements below.");
       return;
     }
     setLoading(true);
@@ -141,13 +142,14 @@ const Signup = () => {
                   value={form.password}
                   onChange={handleChange("password")}
                   className="input-field-light pl-10 pr-10"
-                  placeholder="Minimum 6 characters"
+                  placeholder="Create a password"
                   required
                 />
                 <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/30 hover:text-ink/60">
                   {showPw ? <FiEyeOff size={15} /> : <FiEye size={15} />}
                 </button>
               </div>
+              {form.password && <PasswordChecklist password={form.password} />}
             </div>
 
             <div>
