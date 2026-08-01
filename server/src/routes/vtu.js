@@ -420,6 +420,7 @@ router.post(
         purchaseCall = () =>
           maskawasubBuyElectricity({
             disco_name: discoId, amount: faceValue, meter_number: meterNumber, MeterType: METER_TYPE[type],
+            Customer_Phone: phone,
           });
       } else {
         const cableId = await resolveProviderId("cable", provider);

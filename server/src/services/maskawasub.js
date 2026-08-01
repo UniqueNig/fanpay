@@ -159,9 +159,22 @@ export async function maskawasubCablePlans(cableKey) {
 // deliveryStatus: "pending" and jobs/reconcileVtu.js resolves it later via
 // maskawasubRequery, same pattern already used for airtime/data's much
 // rarer "still processing" case.
+// Maskawasub isn't consistent about the shape of its `error` field — usually
+// an array of strings ({"error": ["This field is required."]}), but at least
+// /billpayment/ sends it as a plain string ({"error": "Customer_Phone is
+// required..."}). Blindly indexing [0] on a string silently truncates it to
+// its first character (confirmed live: a real error came through as just
+// "C"), so every extraction has to handle both shapes.
+function extractApiErrorMessage(data) {
+  const err = data?.error;
+  if (Array.isArray(err)) return err[0];
+  if (typeof err === "string") return err;
+  return null;
+}
+
 function assertDelivered(data, label) {
   if (data?.Status === "successful" || data?.Status === "pending") return data;
-  const msg = data?.api_response || data?.error?.[0] || `${label} delivery could not be confirmed.`;
+  const msg = data?.api_response || extractApiErrorMessage(data) || `${label} delivery could not be confirmed.`;
   throw new ApiError(502, msg);
 }
 
@@ -201,7 +214,7 @@ export async function maskawasubBuyAirtime({ network, mobile_number, amount, air
   } catch (err) {
     if (err instanceof ApiError) throw err;
     console.error("Maskawasub airtime error:", err.response?.data || err.message);
-    throw new ApiError(502, err.response?.data?.error?.[0] || "Could not complete delivery. No charge made.");
+    throw new ApiError(502, extractApiErrorMessage(err.response?.data) || "Could not complete delivery. No charge made.");
   }
 }
 
@@ -216,22 +229,22 @@ export async function maskawasubBuyData({ network, mobile_number, plan }) {
   } catch (err) {
     if (err instanceof ApiError) throw err;
     console.error("Maskawasub data error:", err.response?.data || err.message);
-    throw new ApiError(502, err.response?.data?.error?.[0] || "Could not complete delivery. No charge made.");
+    throw new ApiError(502, extractApiErrorMessage(err.response?.data) || "Could not complete delivery. No charge made.");
   }
 }
 
-export async function maskawasubBuyElectricity({ disco_name, amount, meter_number, MeterType }) {
+export async function maskawasubBuyElectricity({ disco_name, amount, meter_number, MeterType, Customer_Phone }) {
   try {
     const res = await axios.post(
       `${env.maskawasubBaseUrl}/billpayment/`,
-      { disco_name, amount, meter_number, MeterType },
+      { disco_name, amount, meter_number, MeterType, Customer_Phone },
       { headers: headers(), timeout: 30000 }
     );
     return assertDelivered(res.data, "Bill payment");
   } catch (err) {
     if (err instanceof ApiError) throw err;
     console.error("Maskawasub billpayment error:", err.response?.data || err.message);
-    throw new ApiError(502, err.response?.data?.error?.[0] || "Could not complete delivery. No charge made.");
+    throw new ApiError(502, extractApiErrorMessage(err.response?.data) || "Could not complete delivery. No charge made.");
   }
 }
 
@@ -261,7 +274,7 @@ export async function maskawasubBuyCable({ cablename, cableplan, smart_card_numb
   } catch (err) {
     if (err instanceof ApiError) throw err;
     console.error("Maskawasub cablesub error:", err.response?.data || err.message);
-    throw new ApiError(502, err.response?.data?.error?.[0] || "Could not complete delivery. No charge made.");
+    throw new ApiError(502, extractApiErrorMessage(err.response?.data) || "Could not complete delivery. No charge made.");
   }
 }
 
@@ -285,7 +298,7 @@ export async function maskawasubBuyExamPin({ exam_name }) {
   } catch (err) {
     if (err instanceof ApiError) throw err;
     console.error("Maskawasub epin error:", err.response?.data || err.message);
-    throw new ApiError(502, err.response?.data?.error?.[0] || "Could not complete delivery. No charge made.");
+    throw new ApiError(502, extractApiErrorMessage(err.response?.data) || "Could not complete delivery. No charge made.");
   }
 }
 
