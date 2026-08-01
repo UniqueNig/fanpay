@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { FiUser, FiMail, FiLock, FiPhone, FiArrowRight, FiEye, FiEyeOff } from "react-icons/fi";
-import fanpayLogo from "../assets/abopay-logo.svg";
+import FanPayLogo from "../components/FanPayLogo";
 import PasswordChecklist, { isPasswordValid } from "../components/PasswordChecklist";
 
 const GoogleIcon = () => (
@@ -85,7 +85,7 @@ const Signup = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center justify-center mb-6">
-            <img src={fanpayLogo} alt="FanPay" className="h-10 w-auto" />
+            <FanPayLogo className="h-10 w-auto" />
           </Link>
           <h1 className="font-syne font-bold text-2xl text-ink mb-2">Create your account</h1>
           <p className="text-ink/50 font-dm text-sm">Free forever. No hidden charges.</p>

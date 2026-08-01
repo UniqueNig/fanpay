@@ -1,6 +1,7 @@
 import React from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import BackToTop from "../components/BackToTop";
 import { FiMapPin, FiPhone, FiMail, FiMessageCircle } from "react-icons/fi";
 
 const CONTACTS = [
@@ -45,6 +46,7 @@ const ContactUs = () => (
       </div>
     </div>
     <Footer />
+    <BackToTop />
   </div>
 );
 

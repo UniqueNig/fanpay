@@ -5,6 +5,7 @@ import Features from "../components/Features";
 import PlansShowcase from "../components/PlansShowcase";
 import FAQAccordion from "../components/FAQAccordion";
 import Footer from "../components/Footer";
+import BackToTop from "../components/BackToTop";
 
 const HowItWorks = () => (
   <section id="how" className="py-24 relative">
@@ -48,6 +49,7 @@ const Home = () => (
     <PlansShowcase />
     <FAQAccordion />
     <Footer />
+    <BackToTop />
   </div>
 );
 

@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { FiMail, FiLock, FiArrowRight, FiEye, FiEyeOff } from "react-icons/fi";
-import fanpayLogo from "../assets/abopay-logo.svg";
+import FanPayLogo from "../components/FanPayLogo";
 
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -84,7 +84,7 @@ const Login = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center justify-center mb-6">
-            <img src={fanpayLogo} alt="FanPay" className="h-10 w-auto" />
+            <FanPayLogo className="h-10 w-auto" />
           </Link>
           <h1 className="font-syne font-bold text-2xl text-ink mb-2">Welcome back</h1>
           <p className="text-ink/50 font-dm text-sm">Sign in to your account</p>

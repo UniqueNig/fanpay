@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { FiMenu, FiX, FiLogOut, FiUser, FiSun, FiMoon } from "react-icons/fi";
-import fanpayLogo from "../assets/abopay-logo.svg";
+import FanPayLogo from "./FanPayLogo";
 
 const ThemeToggleButton = () => {
   const { theme, toggleTheme } = useTheme();
@@ -46,6 +46,7 @@ const Navbar = () => {
         { to: "/#features", label: "Features" },
         { to: "/#how", label: "How It Works" },
         { to: "/#faq", label: "FAQ" },
+        { to: "/about", label: "About Us" },
       ];
 
   return (
@@ -57,7 +58,7 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center">
-          <img src={fanpayLogo} alt="FanPay" className="h-8 w-auto" />
+          <FanPayLogo className="h-8 w-auto" />
         </Link>
 
         {/* Desktop Nav */}

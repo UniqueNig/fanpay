@@ -1,6 +1,7 @@
 import React from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import BackToTop from "../components/BackToTop";
 import { Link } from "react-router-dom";
 import { FiArrowRight } from "react-icons/fi";
 
@@ -32,6 +33,7 @@ const AboutUs = () => (
       </Link>
     </div>
     <Footer />
+    <BackToTop />
   </div>
 );
 

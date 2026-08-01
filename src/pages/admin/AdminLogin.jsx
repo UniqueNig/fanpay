@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { FiMail, FiLock, FiArrowRight, FiEye, FiEyeOff, FiShield } from "react-icons/fi";
-import fanpayLogo from "../../assets/abopay-logo.svg";
+import FanPayLogo from "../../components/FanPayLogo";
 
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
@@ -62,7 +62,7 @@ const AdminLogin = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center justify-center mb-6">
-            <img src={fanpayLogo} alt="FanPay" className="h-10 w-auto" />
+            <FanPayLogo className="h-10 w-auto" />
           </Link>
           <div className="w-12 h-12 rounded-2xl bg-iris/15 border border-iris/25 flex items-center justify-center mx-auto mb-4">
             <FiShield size={20} className="text-iris" />

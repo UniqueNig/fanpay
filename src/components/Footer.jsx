@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { FiMapPin, FiPhone, FiMail } from "react-icons/fi";
-import fanpayLogo from "../assets/abopay-logo.svg";
+import FanPayLogo from "./FanPayLogo";
 
 const COLUMNS = [
   {
@@ -34,7 +34,7 @@ const Footer = () => (
       <div className="grid md:grid-cols-4 gap-10 mb-12">
         <div className="md:col-span-1">
           <Link to="/" className="flex items-center mb-4">
-            <img src={fanpayLogo} alt="FanPay" className="h-9 w-auto" />
+            <FanPayLogo className="h-9 w-auto" />
           </Link>
           <p className="text-ink/40 font-dm text-sm leading-relaxed mb-5">
             Fund your wallet, buy airtime and data, and pay your bills — all in one simple app.

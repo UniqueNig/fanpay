@@ -24,6 +24,7 @@ import HelpCenter from "./pages/HelpCenter";
 import ContactUs from "./pages/ContactUs";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminUserDetail from "./pages/admin/AdminUserDetail";
@@ -93,6 +94,8 @@ function App() {
           <Route path="/admin/pricing-catalog" element={<AdminRoute><AdminPricingCatalog /></AdminRoute>} />
           <Route path="/admin/live-chat" element={<AdminRoute><AdminLiveChat /></AdminRoute>} />
           <Route path="/admin/assistant" element={<AdminRoute><AdminAssistant /></AdminRoute>} />
+
+          <Route path="*" element={<NotFound />} />
         </Routes>
         <ChatWidget />
       </BrowserRouter>

@@ -1,6 +1,7 @@
 import React from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import BackToTop from "../components/BackToTop";
 
 const SECTIONS = [
   {
@@ -47,6 +48,7 @@ const PrivacyPolicy = () => (
       </div>
     </div>
     <Footer />
+    <BackToTop />
   </div>
 );
 

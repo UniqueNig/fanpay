@@ -2,6 +2,7 @@ import React from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import FAQAccordion from "../components/FAQAccordion";
+import BackToTop from "../components/BackToTop";
 import { Link } from "react-router-dom";
 import { FiMessageCircle, FiMail } from "react-icons/fi";
 
@@ -27,6 +28,7 @@ const HelpCenter = () => (
     </div>
     <FAQAccordion />
     <Footer />
+    <BackToTop />
   </div>
 );
 
