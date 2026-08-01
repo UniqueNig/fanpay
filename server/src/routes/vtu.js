@@ -462,6 +462,18 @@ router.post(
       const electricityToken =
         maskawasubRes?.token || maskawasubRes?.Token || maskawasubRes?.electricity_token || null;
 
+      // Pre-purchase verify (/validatemeter, /validateiuc) is unreliable
+      // (see the amber warning in Bills.jsx), so accountName in `meta` above
+      // is just whatever the customer typed or a lucky verify returned — not
+      // trustworthy. The purchase response itself is the authoritative
+      // source: confirmed live for cable (`customer_name`, see
+      // maskawasub.js). Electricity's field name is unconfirmed (no real
+      // purchase has gone through this account yet), so checked defensively
+      // across the same plausible names as electricityToken above.
+      const confirmedName =
+        maskawasubRes?.customer_name || maskawasubRes?.Customer_Name ||
+        maskawasubRes?.CustomerName || maskawasubRes?.meter_name || maskawasubRes?.name || null;
+
       await Transaction.updateOne(
         { reference: ref },
         {
@@ -470,13 +482,17 @@ router.post(
             "meta.deliveryStatus": maskawasubRes?.Status,
             "meta.apiResponse": maskawasubRes?.api_response,
             "meta.electricityToken": electricityToken,
+            ...(confirmedName ? { "meta.accountName": confirmedName, "meta.confirmedName": true } : {}),
           },
         }
       );
 
       if (couponResult) await recordRedemption(couponResult.coupon._id, req.uid, ref);
 
-      res.json({ success: true, status: maskawasubRes?.Status, requestId, reference: ref, electricityToken, amountCharged: chargeAmount });
+      res.json({
+        success: true, status: maskawasubRes?.Status, requestId, reference: ref,
+        electricityToken, confirmedName, amountCharged: chargeAmount,
+      });
     } catch (err) {
       next(err);
     }

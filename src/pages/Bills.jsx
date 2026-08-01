@@ -224,6 +224,11 @@ const Bills = () => {
                 <span className="text-orange-400 font-bold">{formatNaira(paidAmount)}</span>{" "}
                 {successData?.status === "pending" ? "is being processed for" : "paid to"} {form.provider}
               </p>
+              {successData?.confirmedName && (
+                <p className="text-ink/60 font-dm text-sm mt-1">
+                  Confirmed for <span className="text-ink font-semibold">{successData.confirmedName}</span>
+                </p>
+              )}
               {successData?.status === "pending" && (
                 <p className="text-ink/40 font-dm text-xs mt-2">
                   This can take a few minutes to confirm. We'll update your transaction automatically — no need to try again.
