@@ -4,7 +4,7 @@ import PinConfirmModal from "../components/PinConfirmModal";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../api";
 import { BILL_TYPES, formatNaira } from "../utils/helpers";
-import { FiCheckCircle, FiAlertCircle, FiLoader } from "react-icons/fi";
+import { FiCheckCircle, FiAlertCircle, FiLoader, FiClock } from "react-icons/fi";
 import { Link, useNavigate } from "react-router-dom";
 
 const Bills = () => {
@@ -214,14 +214,28 @@ const Bills = () => {
 
         {success ? (
           <div className="card-flat p-10 flex flex-col items-center text-center gap-5">
-            <div className="w-20 h-20 rounded-full bg-orange-400/15 border-2 border-orange-400/30 flex items-center justify-center">
-              <FiCheckCircle size={36} className="text-orange-400" />
-            </div>
+            {successData?.status === "pending" ? (
+              <div className="w-20 h-20 rounded-full bg-yellow-400/15 border-2 border-yellow-400/30 flex items-center justify-center">
+                <FiClock size={36} className="text-yellow-500" />
+              </div>
+            ) : (
+              <div className="w-20 h-20 rounded-full bg-orange-400/15 border-2 border-orange-400/30 flex items-center justify-center">
+                <FiCheckCircle size={36} className="text-orange-400" />
+              </div>
+            )}
             <div>
-              <h2 className="font-syne font-bold text-ink text-xl mb-2">Bill Paid!</h2>
+              <h2 className="font-syne font-bold text-ink text-xl mb-2">
+                {successData?.status === "pending" ? "Payment Processing" : "Bill Paid!"}
+              </h2>
               <p className="text-ink/60 font-dm text-sm">
-                <span className="text-orange-400 font-bold">{formatNaira(paidAmount)}</span> paid to {form.provider}
+                <span className="text-orange-400 font-bold">{formatNaira(paidAmount)}</span>{" "}
+                {successData?.status === "pending" ? "is being processed for" : "paid to"} {form.provider}
               </p>
+              {successData?.status === "pending" && (
+                <p className="text-ink/40 font-dm text-xs mt-2">
+                  This can take a few minutes to confirm. We'll update your transaction automatically — no need to try again.
+                </p>
+              )}
               {successData?.electricityToken && (
                 <div className="mt-3 bg-iris/10 border border-iris/20 rounded-xl px-4 py-3">
                   <p className="text-ink/50 font-dm text-xs mb-1">Electricity Token</p>

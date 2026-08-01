@@ -2,38 +2,52 @@ import cron from "node-cron";
 import { Transaction } from "../models/Transaction.js";
 import { User } from "../models/User.js";
 import { creditWallet } from "../services/wallet.js";
-import { vtpassRequery } from "../services/vtpass.js";
+import { maskawasubRequery } from "../services/maskawasub.js";
 import { SystemLog } from "../models/SystemLog.js";
 
 const PENDING_STATUSES = ["pending", "initiated", "processing"];
-const VTU_PREFIXES = ["AIR-", "DATA-", "BILL-"];
 
-function requestIdFromReference(reference) {
-  const prefix = VTU_PREFIXES.find((p) => reference.startsWith(p));
-  return prefix ? reference.slice(prefix.length) : null;
+// Which Maskawasub endpoint a transaction's status lives at — airtime/data
+// are keyed by reference prefix alone; a "BILL-" reference is either cable
+// or electricity, disambiguated by meta.billType (set at purchase time,
+// see routes/vtu.js).
+function requeryKindFor(txn) {
+  if (txn.reference.startsWith("AIR-")) return "airtime";
+  if (txn.reference.startsWith("DATA-")) return "data";
+  if (txn.reference.startsWith("BILL-")) return txn.meta?.billType === "cable" ? "cable" : "electricity";
+  return null;
 }
 
-// Re-queries a single VTU transaction against VTpass and reconciles it: marks
-// delivered, or refunds the wallet if VTpass ultimately reports failure.
-// Shared by the automatic cron below and the admin "Requery" button
-// (routes/admin.js) — same logic either way, just a different trigger.
-// Returns the fresh status, or null if the reference isn't a VTU transaction
-// or VTpass still reports it pending (nothing changed).
+// Re-queries a single VTU transaction against Maskawasub and reconciles it:
+// marks delivered, or refunds the wallet if Maskawasub ultimately reports
+// failure. Shared by the automatic cron below and the admin "Requery" button
+// (routes/adminVtuTransactions.js) — same logic either way, just a different
+// trigger. Returns the fresh status, or null if the reference isn't a VTU
+// transaction, has no recorded Maskawasub id yet, or is still pending.
 export async function reconcileOneVtuTransaction(txn) {
-  const requestId = requestIdFromReference(txn.reference);
-  if (!requestId) return null;
+  const kind = requeryKindFor(txn);
+  if (!kind) return null;
 
-  const result = await vtpassRequery(requestId);
-  const status = result?.content?.transactions?.status;
+  // Set once the original purchase call returns (routes/vtu.js) — without
+  // it there's nothing to look up. Genuinely shouldn't happen in practice
+  // (assertDelivered only returns for "successful"/"pending", both of which
+  // come with a real Maskawasub id), but a transaction predating this fix
+  // could plausibly be missing it.
+  const maskawasubId = txn.meta?.maskawasubId;
+  if (!maskawasubId) return null;
+
+  const result = await maskawasubRequery(kind, maskawasubId);
+  const status = result?.Status;
   if (!status || PENDING_STATUSES.includes(status)) return null; // still pending
 
-  if (status === "delivered" || status === "successful") {
+  if (status === "successful") {
     txn.meta = { ...txn.meta, deliveryStatus: status };
     await txn.save();
   } else {
-    // VTpass ultimately failed the delivery — refund the wallet. creditWallet
-    // is idempotent on reference, so calling this twice for the same
-    // transaction (e.g. cron + manual requery both catching it) is safe.
+    // Maskawasub ultimately failed the delivery — refund the wallet.
+    // creditWallet is idempotent on reference, so calling this twice for
+    // the same transaction (e.g. cron + manual requery both catching it)
+    // is safe.
     const user = await User.findById(txn.userId);
     if (user) {
       await creditWallet(user.uid, txn.amount, txn.reference + "_refund", `Refund: ${txn.title}`, "↩️", {
@@ -48,12 +62,14 @@ export async function reconcileOneVtuTransaction(txn) {
   return status;
 }
 
-// VTpass code "099" means "processing" at purchase time — the delivery isn't
-// confirmed yet. This job re-queries any VTU transaction still marked pending
-// a few minutes later and reconciles it. Runs every 5 minutes.
+// Cable purchases in particular return Status: "pending" immediately and
+// only confirm asynchronously (confirmed live 2026-08-01 — see
+// services/maskawasub.js's assertDelivered) — this job re-queries any VTU
+// transaction still marked pending a few minutes later and reconciles it.
+// Runs every 5 minutes.
 export function startVtuReconciliation() {
   cron.schedule("*/5 * * * *", async () => {
-    const stale = new Date(Date.now() - 3 * 60_000); // give VTpass at least 3 min
+    const stale = new Date(Date.now() - 3 * 60_000); // give Maskawasub at least 3 min
     const candidates = await Transaction.find({
       reference: { $regex: /^(AIR|DATA|BILL)-/ },
       "meta.deliveryStatus": { $in: PENDING_STATUSES },

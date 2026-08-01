@@ -145,16 +145,49 @@ export async function maskawasubCablePlans(cableKey) {
 // would come back as HTTP 200 with a non-"successful" Status, which without
 // this check would be silently treated as a success and the customer's
 // wallet would never be refunded (see debitThenPurchase in vtu.js).
-// Only actually confirmed for /data/ so far — /topup/, /billpayment/, and
-// /cablesub/ are assumed to follow the same convention since Maskawasub
-// appears consistent about it, but that assumption should be checked the
-// first time each of those runs for real.
+//
+// "pending" is NOT a failure — confirmed live (2026-08-01) that /cablesub/
+// always returns Status: "pending" immediately (delivery confirms
+// asynchronously), unlike /topup/ and /data/ which return "successful"
+// right away. The original version of this function treated anything but
+// "successful" as an instant failure, which meant every cable purchase was
+// auto-refunded to the customer's wallet while Maskawasub had *already*
+// charged FanPay's real account balance for it (confirmed: balance_before/
+// balance_after moved on a purchase this code was simultaneously reporting
+// as failed) — a real, live money-losing bug, not a hypothetical one.
+// "pending" purchases are left as-is here; the caller records
+// deliveryStatus: "pending" and jobs/reconcileVtu.js resolves it later via
+// maskawasubRequery, same pattern already used for airtime/data's much
+// rarer "still processing" case.
 function assertDelivered(data, label) {
-  if (data?.Status !== "successful") {
-    const msg = data?.api_response || data?.error?.[0] || `${label} delivery could not be confirmed.`;
-    throw new ApiError(502, msg);
+  if (data?.Status === "successful" || data?.Status === "pending") return data;
+  const msg = data?.api_response || data?.error?.[0] || `${label} delivery could not be confirmed.`;
+  throw new ApiError(502, msg);
+}
+
+// Result-checker for a "pending" purchase — confirmed live (2026-08-01) that
+// each purchase endpoint doubles as its own by-id lookup: GET /cablesub/{id}
+// returns the exact same transaction record the original POST did, with an
+// up-to-date Status. No separate "/requery" or "/status" endpoint exists
+// (both 404); this is the real pattern. Only /cablesub/{id} has actually
+// been confirmed against a real transaction — /topup/{id}, /data/{id}, and
+// /billpayment/{id} are assumed to follow the same convention (same account,
+// same underlying API framework) but haven't individually been tested,
+// since airtime/data return "successful" immediately in every case seen so
+// far and rarely need requerying, and no electricity purchase has been made
+// yet to test against.
+const REQUERY_PATH = { airtime: "topup", data: "data", cable: "cablesub", electricity: "billpayment" };
+
+export async function maskawasubRequery(kind, id) {
+  const path = REQUERY_PATH[kind];
+  if (!path) throw new ApiError(400, `Unknown requery kind: ${kind}`);
+  try {
+    const res = await axios.get(`${env.maskawasubBaseUrl}/${path}/${id}`, { headers: headers(), timeout: 20000 });
+    return res.data;
+  } catch (err) {
+    console.error(`Maskawasub requery error (${kind}/${id}):`, err.response?.data || err.message);
+    throw new ApiError(502, "Could not check delivery status. Try again shortly.");
   }
-  return data;
 }
 
 export async function maskawasubBuyAirtime({ network, mobile_number, amount, airtime_type = "VTU" }) {
