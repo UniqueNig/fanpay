@@ -38,6 +38,16 @@ const appSettingsSchema = new mongoose.Schema(
       // doesn't absorb Paystack's own transaction fee.
       paystackDepositFeePercent: { type: Number, default: 1.5 },
     },
+    // Caps on airtime/data/cable/electricity purchases for accounts that
+    // haven't completed KYC (routes/vtu.js's requireBalanceAndPin) — deposits
+    // and receiving money are never limited by this, only spending it on
+    // something resellable, which is the actual laundering vector KYC tiers
+    // exist to blunt. Verified accounts (KycSubmission.status === "verified")
+    // are exempt entirely.
+    kyc: {
+      unverifiedPerTransactionLimit: { type: Number, default: 5000 },
+      unverifiedDailyLimit: { type: Number, default: 10000 },
+    },
     // AI auto-reply for the customer support chat (services/chatAi.js,
     // services/chatListener.js). Off by default — an admin opts in once
     // ANTHROPIC_API_KEY is set. Per-thread `chats/{uid}.aiPaused` (Firestore,

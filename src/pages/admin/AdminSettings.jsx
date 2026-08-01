@@ -3,7 +3,7 @@ import AdminLayout from "../../components/AdminLayout";
 import { api } from "../../api";
 import { FiAlertCircle, FiCheck, FiAlertTriangle } from "react-icons/fi";
 
-const TABS = ["System Settings", "Services Control", "Pricing"];
+const TABS = ["System Settings", "Services Control", "Pricing", "KYC Limits"];
 
 const Toggle = ({ on, onClick }) => (
   <button
@@ -54,6 +54,7 @@ const AdminSettings = () => {
   const services = settings?.servicesEnabled || {};
   const pricing = settings?.pricing || {};
   const general = settings?.general || {};
+  const kyc = settings?.kyc || {};
 
   return (
     <AdminLayout>
@@ -131,7 +132,7 @@ const AdminSettings = () => {
               </div>
             ))}
           </div>
-        ) : (
+        ) : tab === 2 ? (
           <div className="card-flat p-6 flex flex-col gap-5">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -169,6 +170,26 @@ const AdminSettings = () => {
               Airtime, data, and cable pricing moved to <strong className="text-ink/50">Admin → Pricing
               Catalog</strong> — buying price vs. selling price per network/plan, since Maskawasub sells those
               below face value rather than charging a flat percentage.
+            </p>
+          </div>
+        ) : (
+          <div className="card-flat p-6 flex flex-col gap-5">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-ink/60 font-dm text-xs mb-1.5 block">Unverified: Per-Transaction Limit (₦)</label>
+                <input type="number" className="input-field-light" defaultValue={kyc.unverifiedPerTransactionLimit} onBlur={(e) => save({ kyc: { ...kyc, unverifiedPerTransactionLimit: Number(e.target.value) } })} />
+              </div>
+              <div>
+                <label className="text-ink/60 font-dm text-xs mb-1.5 block">Unverified: Daily Limit (₦)</label>
+                <input type="number" className="input-field-light" defaultValue={kyc.unverifiedDailyLimit} onBlur={(e) => save({ kyc: { ...kyc, unverifiedDailyLimit: Number(e.target.value) } })} />
+              </div>
+            </div>
+            <p className="text-ink/30 font-dm text-xs">
+              Applies only to airtime, data, cable, and electricity purchases — deposits and holding a
+              balance are never limited. An account with an approved KYC submission is exempt from both
+              caps entirely. This is the actual laundering-risk lever: unverified accounts can receive
+              money freely, but turning it back into something resellable (airtime especially) is capped
+              until identity is verified.
             </p>
           </div>
         )}

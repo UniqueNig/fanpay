@@ -13,6 +13,7 @@ import { previewCoupon, recordRedemption } from "../services/coupons.js";
 import { getAirtimeRate, resolveDataPlanPrice, resolveCablePlanPrice, listDataCatalog, listCableCatalog } from "../services/maskawasubPricing.js";
 import { User } from "../models/User.js";
 import { Transaction } from "../models/Transaction.js";
+import { KycSubmission } from "../models/KycSubmission.js";
 
 const router = Router();
 
@@ -23,6 +24,45 @@ const COUPON_RULE = body("couponCode").optional().isString().trim();
 // Maskawasub's API wants it as 1/2 — this is the only place that mapping happens.
 const METER_TYPE = { prepaid: 1, postpaid: 2 };
 
+// Unverified accounts can hold and receive money freely — the fraud/AML
+// risk is in moving it back out as something resellable (airtime especially),
+// which is exactly what CBN's own tiered-KYC framework caps for bank
+// accounts too. Verified accounts (an approved KycSubmission) are exempt
+// entirely; admin-editable limits live in AppSettings.kyc.
+async function assertWithinKycLimit(uid, userId, chargeAmount, settings) {
+  const submission = await KycSubmission.findOne({ uid, status: "verified" }).select("_id").lean();
+  if (submission) return;
+
+  const { unverifiedPerTransactionLimit, unverifiedDailyLimit } = settings.kyc || {};
+  if (chargeAmount > unverifiedPerTransactionLimit) {
+    throw new ApiError(
+      403,
+      `Unverified accounts can spend up to ₦${unverifiedPerTransactionLimit.toLocaleString()} per transaction. Complete KYC verification to increase this.`
+    );
+  }
+
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const [{ total } = { total: 0 }] = await Transaction.aggregate([
+    {
+      $match: {
+        userId,
+        type: "debit",
+        reference: { $regex: /^(AIR|DATA|BILL)-/ },
+        createdAt: { $gte: startOfToday },
+      },
+    },
+    { $group: { _id: null, total: { $sum: "$amount" } } },
+  ]);
+
+  if (total + chargeAmount > unverifiedDailyLimit) {
+    throw new ApiError(
+      403,
+      `Unverified accounts can spend up to ₦${unverifiedDailyLimit.toLocaleString()} per day on airtime, data, and bills. Complete KYC verification to increase this, or try again tomorrow.`
+    );
+  }
+}
+
 // The balance check here is a fast-fail UX nicety only — it runs outside any
 // transaction, so it can't be trusted against two concurrent requests. The
 // real, atomic guard is debitWallet, which callers below now run BEFORE the
@@ -30,11 +70,12 @@ const METER_TYPE = { prepaid: 1, postpaid: 2 };
 // after — see the comment at each call site for why that order matters.
 // `chargeAmount` is the fee/markup-inclusive total actually charged, not the
 // Maskawasub face value — callers compute that first from settings + coupon.
-async function requireBalanceAndPin(uid, chargeAmount, pin) {
+async function requireBalanceAndPin(uid, chargeAmount, pin, settings) {
   const user = await User.findOne({ uid });
   if (!user) throw new ApiError(404, "User not found.");
   if (user.suspended) throw new ApiError(403, "This account has been suspended.");
   if (user.balance < chargeAmount) throw new ApiError(400, "Insufficient balance.");
+  await assertWithinKycLimit(uid, user._id, chargeAmount, settings);
   await verifyTransactionPin(uid, pin);
   return user;
 }
@@ -192,7 +233,7 @@ router.post(
       const buyingPrice = amount * (rate.buyingPrice / 100);
       const chargeAmount = amount * (rate.sellingPrice / 100);
 
-      await requireBalanceAndPin(req.uid, chargeAmount, pin);
+      await requireBalanceAndPin(req.uid, chargeAmount, pin, settings);
 
       const requestId = Date.now().toString();
       const ref = "AIR-" + requestId;
@@ -257,7 +298,7 @@ router.post(
       const priced = await resolveDataPlanPrice(networkKey, planId);
       const chargeAmount = priced.sellingPrice;
 
-      await requireBalanceAndPin(req.uid, chargeAmount, pin);
+      await requireBalanceAndPin(req.uid, chargeAmount, pin, settings);
 
       const requestId = Date.now().toString();
       const ref = "DATA-" + requestId;
@@ -369,7 +410,7 @@ router.post(
           maskawasubBuyCable({ cablename: cableId, cableplan: planId, smart_card_number: smartCardNumber || meterNumber });
       }
 
-      await requireBalanceAndPin(req.uid, chargeAmount, pin);
+      await requireBalanceAndPin(req.uid, chargeAmount, pin, settings);
 
       const requestId = Date.now().toString();
       const category = billType === "electricity" ? "⚡" : "📺";
