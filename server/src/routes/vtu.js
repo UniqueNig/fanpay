@@ -71,6 +71,14 @@ async function assertWithinKycLimit(uid, userId, chargeAmount, settings) {
 // `chargeAmount` is the fee/markup-inclusive total actually charged, not the
 // Maskawasub face value — callers compute that first from settings + coupon.
 async function requireBalanceAndPin(uid, chargeAmount, pin, settings) {
+  // Defense-in-depth, not the primary guarantee — every caller already
+  // computes chargeAmount from a trusted server-side rate/catalog lookup,
+  // never a raw client-supplied price. This exists purely as a floor so a
+  // pricing misconfiguration (e.g. an admin fat-fingering sellingPrice to 0
+  // or negative in the Pricing Catalog) can never slip through as a
+  // zero-cost purchase or, worse, a negative chargeAmount that debitWallet
+  // would interpret as a credit (it does `balance -= amount`).
+  if (!(chargeAmount > 0)) throw new ApiError(400, "Invalid purchase amount.");
   const user = await User.findOne({ uid });
   if (!user) throw new ApiError(404, "User not found.");
   if (user.suspended) throw new ApiError(403, "This account has been suspended.");

@@ -9,7 +9,20 @@ function isDuplicateKeyError(err) {
   return err && err.code === 11000;
 }
 
+// Floor check shared by every credit/debit path — every caller already
+// computes `amount` from trusted server-side data (never a raw client
+// price), but this is the one place that matters for all of them at once:
+// a zero/negative amount here isn't just "no-op", debitWallet does
+// `balance -= amount` and creditWallet does `balance += amount`, so a
+// negative value would silently flip into the wrong direction. A single
+// guard at the lowest shared point protects every current and future caller
+// regardless of what upstream validation existed (or didn't).
+function assertPositiveAmount(amount) {
+  if (!(amount > 0)) throw new ApiError(400, "Invalid amount.");
+}
+
 export async function creditWallet(uid, amount, reference, title = "Wallet Deposit", category = "💳", meta = {}) {
+  assertPositiveAmount(amount);
   const session = await mongoose.startSession();
   try {
     await session.withTransaction(async () => {
@@ -37,6 +50,7 @@ export async function creditWallet(uid, amount, reference, title = "Wallet Depos
 // can refund on failure), a wallet-to-wallet move has no external reconciliation
 // path, so both writes must succeed or fail together.
 export async function transferBetweenWallets({ senderUid, recipientUid, amount, reference, senderMeta = {}, recipientMeta = {} }) {
+  assertPositiveAmount(amount);
   const session = await mongoose.startSession();
   try {
     await session.withTransaction(async () => {
@@ -70,6 +84,7 @@ export async function transferBetweenWallets({ senderUid, recipientUid, amount, 
 }
 
 export async function debitWallet(uid, amount, reference, title, category = "💸", meta = {}) {
+  assertPositiveAmount(amount);
   const session = await mongoose.startSession();
   try {
     await session.withTransaction(async () => {

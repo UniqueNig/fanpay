@@ -14,7 +14,7 @@ import FanPayLogo from "./FanPayLogo";
 const HIDDEN_KEYS = new Set([
   "id", "type", "title", "amount", "date", "category", "reference",
   "recipientCode", "transferStatus", "vtpassTxId", "maskawasubId",
-  "buyingPrice", "sellingPrice",
+  "buyingPrice", "sellingPrice", "apiResponse", "adminAction", "adminUid",
 ]);
 
 const LABELS = {

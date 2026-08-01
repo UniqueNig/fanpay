@@ -13,6 +13,28 @@ function generateAccountNumber() {
   return "0" + Math.floor(Math.random() * 900000000 + 100000000);
 }
 
+// transaction.meta carries whatever a purchase/deposit route found useful to
+// record internally — that includes real wholesale cost data (buyingPrice/
+// sellingPrice reveal FanPay's exact margin per purchase) and raw
+// provider-internal identifiers/debug text, none of which should ever reach
+// a customer's own browser. TransactionDetailModal.jsx already hides these
+// from the receipt UI, but that's cosmetic only — the previous version of
+// this route still sent the raw meta object over the wire regardless, so
+// anyone opening devtools' Network tab could read it directly. This is the
+// actual enforcement point; keep it as the superset of what the frontend hides.
+const HIDDEN_META_KEYS = new Set([
+  "buyingPrice", "sellingPrice", "maskawasubId", "vtpassTxId", "apiResponse",
+  "adminAction", "adminUid",
+]);
+
+function sanitizeMeta(meta = {}) {
+  const clean = {};
+  for (const [key, value] of Object.entries(meta)) {
+    if (!HIDDEN_META_KEYS.has(key)) clean[key] = value;
+  }
+  return clean;
+}
+
 // Returns the user profile plus their 200 most recent transactions, mirroring
 // the shape the frontend previously read straight off the Firestore user doc
 // (userData.balance, userData.transactions) so AuthContext needs minimal changes.
@@ -41,7 +63,7 @@ router.get("/me", requireAuth, async (req, res, next) => {
           date: tx.createdAt,
           category: tx.category,
           reference: tx.reference,
-          ...tx.meta,
+          ...sanitizeMeta(tx.meta),
         })),
       },
     });
