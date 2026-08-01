@@ -6,6 +6,7 @@ import { env } from "./config/env.js";
 import { connectDb } from "./config/db.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { startVtuReconciliation } from "./jobs/reconcileVtu.js";
+import { startChatAiListener } from "./services/chatListener.js";
 
 import webhooksRouter from "./routes/webhooks.js";
 import usersRouter from "./routes/users.js";
@@ -120,4 +121,5 @@ app.use(errorHandler);
 
 await connectDb();
 startVtuReconciliation();
-app.listen(env.port, () => console.log(`Abopay API listening on port ${env.port}`));
+startChatAiListener();
+app.listen(env.port, () => console.log(`FanPay API listening on port ${env.port}`));

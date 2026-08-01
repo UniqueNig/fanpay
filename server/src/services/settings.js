@@ -12,7 +12,7 @@ export async function getSettings() {
 
 export function assertNotMaintenance(settings) {
   if (settings.maintenanceMode) {
-    throw new ApiError(503, "Abopay is temporarily down for maintenance. Please try again shortly.");
+    throw new ApiError(503, "FanPay is temporarily down for maintenance. Please try again shortly.");
   }
 }
 

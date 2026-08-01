@@ -2,12 +2,15 @@ import { Router } from "express";
 import { body, validationResult } from "express-validator";
 import { requireAuth } from "../middleware/auth.js";
 import { ApiError } from "../middleware/errorHandler.js";
-import { vtpassPay, vtpassMerchantVerify, lookupService } from "../services/vtpass.js";
+import {
+  maskawasubBuyAirtime, maskawasubBuyData, maskawasubBuyElectricity, maskawasubBuyCable,
+  maskawasubValidateMeter, maskawasubValidateIUC, resolveProviderId,
+} from "../services/maskawasub.js";
 import { debitWallet, creditWallet } from "../services/wallet.js";
 import { verifyTransactionPin } from "../services/pin.js";
 import { getSettings, assertNotMaintenance, assertServiceEnabled } from "../services/settings.js";
 import { previewCoupon, recordRedemption } from "../services/coupons.js";
-import { getAirtimeRate, resolvePlanPrice, listCatalog, getServiceIDs } from "../services/productPricing.js";
+import { getAirtimeRate, resolveDataPlanPrice, resolveCablePlanPrice, listDataCatalog, listCableCatalog } from "../services/maskawasubPricing.js";
 import { User } from "../models/User.js";
 import { Transaction } from "../models/Transaction.js";
 
@@ -16,13 +19,17 @@ const router = Router();
 const PIN_RULE = body("pin").isString().matches(/^\d{4}$/).withMessage("A valid 4-digit PIN is required.");
 const COUPON_RULE = body("couponCode").optional().isString().trim();
 
+// meterType comes from the frontend as "prepaid"/"postpaid" (unchanged UX);
+// Maskawasub's API wants it as 1/2 — this is the only place that mapping happens.
+const METER_TYPE = { prepaid: 1, postpaid: 2 };
+
 // The balance check here is a fast-fail UX nicety only — it runs outside any
 // transaction, so it can't be trusted against two concurrent requests. The
 // real, atomic guard is debitWallet, which callers below now run BEFORE the
-// VTpass purchase call (refunding if that call then fails) rather than
+// Maskawasub purchase call (refunding if that call then fails) rather than
 // after — see the comment at each call site for why that order matters.
 // `chargeAmount` is the fee/markup-inclusive total actually charged, not the
-// VTpass face value — callers compute that first from settings + coupon.
+// Maskawasub face value — callers compute that first from settings + coupon.
 async function requireBalanceAndPin(uid, chargeAmount, pin) {
   const user = await User.findOne({ uid });
   if (!user) throw new ApiError(404, "User not found.");
@@ -34,7 +41,7 @@ async function requireBalanceAndPin(uid, chargeAmount, pin) {
 
 // Debits atomically first (closing the double-spend race a post-purchase
 // debit would leave open — see requireBalanceAndPin above), then attempts
-// the VTpass purchase. On failure, refunds the debit and rethrows so the
+// the Maskawasub purchase. On failure, refunds the debit and rethrows so the
 // route's existing catch/next(err) handling is unchanged.
 async function debitThenPurchase(uid, amount, ref, title, category, meta, purchase) {
   await debitWallet(uid, amount, ref, title, category, meta);
@@ -57,23 +64,23 @@ function checkValidation(req, res) {
   return true;
 }
 
-// Real VTpass plan codes — the frontend must call this before letting a user
-// pick a data bundle, rather than guessing a variationCode like "mtn-1000".
-// Returns the admin's configured selling price (via the product-pricing
-// catalog), not VTpass's raw wholesale price — customers should see exactly
-// what they'll be charged, not Abopay's cost. A network can now span more
-// than one VTpass service (e.g. Glo's regular + SME data merged together),
-// so this queries each and combines the results; inactive (admin-hidden)
-// plans are filtered out before anything reaches the customer.
+// Real Maskawasub plan ids — the frontend must call this before letting a
+// user pick a data bundle, rather than guessing an id. Response shape kept
+// close to the old VTpass-backed version (variation_code/name/
+// variation_amount) so the frontend needed minimal changes — variation_code
+// is just the plan's Maskawasub id as a string here instead of a VTpass
+// code — plus planType/validity/sizeLabel added on for the plan picker's
+// type-filter tabs and per-plan validity display.
 router.get("/data-plans/:network", requireAuth, async (req, res, next) => {
   try {
-    const serviceIDs = await getServiceIDs("data", req.params.network.toLowerCase());
-    if (serviceIDs.length === 0) throw new ApiError(400, `Unknown network: ${req.params.network}`);
-    const rows = (await Promise.all(serviceIDs.map((id) => listCatalog("data", id)))).flat();
+    const networkKey = req.params.network.toLowerCase();
+    if (!(await resolveProviderId("network", networkKey))) throw new ApiError(400, `Unknown network: ${req.params.network}`);
+    const rows = await listDataCatalog(networkKey);
     res.json({
       content: {
         varations: rows.filter((r) => r.active).map((r) => ({
-          variation_code: r.variationCode, name: r.label, variation_amount: String(r.sellingPrice), serviceID: r.serviceID,
+          variation_code: r.variationCode, name: r.label, variation_amount: String(r.sellingPrice),
+          plan_type: r.planType, validity: r.validity, size: r.sizeLabel,
         })),
       },
     });
@@ -82,17 +89,15 @@ router.get("/data-plans/:network", requireAuth, async (req, res, next) => {
   }
 });
 
-// Same idea for cable bouquets — same selling-price substitution and
-// multi-service merge as data above.
 router.get("/cable-plans/:provider", requireAuth, async (req, res, next) => {
   try {
-    const serviceIDs = await getServiceIDs("cable", req.params.provider);
-    if (serviceIDs.length === 0) throw new ApiError(400, `Unknown cable provider: ${req.params.provider}`);
-    const rows = (await Promise.all(serviceIDs.map((id) => listCatalog("cable", id)))).flat();
+    const cableKey = req.params.provider;
+    if (!(await resolveProviderId("cable", cableKey))) throw new ApiError(400, `Unknown cable provider: ${req.params.provider}`);
+    const rows = await listCableCatalog(cableKey);
     res.json({
       content: {
         varations: rows.filter((r) => r.active).map((r) => ({
-          variation_code: r.variationCode, name: r.label, variation_amount: String(r.sellingPrice), serviceID: r.serviceID,
+          variation_code: r.variationCode, name: r.label, variation_amount: String(r.sellingPrice),
         })),
       },
     });
@@ -103,16 +108,27 @@ router.get("/cable-plans/:provider", requireAuth, async (req, res, next) => {
 
 // Confirms the smartcard belongs to a real active subscription and returns
 // the customer's name, so the frontend can show "Paying for: X" before the
-// user confirms — same trust pattern as the bank-transfer name resolution.
+// user confirms.
 router.get("/verify-cable/:provider/:smartCardNumber", requireAuth, async (req, res, next) => {
   try {
-    const [serviceID] = await getServiceIDs("cable", req.params.provider);
-    if (!serviceID) throw new ApiError(400, `Unknown cable provider: ${req.params.provider}`);
-    const content = await vtpassMerchantVerify({ billersCode: req.params.smartCardNumber, serviceID });
+    const cableId = await resolveProviderId("cable", req.params.provider);
+    if (!cableId) throw new ApiError(400, `Unknown cable provider: ${req.params.provider}`);
+    const content = await maskawasubValidateIUC({ smart_card_number: req.params.smartCardNumber, cablename: cableId });
+    // Confirmed live (2026-08-01) via the sibling validatemeter endpoint:
+    // Maskawasub returns { invalid: true/false, name, address } — no
+    // "customer_name"/"Customer_Name" field exists at all, and an invalid
+    // number doesn't error, it comes back 200 with invalid:true and a
+    // literal "INVALID METER NUMBER" string in `name` — must be checked
+    // explicitly or that string would show as if it were a real name.
+    // validateiuc itself wasn't confirmed (test smartcard triggered a
+    // Maskawasub-side 500, not a usable response) — assumed to follow the
+    // same shape as validatemeter since they're clearly the same underlying
+    // pattern, but worth a real re-check against an actual smartcard.
+    if (content?.invalid) return res.json({ customerName: null, status: null, dueDate: null });
     res.json({
-      customerName: content?.Customer_Name || null,
-      status: content?.Status || null,
-      dueDate: content?.Due_Date || null,
+      customerName: content?.name || content?.customer_name || content?.Customer_Name || null,
+      status: content?.status || content?.Status || null,
+      dueDate: content?.due_date || content?.Due_Date || null,
     });
   } catch (err) {
     next(err);
@@ -123,13 +139,20 @@ router.get("/verify-cable/:provider/:smartCardNumber", requireAuth, async (req, 
 // (prepaid/postpaid) that cable doesn't.
 router.get("/verify-electricity/:provider/:meterNumber", requireAuth, async (req, res, next) => {
   try {
-    const serviceID = lookupService("electricity", req.params.provider);
-    if (!serviceID) throw new ApiError(400, `Unknown electricity provider: ${req.params.provider}`);
+    const discoId = await resolveProviderId("electricity", req.params.provider);
+    if (!discoId) throw new ApiError(400, `Unknown electricity provider: ${req.params.provider}`);
     const type = req.query.type === "postpaid" ? "postpaid" : "prepaid";
-    const content = await vtpassMerchantVerify({ billersCode: req.params.meterNumber, serviceID, extra: { type } });
+    const content = await maskawasubValidateMeter({
+      meternumber: req.params.meterNumber, disconame: discoId, mtype: METER_TYPE[type],
+    });
+    // Confirmed live (2026-08-01, real request against Ibadan Electric):
+    // { invalid: true, name: "INVALID METER NUMBER", address: "INVALID METER NUMBER" }
+    // for a bad meter — 200 OK, not an error, so `invalid` must be checked
+    // explicitly or that placeholder string renders as if it were real.
+    if (content?.invalid) return res.json({ customerName: null, address: null });
     res.json({
-      customerName: content?.Customer_Name || null,
-      address: content?.Address || content?.Customer_District || null,
+      customerName: content?.name || content?.customer_name || content?.Customer_Name || null,
+      address: content?.address || content?.Address || null,
     });
   } catch (err) {
     next(err);
@@ -149,21 +172,23 @@ router.post(
     if (!checkValidation(req, res)) return;
     try {
       const { network, phone, amount, pin } = req.body;
-      const serviceID = lookupService("airtime", network.toLowerCase());
-      if (!serviceID) throw new ApiError(400, `Unknown network: ${network}`);
+      const networkKey = network.toLowerCase();
+      const networkId = await resolveProviderId("network", networkKey);
+      if (!networkId) throw new ApiError(400, `Unknown network: ${network}`);
 
       const settings = await getSettings();
       assertNotMaintenance(settings);
       assertServiceEnabled(settings, "airtime");
 
-      // VTpass sells airtime to resellers below face value — that wholesale
-      // spread is the actual source of profit. Rates are configured per
-      // network in the admin Pricing Catalog (services/productPricing.js),
-      // as a percent of face value; an unconfigured network defaults to
-      // 100/100 (sell at face value, zero recorded margin). No coupon
-      // support — there's no safe way to cap a further stacked discount
-      // without knowing VTpass's real wholesale rate for this account.
-      const rate = await getAirtimeRate(serviceID);
+      // Maskawasub sells airtime below face value — that wholesale spread is
+      // the actual source of profit. Rates are configured per network in the
+      // admin Pricing Catalog (services/maskawasubPricing.js), as a percent
+      // of face value, seeded from Maskawasub's own live topuppercentage
+      // table; an unconfigured network defaults to 100/100 (sell at face
+      // value, zero recorded margin). No coupon support — there's no safe
+      // way to cap a further stacked discount without knowing Maskawasub's
+      // real wholesale rate for this account.
+      const rate = await getAirtimeRate(networkKey);
       const buyingPrice = amount * (rate.buyingPrice / 100);
       const chargeAmount = amount * (rate.sellingPrice / 100);
 
@@ -173,23 +198,28 @@ router.post(
       const ref = "AIR-" + requestId;
       const title = `${network.toUpperCase()} Airtime – ${phone}`;
 
-      const vtpassRes = await debitThenPurchase(
+      const maskawasubRes = await debitThenPurchase(
         req.uid,
         chargeAmount,
         ref,
         title,
         "📱",
         { network, phone, amount, buyingPrice, sellingPrice: chargeAmount },
-        () => vtpassPay({ request_id: requestId, serviceID, amount, phone, billersCode: phone, quantity: 1 })
+        () => maskawasubBuyAirtime({ network: networkId, mobile_number: phone, amount })
       );
 
-      const txStatus = vtpassRes?.content?.transactions?.status;
       await Transaction.updateOne(
         { reference: ref },
-        { $set: { "meta.vtpassTxId": vtpassRes?.content?.transactions?.transactionId, "meta.deliveryStatus": txStatus } }
+        {
+          $set: {
+            "meta.maskawasubId": maskawasubRes?.id,
+            "meta.deliveryStatus": maskawasubRes?.Status,
+            "meta.apiResponse": maskawasubRes?.api_response,
+          },
+        }
       );
 
-      res.json({ success: true, status: txStatus, requestId, reference: ref, amountCharged: chargeAmount });
+      res.json({ success: true, status: maskawasubRes?.Status, requestId, reference: ref, amountCharged: chargeAmount });
     } catch (err) {
       next(err);
     }
@@ -203,36 +233,28 @@ router.post(
     body("network").isString().trim().notEmpty(),
     body("phone").isString().trim().isLength({ min: 10, max: 11 }),
     body("variationCode").isString().trim().notEmpty(),
-    // Which of the network's (possibly several, once an admin merges in an
-    // extra service like Glo SME) VTpass services this plan belongs to —
-    // optional, defaults to the network's single hardcoded service.
-    body("serviceID").optional().isString().trim(),
     PIN_RULE,
   ],
   async (req, res, next) => {
     if (!checkValidation(req, res)) return;
     try {
       const { network, phone, variationCode, pin } = req.body;
-      const allowedServiceIDs = await getServiceIDs("data", network.toLowerCase());
-      if (allowedServiceIDs.length === 0) throw new ApiError(400, `Unknown network: ${network}`);
+      const networkKey = network.toLowerCase();
+      const networkId = await resolveProviderId("network", networkKey);
+      if (!networkId) throw new ApiError(400, `Unknown network: ${network}`);
 
-      // Never trust an arbitrary client-supplied serviceID — only one
-      // that's actually configured for this network is accepted. Falls back
-      // to the first (the network's primary/hardcoded service) if omitted.
-      const requestedServiceID = req.body.serviceID;
-      const serviceID = requestedServiceID && allowedServiceIDs.includes(requestedServiceID)
-        ? requestedServiceID
-        : allowedServiceIDs[0];
+      const planId = Number(variationCode);
+      if (!Number.isInteger(planId)) throw new ApiError(400, "Invalid plan selected.");
 
       const settings = await getSettings();
       assertNotMaintenance(settings);
       assertServiceEnabled(settings, "data");
 
       // Authoritative price resolved server-side — a client-supplied amount
-      // is never trusted here, since data bundles have a real fixed VTpass
-      // price per variationCode (unlike airtime's free-typed amount).
-      const priced = await resolvePlanPrice("data", serviceID, variationCode);
-      const faceValue = priced.buyingPrice;
+      // is never trusted here, since data bundles have a real fixed
+      // Maskawasub price per plan id (unlike airtime's free-typed amount).
+      // Also confirms planId actually belongs to networkKey.
+      const priced = await resolveDataPlanPrice(networkKey, planId);
       const chargeAmount = priced.sellingPrice;
 
       await requireBalanceAndPin(req.uid, chargeAmount, pin);
@@ -241,23 +263,28 @@ router.post(
       const ref = "DATA-" + requestId;
       const title = `${network.toUpperCase()} Data – ${phone}`;
 
-      const vtpassRes = await debitThenPurchase(
+      const maskawasubRes = await debitThenPurchase(
         req.uid,
         chargeAmount,
         ref,
         title,
         "📶",
         { network, phone, variationCode, buyingPrice: priced.buyingPrice, sellingPrice: priced.sellingPrice },
-        () => vtpassPay({ request_id: requestId, serviceID, billersCode: phone, variation_code: variationCode, amount: faceValue, phone, quantity: 1 })
+        () => maskawasubBuyData({ network: networkId, mobile_number: phone, plan: planId })
       );
 
-      const txStatus = vtpassRes?.content?.transactions?.status;
       await Transaction.updateOne(
         { reference: ref },
-        { $set: { "meta.vtpassTxId": vtpassRes?.content?.transactions?.transactionId, "meta.deliveryStatus": txStatus } }
+        {
+          $set: {
+            "meta.maskawasubId": maskawasubRes?.id,
+            "meta.deliveryStatus": maskawasubRes?.Status,
+            "meta.apiResponse": maskawasubRes?.api_response,
+          },
+        }
       );
 
-      res.json({ success: true, status: txStatus, requestId, reference: ref, amountCharged: chargeAmount });
+      res.json({ success: true, status: maskawasubRes?.Status, requestId, reference: ref, amountCharged: chargeAmount });
     } catch (err) {
       next(err);
     }
@@ -273,9 +300,9 @@ router.post(
     // Required for electricity (customer types any amount); ignored for
     // cable, which resolves its authoritative price server-side below.
     body("amount").optional().isFloat({ gt: 0 }),
-    // VTpass requires phone as a mandatory /pay parameter for bills — don't
-    // fall back to the user's profile phone, which may be blank (e.g. Google
-    // sign-in never collects one) and isn't necessarily tied to this meter/card.
+    // Maskawasub requires a phone number for bill payments — don't fall back
+    // to the user's profile phone, which may be blank (e.g. Google sign-in
+    // never collects one) and isn't necessarily tied to this meter/card.
     body("phone").isString().trim().isLength({ min: 10, max: 11 }).withMessage("A valid phone number is required."),
     body("meterNumber").optional().isString().trim(),
     body("smartCardNumber").optional().isString().trim(),
@@ -283,13 +310,9 @@ router.post(
     body("variationCode").optional().isString().trim(),
     // Purely informational — whatever name was shown during the verify step,
     // carried through so it shows on the transaction receipt. Not used for
-    // fund routing (billersCode is what VTpass actually charges against), so
-    // trusting the client here doesn't create a money-movement risk.
+    // fund routing, so trusting the client here doesn't create a
+    // money-movement risk.
     body("accountName").optional().isString().trim(),
-    // Which of the provider's (possibly several) VTpass services this
-    // bouquet belongs to — optional, defaults to the provider's single
-    // hardcoded service. Cable-only; electricity has no equivalent.
-    body("serviceID").optional().isString().trim(),
     COUPON_RULE,
     PIN_RULE,
   ],
@@ -302,43 +325,48 @@ router.post(
       assertNotMaintenance(settings);
       assertServiceEnabled(settings, "bills");
 
-      let serviceID, billersCode, payloadExtra = {};
-      let faceValue, chargeAmount, couponResult = null, discount = 0, fee = 0, buyingPrice = null, sellingPrice = null;
+      let chargeAmount, faceValue, couponResult = null, discount = 0, fee = 0, buyingPrice = null, sellingPrice = null;
+      let purchaseCall;
 
       if (billType === "electricity") {
-        serviceID = lookupService("electricity", provider);
-        if (!serviceID) throw new ApiError(400, `Unknown electricity provider: ${provider}`);
-        billersCode = meterNumber;
-        payloadExtra = { variation_code: meterType || "prepaid" };
+        const discoId = await resolveProviderId("electricity", provider);
+        if (!discoId) throw new ApiError(400, `Unknown electricity provider: ${provider}`);
 
         // Electricity keeps the flat additive fee — arbitrary user-typed
-        // amount, no fixed VTpass "plan" to catalog-price like data/cable.
+        // amount, no fixed Maskawasub "plan" to catalog-price like data/cable.
         if (!(amount > 0)) throw new ApiError(400, "A valid amount is required.");
         faceValue = amount;
         fee = settings.pricing.billFeeFlat;
         couponResult = await previewCoupon(couponCode, req.uid, fee);
         discount = couponResult?.discount || 0;
         chargeAmount = faceValue + fee - discount;
-      } else {
-        const allowedServiceIDs = await getServiceIDs("cable", provider);
-        if (allowedServiceIDs.length === 0) throw new ApiError(400, `Unknown cable provider: ${provider}`);
-        // Never trust an arbitrary client-supplied serviceID — same pattern
-        // as the /data route above.
-        serviceID = req.body.serviceID && allowedServiceIDs.includes(req.body.serviceID)
-          ? req.body.serviceID
-          : allowedServiceIDs[0];
-        billersCode = smartCardNumber || meterNumber;
-        if (!variationCode) throw new ApiError(400, "A bouquet must be selected.");
-        payloadExtra = { variation_code: variationCode };
 
-        // Same catalog-based, tamper-proof pricing as data purchases —
-        // never trusts a client-supplied amount. No coupon support, same
-        // reasoning as data: no safe cap without knowing VTpass's real rate.
-        const priced = await resolvePlanPrice("cable", serviceID, variationCode);
+        const type = meterType === "postpaid" ? "postpaid" : "prepaid";
+        purchaseCall = () =>
+          maskawasubBuyElectricity({
+            disco_name: discoId, amount: faceValue, meter_number: meterNumber, MeterType: METER_TYPE[type],
+          });
+      } else {
+        const cableId = await resolveProviderId("cable", provider);
+        if (!cableId) throw new ApiError(400, `Unknown cable provider: ${provider}`);
+        if (!variationCode) throw new ApiError(400, "A bouquet must be selected.");
+        const planId = Number(variationCode);
+        if (!Number.isInteger(planId)) throw new ApiError(400, "Invalid bouquet selected.");
+
+        // Same catalog-based, tamper-proof pricing as data purchases — never
+        // trusts a client-supplied amount. No coupon support, same reasoning
+        // as data: no safe cap without knowing Maskawasub's real rate.
+        // Priced by the string provider key (matches how the catalog stores
+        // it), not the numeric cableId — that numeric id is only what the
+        // actual Maskawasub purchase call below needs.
+        const priced = await resolveCablePlanPrice(provider, planId);
         faceValue = priced.buyingPrice;
         chargeAmount = priced.sellingPrice;
         buyingPrice = priced.buyingPrice;
         sellingPrice = priced.sellingPrice;
+
+        purchaseCall = () =>
+          maskawasubBuyCable({ cablename: cableId, cableplan: planId, smart_card_number: smartCardNumber || meterNumber });
       }
 
       await requireBalanceAndPin(req.uid, chargeAmount, pin);
@@ -349,33 +377,31 @@ router.post(
 
       const meta = billType === "electricity"
         ? {
-            provider, billType, billersCode, accountName: accountName || null,
+            provider, billType, meterNumber, accountName: accountName || null,
             amount: faceValue, fee, couponCode: couponResult ? couponResult.coupon.code : null, couponDiscount: discount,
           }
-        : { provider, billType, billersCode, accountName: accountName || null, buyingPrice, sellingPrice };
+        : { provider, billType, smartCardNumber, accountName: accountName || null, buyingPrice, sellingPrice };
 
-      const vtpassRes = await debitThenPurchase(
-        req.uid,
-        chargeAmount,
-        ref,
-        `${provider} ${billType}`,
-        category,
-        meta,
-        () =>
-          vtpassPay(
-            { request_id: requestId, serviceID, billersCode, amount: faceValue, phone, quantity: 1, ...payloadExtra },
-            30000
-          )
+      const maskawasubRes = await debitThenPurchase(
+        req.uid, chargeAmount, ref, `${provider} ${billType}`, category, meta, purchaseCall
       );
 
-      const txStatus = vtpassRes?.content?.transactions?.status;
-      const electricityToken = vtpassRes?.purchased_code || null;
+      // Not confirmed which field (if any) carries the electricity token —
+      // never live-tested against a real electricity purchase. Checked
+      // across a few plausible names; if none match, meta.apiResponse (the
+      // human-readable confirmation text) is stored regardless and is the
+      // fallback place to actually find it, same as data's usage
+      // instructions came through in api_response during the live data test.
+      const electricityToken =
+        maskawasubRes?.token || maskawasubRes?.Token || maskawasubRes?.electricity_token || null;
+
       await Transaction.updateOne(
         { reference: ref },
         {
           $set: {
-            "meta.vtpassTxId": vtpassRes?.content?.transactions?.transactionId,
-            "meta.deliveryStatus": txStatus,
+            "meta.maskawasubId": maskawasubRes?.id,
+            "meta.deliveryStatus": maskawasubRes?.Status,
+            "meta.apiResponse": maskawasubRes?.api_response,
             "meta.electricityToken": electricityToken,
           },
         }
@@ -383,7 +409,7 @@ router.post(
 
       if (couponResult) await recordRedemption(couponResult.coupon._id, req.uid, ref);
 
-      res.json({ success: true, status: txStatus, requestId, reference: ref, electricityToken, amountCharged: chargeAmount });
+      res.json({ success: true, status: maskawasubRes?.Status, requestId, reference: ref, electricityToken, amountCharged: chargeAmount });
     } catch (err) {
       next(err);
     }

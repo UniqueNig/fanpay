@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 import { FiUser, FiMail, FiLock, FiPhone, FiArrowRight, FiEye, FiEyeOff } from "react-icons/fi";
-import abopayLogo from "../assets/abopay-logo.svg";
+import fanpayLogo from "../assets/abopay-logo.svg";
 
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -20,6 +21,7 @@ const Signup = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
   const { signup, loginWithGoogle } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
 
   const handleChange = (field) => (e) =>
@@ -39,9 +41,12 @@ const Signup = () => {
     setLoading(true);
     try {
       await signup(form.email, form.password, form.fullName, form.phone);
+      showToast("Account created successfully. Welcome to FanPay!", "success");
       navigate("/dashboard");
     } catch (err) {
-      setError(err.message || "Failed to create account. Try again.");
+      const msg = err.message || "Failed to create account. Try again.";
+      setError(msg);
+      showToast(msg, "error");
     }
     setLoading(false);
   };
@@ -51,10 +56,13 @@ const Signup = () => {
     setGoogleLoading(true);
     try {
       await loginWithGoogle();
+      showToast("Account created successfully. Welcome to FanPay!", "success");
       navigate("/dashboard");
     } catch (err) {
       if (err.code !== "auth/popup-closed-by-user") {
-        setError("Google sign-up failed. Please try again.");
+        const msg = "Google sign-up failed. Please try again.";
+        setError(msg);
+        showToast(msg, "error");
       }
     }
     setGoogleLoading(false);
@@ -67,19 +75,19 @@ const Signup = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-primary mesh-bg flex items-center justify-center px-4 py-12">
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-secondary to-transparent" />
+    <div className="min-h-screen bg-surface mesh-bg flex items-center justify-center px-4 py-12">
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-iris to-transparent" />
 
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center justify-center mb-6">
-            <img src={abopayLogo} alt="Abopay" className="h-10 w-auto" />
+            <img src={fanpayLogo} alt="FanPay" className="h-10 w-auto" />
           </Link>
-          <h1 className="font-syne font-bold text-2xl text-white mb-2">Create your account</h1>
-          <p className="text-white/50 font-dm text-sm">Free forever. No hidden charges.</p>
+          <h1 className="font-syne font-bold text-2xl text-ink mb-2">Create your account</h1>
+          <p className="text-ink/50 font-dm text-sm">Free forever. No hidden charges.</p>
         </div>
 
-        <div className="card-glass p-8">
+        <div className="card-flat p-8">
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-5 text-red-400 font-dm text-sm">
               {error}
@@ -90,7 +98,7 @@ const Signup = () => {
           <button
             onClick={handleGoogle}
             disabled={googleLoading || loading}
-            className="w-full flex items-center justify-center gap-3 bg-white/5 border border-white/15 hover:bg-white/10 hover:border-white/25 text-white font-dm text-sm font-medium px-4 py-3 rounded-xl transition-all duration-200 mb-5 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-3 bg-surface border border-line hover:bg-surface hover:border-line text-ink font-dm text-sm font-medium px-4 py-3 rounded-xl transition-all duration-200 mb-5 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <GoogleIcon />
             {googleLoading ? "Signing up with Google..." : "Continue with Google"}
@@ -98,22 +106,22 @@ const Signup = () => {
 
           {/* Divider */}
           <div className="flex items-center gap-3 mb-5">
-            <div className="flex-1 h-px bg-white/10" />
-            <span className="text-white/30 font-dm text-xs">or sign up with email</span>
-            <div className="flex-1 h-px bg-white/10" />
+            <div className="flex-1 h-px bg-surface" />
+            <span className="text-ink/30 font-dm text-xs">or sign up with email</span>
+            <div className="flex-1 h-px bg-surface" />
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {fields.map((f) => (
               <div key={f.key}>
-                <label className="text-white/60 font-dm text-xs mb-1.5 block">{f.label}</label>
+                <label className="text-ink/60 font-dm text-xs mb-1.5 block">{f.label}</label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30">{f.icon}</span>
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/30">{f.icon}</span>
                   <input
                     type={f.type}
                     value={form[f.key]}
                     onChange={handleChange(f.key)}
-                    className="input-field pl-10"
+                    className="input-field-light pl-10"
                     placeholder={f.placeholder}
                     required
                   />
@@ -122,57 +130,57 @@ const Signup = () => {
             ))}
 
             <div>
-              <label className="text-white/60 font-dm text-xs mb-1.5 block">Password</label>
+              <label className="text-ink/60 font-dm text-xs mb-1.5 block">Password</label>
               <div className="relative">
-                <FiLock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+                <FiLock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/30" />
                 <input
                   type={showPw ? "text" : "password"}
                   value={form.password}
                   onChange={handleChange("password")}
-                  className="input-field pl-10 pr-10"
+                  className="input-field-light pl-10 pr-10"
                   placeholder="Minimum 6 characters"
                   required
                 />
-                <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
+                <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/30 hover:text-ink/60">
                   {showPw ? <FiEyeOff size={15} /> : <FiEye size={15} />}
                 </button>
               </div>
             </div>
 
             <div>
-              <label className="text-white/60 font-dm text-xs mb-1.5 block">Confirm Password</label>
+              <label className="text-ink/60 font-dm text-xs mb-1.5 block">Confirm Password</label>
               <div className="relative">
-                <FiLock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+                <FiLock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/30" />
                 <input
                   type="password"
                   value={form.confirm}
                   onChange={handleChange("confirm")}
-                  className="input-field pl-10"
+                  className="input-field-light pl-10"
                   placeholder="Repeat password"
                   required
                 />
               </div>
             </div>
 
-            <p className="text-white/30 font-dm text-xs">
+            <p className="text-ink/30 font-dm text-xs">
               By creating an account, you agree to our{" "}
-              <a href="#" className="text-secondary hover:underline">Terms of Service</a>{" "}
+              <a href="#" className="text-iris hover:underline">Terms of Service</a>{" "}
               and{" "}
-              <a href="#" className="text-secondary hover:underline">Privacy Policy</a>.
+              <a href="#" className="text-iris hover:underline">Privacy Policy</a>.
             </p>
 
             <button
               type="submit"
               disabled={loading || googleLoading}
-              className="btn-primary flex items-center justify-center gap-2 mt-1 disabled:opacity-60"
+              className="btn-iris flex items-center justify-center gap-2 mt-1 disabled:opacity-60"
             >
               {loading ? "Creating account..." : <>Create Account <FiArrowRight size={14} /></>}
             </button>
           </form>
 
-          <p className="text-center text-white/40 font-dm text-sm mt-6">
+          <p className="text-center text-ink/40 font-dm text-sm mt-6">
             Already have an account?{" "}
-            <Link to="/login" className="text-secondary hover:underline font-medium">
+            <Link to="/login" className="text-iris hover:underline font-medium">
               Sign in
             </Link>
           </p>

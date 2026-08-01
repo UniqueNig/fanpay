@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { ToastProvider } from "./context/ToastContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 
@@ -13,6 +14,7 @@ import Deposit from "./pages/Deposit";
 import Transfer from "./pages/Transfer";
 import Bills from "./pages/Bills";
 import Recharge from "./pages/Recharge";
+import Pricing from "./pages/Pricing";
 import Savings from "./pages/Savings";
 import Settings from "./pages/Settings";
 import Kyc from "./pages/Kyc";
@@ -41,6 +43,7 @@ import ChatWidget from "./components/ChatWidget";
 
 function App() {
   return (
+    <ToastProvider>
     <AuthProvider>
       <BrowserRouter>
         <Routes>
@@ -53,6 +56,7 @@ function App() {
           <Route path="/transfer" element={<ProtectedRoute><Transfer /></ProtectedRoute>} />
           <Route path="/bills" element={<ProtectedRoute><Bills /></ProtectedRoute>} />
           <Route path="/recharge" element={<ProtectedRoute><Recharge /></ProtectedRoute>} />
+          <Route path="/pricing" element={<ProtectedRoute><Pricing /></ProtectedRoute>} />
           <Route path="/savings" element={<ProtectedRoute><Savings /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/kyc" element={<ProtectedRoute><Kyc /></ProtectedRoute>} />
@@ -83,6 +87,7 @@ function App() {
         <ChatWidget />
       </BrowserRouter>
     </AuthProvider>
+    </ToastProvider>
   );
 }
 

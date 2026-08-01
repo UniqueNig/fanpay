@@ -44,22 +44,22 @@ const AdminComms = () => {
     <AdminLayout>
       <div className="p-5 lg:p-8 max-w-3xl">
         <div className="mb-6">
-          <h1 className="font-syne font-bold text-white text-2xl">{channel === "email" ? "Email Management" : "SMS Message"}</h1>
-          <p className="text-white/40 font-dm text-sm mt-1">Compose and queue bulk messages</p>
+          <h1 className="font-syne font-bold text-ink text-2xl">{channel === "email" ? "Email Management" : "SMS Message"}</h1>
+          <p className="text-ink/40 font-dm text-sm mt-1">Compose and queue bulk messages</p>
         </div>
 
         <div className="flex gap-2 mb-6">
-          <button onClick={() => setChannel("email")} className={`flex items-center gap-2 px-4 py-2 rounded-xl font-dm text-sm border transition-colors ${channel === "email" ? "bg-secondary/15 text-secondary border-secondary/25" : "text-white/50 border-white/10 hover:text-white"}`}>
+          <button onClick={() => setChannel("email")} className={`flex items-center gap-2 px-4 py-2 rounded-xl font-dm text-sm border transition-colors ${channel === "email" ? "bg-iris/15 text-iris border-iris/25" : "text-ink/50 border-line hover:text-ink"}`}>
             <FiMail size={14} /> Email
           </button>
-          <button onClick={() => setChannel("sms")} className={`flex items-center gap-2 px-4 py-2 rounded-xl font-dm text-sm border transition-colors ${channel === "sms" ? "bg-secondary/15 text-secondary border-secondary/25" : "text-white/50 border-white/10 hover:text-white"}`}>
+          <button onClick={() => setChannel("sms")} className={`flex items-center gap-2 px-4 py-2 rounded-xl font-dm text-sm border transition-colors ${channel === "sms" ? "bg-iris/15 text-iris border-iris/25" : "text-ink/50 border-line hover:text-ink"}`}>
             <FiMessageSquare size={14} /> SMS
           </button>
         </div>
 
         {channel === "email" ? (
-          <div className="bg-secondary/10 border border-secondary/20 rounded-xl px-4 py-3 mb-6">
-            <p className="text-secondary font-dm text-xs">
+          <div className="bg-iris/10 border border-iris/20 rounded-xl px-4 py-3 mb-6">
+            <p className="text-iris font-dm text-xs">
               Sends via Resend to every user immediately. The free Resend tier caps at 100 emails/day —
               broadcasting to more users than that in one day will start failing partway through.
             </p>
@@ -80,29 +80,29 @@ const AdminComms = () => {
           </div>
         )}
 
-        <div className="card-glass p-5 mb-6">
+        <div className="card-flat p-5 mb-6">
           <form onSubmit={queue} className="flex flex-col gap-3">
             {channel === "email" && (
-              <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" className="input-field" />
+              <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" className="input-field-light" />
             )}
-            <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message" className="input-field min-h-[100px] resize-none" />
-            <button type="submit" disabled={sending} className="btn-primary flex items-center justify-center gap-2 disabled:opacity-60">
+            <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message" className="input-field-light min-h-[100px] resize-none" />
+            <button type="submit" disabled={sending} className="btn-iris flex items-center justify-center gap-2 disabled:opacity-60">
               <FiSend size={14} /> {sending ? "Queuing..." : "Queue for All Users"}
             </button>
           </form>
         </div>
 
         {!loading && (
-          <div className="card-glass overflow-hidden">
+          <div className="card-flat overflow-hidden">
             {campaigns.length === 0 ? (
-              <div className="p-8 text-center text-white/35 font-dm text-sm">Nothing queued yet.</div>
+              <div className="p-8 text-center text-ink/35 font-dm text-sm">Nothing queued yet.</div>
             ) : campaigns.map((c, i) => (
-              <div key={c.id} className={`p-4 ${i < campaigns.length - 1 ? "border-b border-white/5" : ""}`}>
-                {c.subject && <p className="text-white font-dm text-sm font-medium">{c.subject}</p>}
-                <p className="text-white/40 font-dm text-xs mt-0.5">{c.message}</p>
+              <div key={c.id} className={`p-4 ${i < campaigns.length - 1 ? "border-b border-line" : ""}`}>
+                {c.subject && <p className="text-ink font-dm text-sm font-medium">{c.subject}</p>}
+                <p className="text-ink/40 font-dm text-xs mt-0.5">{c.message}</p>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-[10px] font-dm px-2 py-0.5 rounded-full border bg-white/5 text-white/40 border-white/10">{c.status}</span>
-                  <span className="text-white/25 font-dm text-[11px]">{formatDate(c.createdAt)}</span>
+                  <span className="text-[10px] font-dm px-2 py-0.5 rounded-full border bg-surface text-ink/40 border-line">{c.status}</span>
+                  <span className="text-ink/25 font-dm text-[11px]">{formatDate(c.createdAt)}</span>
                 </div>
               </div>
             ))}

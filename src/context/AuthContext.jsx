@@ -131,7 +131,7 @@ export const AuthProvider = ({ children }) => {
         checkAdminStatus,
       }}
     >
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };

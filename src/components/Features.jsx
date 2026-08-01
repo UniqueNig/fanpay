@@ -6,8 +6,8 @@ const features = [
     icon: <FiSend size={22} />,
     title: "Instant Transfers",
     desc: "Send money to any Nigerian bank instantly. Interbank transfers processed in seconds, 24/7.",
-    color: "text-secondary",
-    bg: "bg-secondary/10",
+    color: "text-iris",
+    bg: "bg-iris/10",
   },
   {
     icon: <FiFileText size={22} />,
@@ -50,7 +50,7 @@ const Features = () => (
   <section id="features" className="py-24 relative">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="text-center mb-16">
-        <span className="text-secondary font-dm text-sm font-medium tracking-widest uppercase">
+        <span className="text-iris font-dm text-sm font-medium tracking-widest uppercase">
           Everything You Need
         </span>
         <h2 className="section-title mt-3 mb-4">
@@ -58,7 +58,7 @@ const Features = () => (
           <span className="text-gradient">Banking Needs</span>
         </h2>
         <p className="section-sub max-w-lg mx-auto">
-          NairaBank brings together every financial service Nigerians need daily,
+          FanPay brings together every financial service Nigerians need daily,
           into one beautifully simple platform.
         </p>
       </div>
@@ -69,8 +69,8 @@ const Features = () => (
             <div className={`w-11 h-11 rounded-xl ${f.bg} ${f.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
               {f.icon}
             </div>
-            <h3 className="font-syne font-semibold text-white text-base mb-2">{f.title}</h3>
-            <p className="font-dm text-white/50 text-sm leading-relaxed">{f.desc}</p>
+            <h3 className="font-syne font-semibold text-ink text-base mb-2">{f.title}</h3>
+            <p className="font-dm text-ink/50 text-sm leading-relaxed">{f.desc}</p>
           </div>
         ))}
       </div>

@@ -2,17 +2,20 @@ import React, { useState, useEffect } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import { api } from "../api";
 import { auth } from "../firebase";
+import { useToast } from "../context/ToastContext";
 import { FiShield, FiCheckCircle, FiAlertCircle, FiUpload, FiClock, FiXCircle } from "react-icons/fi";
 
-const ID_TYPES = ["NIN", "BVN", "Drivers License", "Passport"];
+// NIN only — offering BVN/Driver's License/Passport too just added friction
+// for most users without adding much real coverage (product decision).
+const ID_TYPE = "NIN";
 const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:4000").replace(/\/+$/, "");
 
 const Kyc = () => {
+  const { showToast } = useToast();
   const [statusLoading, setStatusLoading] = useState(true);
   const [kyc, setKyc] = useState(null); // { status, idType, note, submittedAt, reviewedAt } | null
   const [resubmitting, setResubmitting] = useState(false);
 
-  const [idType, setIdType] = useState(ID_TYPES[0]);
   const [idNumber, setIdNumber] = useState("");
   const [idImage, setIdImage] = useState(null);
   const [selfie, setSelfie] = useState(null);
@@ -42,7 +45,7 @@ const Kyc = () => {
       const idToken = await user.getIdToken();
 
       const formData = new FormData();
-      formData.append("idType", idType);
+      formData.append("idType", ID_TYPE);
       formData.append("idNumber", idNumber.trim());
       formData.append("idImage", idImage);
       formData.append("selfie", selfie);
@@ -56,10 +59,13 @@ const Kyc = () => {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Submission failed. Try again.");
 
-      setKyc({ status: "pending", idType, note: null, submittedAt: new Date().toISOString(), reviewedAt: null });
+      setKyc({ status: "pending", idType: ID_TYPE, note: null, submittedAt: new Date().toISOString(), reviewedAt: null });
       setResubmitting(false);
+      showToast("Documents submitted for review.", "success");
     } catch (err) {
-      setError(err.message || "Submission failed. Try again.");
+      const msg = err.message || "Submission failed. Try again.";
+      setError(msg);
+      showToast(msg, "error");
     }
     setLoading(false);
   };
@@ -70,59 +76,59 @@ const Kyc = () => {
     <DashboardLayout>
       <div className="p-5 lg:p-8 max-w-lg">
         <div className="mb-7">
-          <h1 className="font-syne font-bold text-white text-2xl">Identity Verification</h1>
-          <p className="text-white/40 font-dm text-sm mt-1">Verify your identity to unlock higher transaction limits</p>
+          <h1 className="font-syne font-bold text-ink text-2xl">Identity Verification</h1>
+          <p className="text-ink/40 font-dm text-sm mt-1">Verify your identity to unlock higher transaction limits</p>
         </div>
 
         {statusLoading ? (
-          <div className="card-glass p-10 flex items-center justify-center">
-            <p className="text-white/40 font-dm text-sm">Loading...</p>
+          <div className="card-flat p-10 flex items-center justify-center">
+            <p className="text-ink/40 font-dm text-sm">Loading...</p>
           </div>
         ) : kyc?.status === "verified" ? (
-          <div className="card-glass p-10 flex flex-col items-center text-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-secondary/15 border border-secondary/20 flex items-center justify-center">
-              <FiCheckCircle size={28} className="text-secondary" />
+          <div className="card-flat p-10 flex flex-col items-center text-center gap-4">
+            <div className="w-16 h-16 rounded-full bg-iris/15 border border-iris/20 flex items-center justify-center">
+              <FiCheckCircle size={28} className="text-iris" />
             </div>
             <div>
-              <h2 className="font-syne font-bold text-white text-lg mb-1">Identity Verified</h2>
-              <p className="text-white/50 font-dm text-sm">
+              <h2 className="font-syne font-bold text-ink text-lg mb-1">Identity Verified</h2>
+              <p className="text-ink/50 font-dm text-sm">
                 Your {kyc.idType} has been verified. You're all set.
               </p>
             </div>
           </div>
         ) : kyc?.status === "pending" ? (
-          <div className="card-glass p-10 flex flex-col items-center text-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-secondary/15 border border-secondary/20 flex items-center justify-center">
-              <FiClock size={28} className="text-secondary" />
+          <div className="card-flat p-10 flex flex-col items-center text-center gap-4">
+            <div className="w-16 h-16 rounded-full bg-iris/15 border border-iris/20 flex items-center justify-center">
+              <FiClock size={28} className="text-iris" />
             </div>
             <div>
-              <h2 className="font-syne font-bold text-white text-lg mb-1">Submitted for Review</h2>
-              <p className="text-white/50 font-dm text-sm">
+              <h2 className="font-syne font-bold text-ink text-lg mb-1">Submitted for Review</h2>
+              <p className="text-ink/50 font-dm text-sm">
                 Our team will review your documents. This usually takes 24-48 hours.
               </p>
             </div>
           </div>
         ) : kyc?.status === "rejected" && !resubmitting ? (
-          <div className="card-glass p-8 flex flex-col items-center text-center gap-4">
+          <div className="card-flat p-8 flex flex-col items-center text-center gap-4">
             <div className="w-16 h-16 rounded-full bg-red-500/15 border border-red-500/25 flex items-center justify-center">
               <FiXCircle size={28} className="text-red-400" />
             </div>
             <div>
-              <h2 className="font-syne font-bold text-white text-lg mb-1">Verification Rejected</h2>
-              <p className="text-white/50 font-dm text-sm mb-3">
+              <h2 className="font-syne font-bold text-ink text-lg mb-1">Verification Rejected</h2>
+              <p className="text-ink/50 font-dm text-sm mb-3">
                 {kyc.note || "Your submission couldn't be verified."}
               </p>
-              <p className="text-white/35 font-dm text-xs">Please review the reason above and resubmit.</p>
+              <p className="text-ink/35 font-dm text-xs">Please review the reason above and resubmit.</p>
             </div>
-            <button onClick={() => setResubmitting(true)} className="btn-primary w-full">
+            <button onClick={() => setResubmitting(true)} className="btn-iris w-full">
               Resubmit Documents
             </button>
           </div>
         ) : null}
 
         {showForm && (
-          <div className="card-glass p-6">
-            <div className="flex items-center gap-2 mb-5 text-white/50 font-dm text-xs">
+          <div className="card-flat p-6">
+            <div className="flex items-center gap-2 mb-5 text-ink/50 font-dm text-xs">
               <FiShield size={14} /> Your documents are stored securely and only visible to our compliance team.
             </div>
 
@@ -135,40 +141,20 @@ const Kyc = () => {
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <div>
-                <label className="text-white/80 font-dm text-sm font-medium mb-2 block">ID Type</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {ID_TYPES.map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setIdType(t)}
-                      className={`py-2.5 rounded-xl font-dm text-sm border transition-all duration-200 ${
-                        idType === t
-                          ? "bg-secondary/15 border-secondary/40 text-secondary font-semibold"
-                          : "bg-white/5 border-white/15 text-white hover:bg-white/10"
-                      }`}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="text-white/80 font-dm text-sm font-medium mb-2 block">ID Number</label>
+                <label className="text-ink/80 font-dm text-sm font-medium mb-2 block">ID Number (NIN)</label>
                 <input
                   type="text"
                   value={idNumber}
                   onChange={(e) => setIdNumber(e.target.value)}
-                  className="input-field text-base"
-                  placeholder="Enter your ID number"
+                  className="input-field-light text-base"
+                  placeholder="Enter your 11-digit NIN"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-white/80 font-dm text-sm font-medium mb-2 block">ID Photo</label>
-                <label className="flex items-center gap-2 input-field text-base cursor-pointer text-white/60">
+                <label className="text-ink/80 font-dm text-sm font-medium mb-2 block">ID Photo</label>
+                <label className="flex items-center gap-2 input-field-light text-base cursor-pointer text-ink/60">
                   <FiUpload size={15} />
                   {idImage ? idImage.name : "Choose a clear photo of your ID"}
                   <input
@@ -182,8 +168,8 @@ const Kyc = () => {
               </div>
 
               <div>
-                <label className="text-white/80 font-dm text-sm font-medium mb-2 block">Selfie</label>
-                <label className="flex items-center gap-2 input-field text-base cursor-pointer text-white/60">
+                <label className="text-ink/80 font-dm text-sm font-medium mb-2 block">Selfie</label>
+                <label className="flex items-center gap-2 input-field-light text-base cursor-pointer text-ink/60">
                   <FiUpload size={15} />
                   {selfie ? selfie.name : "Choose a clear selfie"}
                   <input
@@ -199,7 +185,7 @@ const Kyc = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="btn-primary mt-2 flex items-center justify-center gap-2 py-4 text-base disabled:opacity-60"
+                className="btn-iris mt-2 flex items-center justify-center gap-2 py-4 text-base disabled:opacity-60"
               >
                 {loading ? "Submitting..." : "Submit for Verification"}
               </button>

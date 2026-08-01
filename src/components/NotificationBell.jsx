@@ -3,7 +3,7 @@ import { FiBell } from "react-icons/fi";
 import { api } from "../api";
 import { formatDate } from "../utils/helpers";
 
-const LAST_SEEN_KEY = "abopay_notifications_last_seen";
+const LAST_SEEN_KEY = "fanpay_notifications_last_seen";
 
 // Minimal broadcast-notification viewer — reads the same shared collection
 // admins write to from Admin → Marketing → Notifications. "Unread" is
@@ -38,23 +38,23 @@ const NotificationBell = () => {
 
   return (
     <div className="relative">
-      <button onClick={toggle} className="relative text-white/60 hover:text-white p-1.5">
+      <button onClick={toggle} className="relative text-ink/60 hover:text-ink p-1.5">
         <FiBell size={19} />
-        {hasUnread && <span className="absolute top-1 right-1 w-2 h-2 bg-secondary rounded-full" />}
+        {hasUnread && <span className="absolute top-1 right-1 w-2 h-2 bg-iris rounded-full" />}
       </button>
 
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-2 w-72 max-h-80 overflow-y-auto bg-[#0d2248] border border-white/15 rounded-xl shadow-2xl z-50">
+          <div className="absolute right-0 top-full mt-2 w-72 max-h-80 overflow-y-auto bg-panel border border-line rounded-xl shadow-xl z-50">
             {notifications.length === 0 ? (
-              <p className="text-white/35 font-dm text-xs text-center p-6">No notifications yet.</p>
+              <p className="text-ink/35 font-dm text-xs text-center p-6">No notifications yet.</p>
             ) : (
               notifications.map((n, i) => (
-                <div key={n.id} className={`p-3.5 ${i < notifications.length - 1 ? "border-b border-white/8" : ""}`}>
-                  <p className="text-white font-dm text-sm font-medium">{n.title}</p>
-                  <p className="text-white/50 font-dm text-xs mt-0.5">{n.body}</p>
-                  <p className="text-white/30 font-dm text-[11px] mt-1">{formatDate(n.createdAt)}</p>
+                <div key={n.id} className={`p-3.5 ${i < notifications.length - 1 ? "border-b border-line" : ""}`}>
+                  <p className="text-ink font-dm text-sm font-medium">{n.title}</p>
+                  <p className="text-ink/50 font-dm text-xs mt-0.5">{n.body}</p>
+                  <p className="text-ink/30 font-dm text-[11px] mt-1">{formatDate(n.createdAt)}</p>
                 </div>
               ))
             )}

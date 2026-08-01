@@ -45,11 +45,17 @@ export const BANKS = [
   { name: "VFD Microfinance Bank", code: "566" },
 ];
 
+// Only Electricity and Cable TV are actually wired to a real backend
+// (server/src/routes/vtu.js's POST /bill only accepts these two billTypes)
+// — Water and Internet used to be listed here too but had no real
+// implementation behind them, so picking one was a dead end that only
+// surfaced as an error on submit.
 export const BILL_TYPES = [
-  { id: "electricity", label: "Electricity", icon: "⚡", providers: ["EKEDC", "IKEDC", "AEDC", "PHEDC", "BEDC", "EEDC"] },
-  { id: "water", label: "Water Bill", icon: "💧", providers: ["Lagos Water Corp", "FCT Water Board", "Rivers RUWASA"] },
+  { id: "electricity", label: "Electricity", icon: "⚡", providers: [
+    "Ikeja Electric", "Eko Electric", "Abuja Electric", "Kano Electric", "Enugu Electric",
+    "Port Harcourt Electric", "Ibadan Electric", "Kaduna Electric", "Jos Electric", "Benin Electric", "Yola Electric",
+  ] },
   { id: "cable", label: "Cable TV", icon: "📺", providers: ["DSTV", "GOtv", "StarTimes"] },
-  { id: "internet", label: "Internet", icon: "🌐", providers: ["Spectranet", "Smile", "ipNX", "MTN Broadband", "Airtel Broadband"] },
 ];
 
 export const RECHARGE_NETWORKS = [

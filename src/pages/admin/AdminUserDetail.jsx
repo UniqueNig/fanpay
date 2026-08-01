@@ -22,44 +22,44 @@ const AdjustModal = ({ type, onClose, onSubmit, submitting }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm">
-      <div className="card-glass p-6 w-full max-w-sm">
+      <div className="card-flat p-6 w-full max-w-sm">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="font-syne font-bold text-white text-lg">
+          <h2 className="font-syne font-bold text-ink text-lg">
             {type === "credit" ? "Credit Wallet" : "Debit Wallet"}
           </h2>
-          <button onClick={onClose} className="text-white/40 hover:text-white">
+          <button onClick={onClose} className="text-ink/40 hover:text-ink">
             <FiX size={18} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label className="text-white/60 font-dm text-xs mb-1.5 block">Amount (₦)</label>
+            <label className="text-ink/60 font-dm text-xs mb-1.5 block">Amount (₦)</label>
             <input
               type="number"
               min="1"
               step="0.01"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="input-field"
+              className="input-field-light"
               placeholder="0.00"
               required
               autoFocus
             />
           </div>
           <div>
-            <label className="text-white/60 font-dm text-xs mb-1.5 block">Reason (optional)</label>
+            <label className="text-ink/60 font-dm text-xs mb-1.5 block">Reason (optional)</label>
             <input
               type="text"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="input-field"
+              className="input-field-light"
               placeholder="e.g. Refund for failed transfer"
             />
           </div>
           <button
             type="submit"
             disabled={submitting}
-            className={`btn-primary flex items-center justify-center gap-2 mt-1 disabled:opacity-60 disabled:cursor-not-allowed ${
+            className={`btn-iris flex items-center justify-center gap-2 mt-1 disabled:opacity-60 disabled:cursor-not-allowed ${
               type === "debit" ? "!bg-red-500 hover:!bg-red-400" : ""
             }`}
           >
@@ -143,7 +143,7 @@ const AdminUserDetail = () => {
   return (
     <AdminLayout>
       <div className="p-5 lg:p-8 max-w-4xl">
-        <Link to="/admin/users" className="inline-flex items-center gap-2 text-white/40 hover:text-white font-dm text-sm mb-6 transition-colors">
+        <Link to="/admin/users" className="inline-flex items-center gap-2 text-ink/40 hover:text-ink font-dm text-sm mb-6 transition-colors">
           <FiArrowLeft size={15} />
           Back to Users
         </Link>
@@ -153,7 +153,7 @@ const AdminUserDetail = () => {
             <FiAlertCircle className="text-red-400 mt-0.5 shrink-0" size={16} />
             <div>
               <p className="text-red-400 font-dm text-sm">{error}</p>
-              <p className="text-white/30 font-dm text-xs mt-1">
+              <p className="text-ink/30 font-dm text-xs mt-1">
                 Expected endpoint: <code>GET /api/admin/users/{"{uid}"}</code>. See <code>ADMIN_SETUP.md</code>.
               </p>
             </div>
@@ -161,13 +161,13 @@ const AdminUserDetail = () => {
         )}
 
         {loading ? (
-          <div className="card-glass p-8 text-center text-white/35 font-dm text-sm">Loading user...</div>
+          <div className="card-flat p-8 text-center text-ink/35 font-dm text-sm">Loading user...</div>
         ) : !user ? null : (
           <>
             {actionSuccess && (
-              <div className="bg-secondary/10 border border-secondary/20 rounded-xl px-4 py-3 mb-6 flex items-center gap-3">
-                <FiCheck className="text-secondary shrink-0" size={16} />
-                <p className="text-secondary font-dm text-sm">{actionSuccess}</p>
+              <div className="bg-iris/10 border border-iris/20 rounded-xl px-4 py-3 mb-6 flex items-center gap-3">
+                <FiCheck className="text-iris shrink-0" size={16} />
+                <p className="text-iris font-dm text-sm">{actionSuccess}</p>
               </div>
             )}
             {actionError && (
@@ -178,24 +178,24 @@ const AdminUserDetail = () => {
             )}
 
             {/* Profile card */}
-            <div className="card-glass p-6 mb-6">
+            <div className="card-flat p-6 mb-6">
               <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-secondary/15 border border-secondary/20 flex items-center justify-center">
-                    <span className="text-secondary font-syne font-bold text-xl">
+                  <div className="w-14 h-14 rounded-2xl bg-iris/15 border border-iris/20 flex items-center justify-center">
+                    <span className="text-iris font-syne font-bold text-xl">
                       {(user.fullName || user.email || "U")[0]?.toUpperCase()}
                     </span>
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h1 className="font-syne font-bold text-white text-xl">{user.fullName || "Unnamed User"}</h1>
+                      <h1 className="font-syne font-bold text-ink text-xl">{user.fullName || "Unnamed User"}</h1>
                       {user.suspended && (
                         <span className="text-[10px] font-dm bg-red-500/15 text-red-400 border border-red-500/25 px-2 py-0.5 rounded-full">
                           Suspended
                         </span>
                       )}
                     </div>
-                    <p className="text-white/40 font-dm text-sm">{user.email}</p>
+                    <p className="text-ink/40 font-dm text-sm">{user.email}</p>
                   </div>
                 </div>
                 <button
@@ -203,7 +203,7 @@ const AdminUserDetail = () => {
                   disabled={suspending}
                   className={`flex items-center gap-2 font-dm text-xs font-medium px-4 py-2.5 rounded-xl border transition-colors disabled:opacity-60 ${
                     user.suspended
-                      ? "border-secondary/25 text-secondary hover:bg-secondary/10"
+                      ? "border-iris/25 text-iris hover:bg-iris/10"
                       : "border-red-500/25 text-red-400 hover:bg-red-500/10"
                   }`}
                 >
@@ -213,28 +213,28 @@ const AdminUserDetail = () => {
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-                <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3">
-                  <p className="text-white/35 font-dm text-[11px] uppercase tracking-wider mb-1">Balance</p>
-                  <p className="text-secondary font-syne font-bold text-sm">{formatNaira(user.balance ?? 0)}</p>
+                <div className="bg-surface border border-line rounded-xl px-4 py-3">
+                  <p className="text-ink/35 font-dm text-[11px] uppercase tracking-wider mb-1">Balance</p>
+                  <p className="text-iris font-syne font-bold text-sm">{formatNaira(user.balance ?? 0)}</p>
                 </div>
-                <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3">
-                  <p className="text-white/35 font-dm text-[11px] uppercase tracking-wider mb-1">Phone</p>
-                  <p className="text-white font-dm text-sm">{user.phone || "—"}</p>
+                <div className="bg-surface border border-line rounded-xl px-4 py-3">
+                  <p className="text-ink/35 font-dm text-[11px] uppercase tracking-wider mb-1">Phone</p>
+                  <p className="text-ink font-dm text-sm">{user.phone || "—"}</p>
                 </div>
-                <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3">
-                  <p className="text-white/35 font-dm text-[11px] uppercase tracking-wider mb-1">Account No.</p>
-                  <p className="text-white font-dm text-sm">{user.accountNumber || "—"}</p>
+                <div className="bg-surface border border-line rounded-xl px-4 py-3">
+                  <p className="text-ink/35 font-dm text-[11px] uppercase tracking-wider mb-1">Account No.</p>
+                  <p className="text-ink font-dm text-sm">{user.accountNumber || "—"}</p>
                 </div>
-                <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3">
-                  <p className="text-white/35 font-dm text-[11px] uppercase tracking-wider mb-1">Joined</p>
-                  <p className="text-white font-dm text-sm">{user.createdAt ? formatDate(user.createdAt) : "—"}</p>
+                <div className="bg-surface border border-line rounded-xl px-4 py-3">
+                  <p className="text-ink/35 font-dm text-[11px] uppercase tracking-wider mb-1">Joined</p>
+                  <p className="text-ink font-dm text-sm">{user.createdAt ? formatDate(user.createdAt) : "—"}</p>
                 </div>
               </div>
 
               <div className="flex gap-3">
                 <button
                   onClick={() => setAdjustType("credit")}
-                  className="flex-1 flex items-center justify-center gap-2 bg-secondary/15 border border-secondary/25 text-secondary hover:bg-secondary/25 font-dm text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 bg-iris/15 border border-iris/25 text-iris hover:bg-iris/25 font-dm text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
                 >
                   <FiPlusCircle size={15} />
                   Credit Wallet
@@ -251,37 +251,37 @@ const AdminUserDetail = () => {
 
             {/* Transactions */}
             <div>
-              <h2 className="font-syne font-semibold text-white text-base mb-4">Transaction History</h2>
-              <div className="card-glass overflow-hidden">
+              <h2 className="font-syne font-semibold text-ink text-base mb-4">Transaction History</h2>
+              <div className="card-flat overflow-hidden">
                 {transactions.length === 0 ? (
-                  <div className="py-12 text-center text-white/35 font-dm text-sm">No transactions yet</div>
+                  <div className="py-12 text-center text-ink/35 font-dm text-sm">No transactions yet</div>
                 ) : (
                   transactions.map((tx, i) => (
                     <button
                       key={tx.id || i}
                       onClick={() => setSelectedTx(tx)}
-                      className={`w-full flex items-center justify-between p-4 text-left hover:bg-white/5 transition-colors ${
-                        i < transactions.length - 1 ? "border-b border-white/5" : ""
+                      className={`w-full flex items-center justify-between p-4 text-left hover:bg-surface transition-colors ${
+                        i < transactions.length - 1 ? "border-b border-line" : ""
                       }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-base shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-surface border border-line flex items-center justify-center text-base shrink-0">
                           {tx.category || "💳"}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-white font-dm text-sm font-medium truncate">{tx.title}</p>
-                          <p className="text-white/35 font-dm text-xs">
+                          <p className="text-ink font-dm text-sm font-medium truncate">{tx.title}</p>
+                          <p className="text-ink/35 font-dm text-xs">
                             {formatDate(tx.date)} · {formatTime(tx.date)}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0 ml-2">
                         {tx.type === "credit" ? (
-                          <FiArrowDownLeft size={13} className="text-secondary" />
+                          <FiArrowDownLeft size={13} className="text-iris" />
                         ) : (
                           <FiArrowUpRight size={13} className="text-red-400" />
                         )}
-                        <span className={`font-syne font-semibold text-sm ${tx.type === "credit" ? "text-secondary" : "text-red-400"}`}>
+                        <span className={`font-syne font-semibold text-sm ${tx.type === "credit" ? "text-iris" : "text-red-400"}`}>
                           {tx.type === "debit" ? "-" : "+"}{formatNaira(tx.amount)}
                         </span>
                       </div>

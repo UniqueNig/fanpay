@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { initializeApp, cert } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
 import { env } from "./env.js";
 
 function loadServiceAccount() {
@@ -15,3 +16,8 @@ const app = initializeApp({
 });
 
 export const firebaseAuth = getAuth(app);
+// Admin SDK access bypasses firestore.rules entirely (trusted server
+// context) — used by services/chatListener.js to watch for new customer
+// messages and post AI replies, same project/database the client SDK
+// (src/firebase.js) reads and writes through.
+export const firestoreDb = getFirestore(app);

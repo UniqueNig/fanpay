@@ -7,14 +7,14 @@ import { FiLock, FiCheckCircle, FiAlertCircle } from "react-icons/fi";
 
 const PinField = ({ label, value, onChange }) => (
   <div>
-    <label className="text-white/80 font-dm text-sm font-medium mb-2 block">{label}</label>
+    <label className="text-ink/80 font-dm text-sm font-medium mb-2 block">{label}</label>
     <input
       type="password"
       inputMode="numeric"
       maxLength={4}
       value={value}
       onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 4))}
-      className="input-field text-base tracking-[0.5em] text-center"
+      className="input-field-light text-base tracking-[0.5em] text-center"
       placeholder="••••"
       required
     />
@@ -58,10 +58,10 @@ const SetPin = () => {
     <DashboardLayout>
       <div className="p-5 lg:p-8 max-w-md">
         <div className="mb-7">
-          <h1 className="font-syne font-bold text-white text-2xl">
+          <h1 className="font-syne font-bold text-ink text-2xl">
             {hasPin ? "Change Transaction PIN" : "Set Transaction PIN"}
           </h1>
-          <p className="text-white/40 font-dm text-sm mt-1">
+          <p className="text-ink/40 font-dm text-sm mt-1">
             {hasPin
               ? "Your 4-digit PIN protects every transfer, bill, and purchase."
               : "Set a 4-digit PIN — required before you can send money or make purchases."}
@@ -69,22 +69,22 @@ const SetPin = () => {
         </div>
 
         {success ? (
-          <div className="card-glass p-10 flex flex-col items-center text-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-secondary/15 border border-secondary/20 flex items-center justify-center">
-              <FiCheckCircle size={28} className="text-secondary" />
+          <div className="card-flat p-10 flex flex-col items-center text-center gap-4">
+            <div className="w-16 h-16 rounded-full bg-iris/15 border border-iris/20 flex items-center justify-center">
+              <FiCheckCircle size={28} className="text-iris" />
             </div>
-            <p className="text-white/60 font-dm text-sm">PIN {hasPin ? "changed" : "set"} successfully.</p>
+            <p className="text-ink/60 font-dm text-sm">PIN {hasPin ? "changed" : "set"} successfully.</p>
             <button
               onClick={() => navigate(returnTo || "/dashboard")}
-              className="btn-primary w-full"
+              className="btn-iris w-full"
             >
               {returnTo ? "Continue" : "Back to Dashboard"}
             </button>
           </div>
         ) : (
-          <div className="card-glass p-6">
-            <div className="flex items-center gap-2 mb-5 text-white/50 font-dm text-xs">
-              <FiLock size={14} /> Never share your PIN with anyone, including Abopay staff.
+          <div className="card-flat p-6">
+            <div className="flex items-center gap-2 mb-5 text-ink/50 font-dm text-xs">
+              <FiLock size={14} /> Never share your PIN with anyone, including FanPay staff.
             </div>
 
             {error && (
@@ -102,7 +102,7 @@ const SetPin = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="btn-primary mt-2 py-4 text-base disabled:opacity-60"
+                className="btn-iris mt-2 py-4 text-base disabled:opacity-60"
               >
                 {loading ? "Saving..." : hasPin ? "Change PIN" : "Set PIN"}
               </button>

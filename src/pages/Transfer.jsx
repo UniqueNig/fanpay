@@ -11,7 +11,7 @@ const Transfer = () => {
   const { user, userData, fetchUserData } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [mode, setMode] = useState("bank"); // "bank" | "abopay"
+  const [mode, setMode] = useState("bank"); // "bank" | "fanpay"
   const [form, setForm] = useState({ bank: "", bankCode: "", accountNumber: "", accountName: "", amount: "", narration: "" });
   const [bankSearch, setBankSearch] = useState("");
   const [showBankDropdown, setShowBankDropdown] = useState(false);
@@ -79,7 +79,7 @@ const Transfer = () => {
     } catch (err) {
       setError(
         err.message ||
-          (isBank ? "Could not verify account. Check the account number and bank." : "No Abopay account found with that account number.")
+          (isBank ? "Could not verify account. Check the account number and bank." : "No FanPay account found with that account number.")
       );
     }
     setVerifying(false);
@@ -103,7 +103,7 @@ const Transfer = () => {
             accountNumber: form.accountNumber,
             bankCode: form.bankCode,
             amount: parseFloat(form.amount),
-            narration: form.narration || "Abopay Transfer",
+            narration: form.narration || "FanPay Transfer",
             couponCode: couponCode.trim() || undefined,
             pin,
           })
@@ -125,7 +125,7 @@ const Transfer = () => {
       setPinError(
         err.message?.includes("Insufficient")
           ? "Insufficient balance."
-          : err.message?.includes("recipient") || err.message?.includes("Abopay account")
+          : err.message?.includes("recipient") || err.message?.includes("FanPay account")
           ? err.message
           : err.message || "Transfer failed. Please try again or contact support."
       );
@@ -143,45 +143,45 @@ const Transfer = () => {
     <DashboardLayout>
       <div className="p-5 lg:p-8 max-w-lg">
         <div className="mb-7">
-          <h1 className="font-syne font-bold text-white text-2xl">Send Money</h1>
-          <p className="text-white/40 font-dm text-sm mt-1">
-            {isBank ? "Transfer to any Nigerian bank account" : "Send instantly to another Abopay user"}
+          <h1 className="font-syne font-bold text-ink text-2xl">Send Money</h1>
+          <p className="text-ink/40 font-dm text-sm mt-1">
+            {isBank ? "Transfer to any Nigerian bank account" : "Send instantly to another FanPay user"}
           </p>
         </div>
 
         {step === 3 ? (
-          <div className="card-glass p-10 flex flex-col items-center text-center gap-5">
-            <div className="w-20 h-20 rounded-full bg-secondary/15 border-2 border-secondary/30 flex items-center justify-center">
-              <FiCheckCircle size={36} className="text-secondary" />
+          <div className="card-flat p-10 flex flex-col items-center text-center gap-5">
+            <div className="w-20 h-20 rounded-full bg-iris/15 border-2 border-iris/30 flex items-center justify-center">
+              <FiCheckCircle size={36} className="text-iris" />
             </div>
             <div>
-              <h2 className="font-syne font-bold text-white text-xl mb-2">Transfer {isBank ? "Initiated" : "Sent"}!</h2>
-              <p className="text-white/60 font-dm text-sm">
-                <span className="text-secondary font-bold">{formatNaira(parseFloat(form.amount))}</span> sent to {form.accountName}{isBank ? ` · ${form.bank}` : ""}
+              <h2 className="font-syne font-bold text-ink text-xl mb-2">Transfer {isBank ? "Initiated" : "Sent"}!</h2>
+              <p className="text-ink/60 font-dm text-sm">
+                <span className="text-iris font-bold">{formatNaira(parseFloat(form.amount))}</span> sent to {form.accountName}{isBank ? ` · ${form.bank}` : ""}
               </p>
-              <p className="text-white/35 font-dm text-xs mt-2">
-                {isBank ? "Bank transfers typically arrive within minutes." : "Delivered instantly to their Abopay wallet."}
+              <p className="text-ink/35 font-dm text-xs mt-2">
+                {isBank ? "Bank transfers typically arrive within minutes." : "Delivered instantly to their FanPay wallet."}
               </p>
             </div>
-            <div className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 flex justify-between">
-              <span className="text-white/50 font-dm text-sm">Remaining Balance</span>
-              <span className="text-white font-syne font-bold">{formatNaira(userData?.balance ?? 0)}</span>
+            <div className="w-full bg-surface border border-line rounded-2xl px-5 py-4 flex justify-between">
+              <span className="text-ink/50 font-dm text-sm">Remaining Balance</span>
+              <span className="text-ink font-syne font-bold">{formatNaira(userData?.balance ?? 0)}</span>
             </div>
-            <button onClick={reset} className="btn-primary w-full">Make Another Transfer</button>
+            <button onClick={reset} className="btn-iris w-full">Make Another Transfer</button>
           </div>
         ) : (
-          <div className="card-glass p-6">
+          <div className="card-flat p-6">
             {step === 1 && (
               <div className="flex gap-2 mb-6">
-                <button type="button" onClick={() => handleModeChange("abopay")}
+                <button type="button" onClick={() => handleModeChange("fanpay")}
                   className={`flex-1 py-3 rounded-xl font-dm text-sm font-semibold border transition-all duration-200 ${
-                    mode === "abopay" ? "bg-secondary/15 border-secondary/40 text-secondary" : "bg-white/5 border-white/15 text-white/60 hover:text-white"
+                    mode === "fanpay" ? "bg-iris/15 border-iris/40 text-iris" : "bg-surface border-line text-ink/60 hover:text-ink"
                   }`}>
-                  Abopay Account
+                  FanPay Account
                 </button>
                 <button type="button" onClick={() => handleModeChange("bank")}
                   className={`flex-1 py-3 rounded-xl font-dm text-sm font-semibold border transition-all duration-200 ${
-                    mode === "bank" ? "bg-secondary/15 border-secondary/40 text-secondary" : "bg-white/5 border-white/15 text-white/60 hover:text-white"
+                    mode === "bank" ? "bg-iris/15 border-iris/40 text-iris" : "bg-surface border-line text-ink/60 hover:text-ink"
                   }`}>
                   Other Banks
                 </button>
@@ -190,11 +190,11 @@ const Transfer = () => {
 
             <div className={`${balance === 0 ? "bg-red-500/8 border-red-500/20" : "bg-sky-400/8 border-sky-400/20"} border rounded-2xl px-5 py-4 mb-6 flex items-center justify-between`}>
               <div>
-                <p className="text-white/50 font-dm text-xs uppercase tracking-wider mb-1">Available Balance</p>
+                <p className="text-ink/50 font-dm text-xs uppercase tracking-wider mb-1">Available Balance</p>
                 <p className={`font-syne font-bold text-xl ${balance === 0 ? "text-red-400" : "text-sky-400"}`}>{formatNaira(balance)}</p>
               </div>
               {balance === 0 && (
-                <Link to="/deposit" className="text-secondary font-dm text-xs border border-secondary/30 rounded-xl px-3 py-1.5 hover:bg-secondary/10 transition-colors">Add funds →</Link>
+                <Link to="/deposit" className="text-iris font-dm text-xs border border-iris/30 rounded-xl px-3 py-1.5 hover:bg-iris/10 transition-colors">Add funds →</Link>
               )}
             </div>
 
@@ -209,70 +209,70 @@ const Transfer = () => {
               <form onSubmit={handleVerify} className="flex flex-col gap-4">
                 {isBank && (
                   <div>
-                    <label className="text-white/80 font-dm text-sm font-medium mb-2 block">Destination Bank</label>
+                    <label className="text-ink/80 font-dm text-sm font-medium mb-2 block">Destination Bank</label>
                     <div className="relative">
                       <input type="text" value={bankSearch}
                         onChange={(e) => { setBankSearch(e.target.value); setShowBankDropdown(true); setForm(p => ({ ...p, bank: "", bankCode: "" })); }}
                         onFocus={() => setShowBankDropdown(true)}
-                        className="input-field text-base" placeholder="Search bank..." autoComplete="off" />
+                        className="input-field-light text-base" placeholder="Search bank..." autoComplete="off" />
                       {showBankDropdown && (
-                        <div className="absolute top-full left-0 right-0 mt-1.5 bg-[#0d2248] border border-white/20 rounded-xl overflow-hidden shadow-2xl z-50 max-h-52 overflow-y-auto">
+                        <div className="absolute top-full left-0 right-0 mt-1.5 bg-panel border border-line rounded-xl overflow-hidden shadow-xl z-50 max-h-52 overflow-y-auto">
                           {filteredBanks.length > 0 ? filteredBanks.map((b) => (
                             <button key={b.code} type="button" onClick={() => handleBankSelect(b)}
-                              className="w-full text-left px-4 py-3 font-dm text-sm text-white hover:bg-secondary/15 hover:text-secondary transition-colors border-b border-white/5 last:border-0">
+                              className="w-full text-left px-4 py-3 font-dm text-sm text-ink hover:bg-iris/15 hover:text-iris transition-colors border-b border-line last:border-0">
                               {b.name}
                             </button>
                           )) : (
-                            <div className="px-4 py-3 text-white/40 font-dm text-sm">No bank found</div>
+                            <div className="px-4 py-3 text-ink/40 font-dm text-sm">No bank found</div>
                           )}
                         </div>
                       )}
                     </div>
-                    {form.bank && <p className="text-secondary font-dm text-xs mt-1.5 ml-1">✓ {form.bank} selected</p>}
+                    {form.bank && <p className="text-iris font-dm text-xs mt-1.5 ml-1">✓ {form.bank} selected</p>}
                   </div>
                 )}
 
                 <div>
-                  <label className="text-white/80 font-dm text-sm font-medium mb-2 block">
-                    {isBank ? "Account Number" : "Recipient's Abopay Account Number"}
+                  <label className="text-ink/80 font-dm text-sm font-medium mb-2 block">
+                    {isBank ? "Account Number" : "Recipient's FanPay Account Number"}
                   </label>
                   <input type="text" value={form.accountNumber} onChange={handleChange("accountNumber")}
-                    className="input-field text-base" placeholder={isBank ? "10-digit NUBAN" : "10-digit account number"} maxLength={10} required />
+                    className="input-field-light text-base" placeholder={isBank ? "10-digit NUBAN" : "10-digit account number"} maxLength={10} required />
                 </div>
 
                 <div>
-                  <label className="text-white/80 font-dm text-sm font-medium mb-2 block">Amount (₦)</label>
+                  <label className="text-ink/80 font-dm text-sm font-medium mb-2 block">Amount (₦)</label>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/60 font-syne font-bold">₦</span>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-ink/60 font-syne font-bold">₦</span>
                     <input type="number" value={form.amount} onChange={handleChange("amount")}
-                      className="input-field pl-9 text-base" placeholder="0.00" min="100" max={balance} required />
+                      className="input-field-light pl-9 text-base" placeholder="0.00" min="100" max={balance} required />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-white/80 font-dm text-sm font-medium mb-2 block">
-                    Narration <span className="text-white/35 font-normal">(optional)</span>
+                  <label className="text-ink/80 font-dm text-sm font-medium mb-2 block">
+                    Narration <span className="text-ink/35 font-normal">(optional)</span>
                   </label>
                   <input type="text" value={form.narration} onChange={handleChange("narration")}
-                    className="input-field text-base" placeholder="What's this for?" maxLength={50} />
+                    className="input-field-light text-base" placeholder="What's this for?" maxLength={50} />
                 </div>
 
                 {isBank && (
                   <div>
-                    <label className="text-white/80 font-dm text-sm font-medium mb-2 block">
-                      Coupon Code <span className="text-white/35 font-normal">(optional)</span>
+                    <label className="text-ink/80 font-dm text-sm font-medium mb-2 block">
+                      Coupon Code <span className="text-ink/35 font-normal">(optional)</span>
                     </label>
                     <input type="text" value={couponCode} onChange={(e) => setCouponCode(e.target.value)}
-                      className="input-field text-base uppercase" placeholder="Have a code?" maxLength={20} />
+                      className="input-field-light text-base uppercase" placeholder="Have a code?" maxLength={20} />
                   </div>
                 )}
 
                 {isBank && fee > 0 && (
-                  <p className="text-white/40 font-dm text-xs -mt-1">Fee: {formatNaira(fee)} · Total: {formatNaira(total)}</p>
+                  <p className="text-ink/40 font-dm text-xs -mt-1">Fee: {formatNaira(fee)} · Total: {formatNaira(total)}</p>
                 )}
 
                 <button type="submit" disabled={(isBank && !form.bank) || !form.accountNumber || verifying}
-                  className="btn-primary flex items-center justify-center gap-2 mt-2 py-4 text-base disabled:opacity-50">
+                  className="btn-iris flex items-center justify-center gap-2 mt-2 py-4 text-base disabled:opacity-50">
                   <FiSend size={15} /> {verifying ? "Verifying account..." : "Continue"}
                 </button>
               </form>
@@ -280,26 +280,26 @@ const Transfer = () => {
 
             {step === 2 && (
               <div className="flex flex-col gap-5">
-                <h3 className="font-syne font-semibold text-white text-base">Confirm Transfer</h3>
-                <div className="flex flex-col rounded-xl overflow-hidden border border-white/10">
+                <h3 className="font-syne font-semibold text-ink text-base">Confirm Transfer</h3>
+                <div className="flex flex-col rounded-xl overflow-hidden border border-line">
                   {[
                     { label: "Account Name", val: form.accountName, highlight: true },
                     ...(isBank ? [{ label: "Destination Bank", val: form.bank }] : []),
-                    { label: isBank ? "Account Number" : "Abopay Account Number", val: form.accountNumber },
+                    { label: isBank ? "Account Number" : "FanPay Account Number", val: form.accountNumber },
                     { label: "Amount", val: formatNaira(amt) },
                     { label: "Fee", val: isBank ? formatNaira(fee) : "Instant & Free" },
                     ...(isBank ? [{ label: "Total", val: formatNaira(total), highlight: true }] : []),
-                    { label: "Narration", val: form.narration || (isBank ? "Abopay Transfer" : "Wallet Transfer") },
+                    { label: "Narration", val: form.narration || (isBank ? "FanPay Transfer" : "Wallet Transfer") },
                   ].map((r, i) => (
-                    <div key={i} className={`flex items-center justify-between px-5 py-3.5 ${i % 2 === 0 ? "bg-white/3" : "bg-white/5"}`}>
-                      <span className="text-white/50 font-dm text-sm">{r.label}</span>
-                      <span className={`font-dm text-sm font-semibold ${r.highlight ? "text-secondary" : "text-white"}`}>{r.val}</span>
+                    <div key={i} className={`flex items-center justify-between px-5 py-3.5 ${i % 2 === 0 ? "bg-panel" : "bg-surface"}`}>
+                      <span className="text-ink/50 font-dm text-sm">{r.label}</span>
+                      <span className={`font-dm text-sm font-semibold ${r.highlight ? "text-iris" : "text-ink"}`}>{r.val}</span>
                     </div>
                   ))}
                 </div>
                 <div className="flex gap-3 mt-2">
-                  <button onClick={() => { setStep(1); setError(""); }} className="btn-outline flex-1">Back</button>
-                  <button onClick={handleConfirmClick} disabled={loading} className="btn-primary flex-1 disabled:opacity-60">
+                  <button onClick={() => { setStep(1); setError(""); }} className="btn-outline-iris flex-1">Back</button>
+                  <button onClick={handleConfirmClick} disabled={loading} className="btn-iris flex-1 disabled:opacity-60">
                     {loading ? "Sending..." : "Confirm & Send"}
                   </button>
                 </div>

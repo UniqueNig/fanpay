@@ -25,9 +25,9 @@ const TYPE_TABS = [
 ];
 
 const STATUS_META = {
-  initiated: { color: "text-white/50 bg-white/5 border-white/10", icon: FiLoader, label: "Initiated" },
+  initiated: { color: "text-ink/50 bg-surface border-line", icon: FiLoader, label: "Initiated" },
   pending: { color: "text-yellow-400 bg-yellow-500/10 border-yellow-500/25", icon: FiClock, label: "Pending" },
-  delivered: { color: "text-secondary bg-secondary/10 border-secondary/25", icon: FiCheckCircle, label: "Delivered" },
+  delivered: { color: "text-iris bg-iris/10 border-iris/25", icon: FiCheckCircle, label: "Delivered" },
   failed: { color: "text-red-400 bg-red-500/10 border-red-500/25", icon: FiXCircle, label: "Failed" },
   reversed: { color: "text-orange-400 bg-orange-500/10 border-orange-500/25", icon: FiRotateCcw, label: "Reversed" },
 };
@@ -89,23 +89,23 @@ const AdminVtuTransactions = () => {
       <div className="p-5 lg:p-8 max-w-4xl">
         <div className="flex items-start justify-between mb-2">
           <div>
-            <h1 className="font-syne font-bold text-white text-2xl">VTU Transactions</h1>
-            <p className="text-white/40 font-dm text-sm mt-1">Data, airtime & bill purchase flow via VTpass</p>
+            <h1 className="font-syne font-bold text-ink text-2xl">VTU Transactions</h1>
+            <p className="text-ink/40 font-dm text-sm mt-1">Data, airtime & bill purchase flow via VTpass</p>
           </div>
           <button
             onClick={load}
             disabled={loading}
-            className="flex items-center gap-2 bg-white/5 border border-white/10 hover:bg-white/10 text-white/60 hover:text-white font-dm text-xs px-3 py-2 rounded-xl transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 bg-surface border border-line hover:bg-surface text-ink/60 hover:text-ink font-dm text-xs px-3 py-2 rounded-xl transition-colors disabled:opacity-50"
           >
             <FiRefreshCw size={13} className={loading ? "animate-spin" : ""} /> Refresh
           </button>
         </div>
 
-        <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-6 mt-4">
-          <p className="text-white/40 font-dm text-xs leading-relaxed">
-            Flow: <span className="text-white/70">initiated</span> (VTpass called) →{" "}
+        <div className="bg-surface border border-line rounded-xl px-4 py-3 mb-6 mt-4">
+          <p className="text-ink/40 font-dm text-xs leading-relaxed">
+            Flow: <span className="text-ink/70">initiated</span> (VTpass called) →{" "}
             <span className="text-yellow-400/80">pending</span> (still processing — try Requery) →{" "}
-            <span className="text-secondary/80">delivered</span> or{" "}
+            <span className="text-iris/80">delivered</span> or{" "}
             <span className="text-red-400/80">failed</span>/<span className="text-orange-400/80">reversed</span>{" "}
             (wallet auto-refunded). VTpass also pushes updates to <code>vtpassWebhook</code> on its own —
             Requery is for checking sooner.
@@ -118,7 +118,7 @@ const AdminVtuTransactions = () => {
               key={t.value}
               onClick={() => setStatus(t.value)}
               className={`px-3.5 py-1.5 rounded-lg font-dm text-xs whitespace-nowrap border transition-colors ${
-                status === t.value ? "bg-secondary/15 text-secondary border-secondary/25" : "text-white/50 border-white/10 hover:text-white"
+                status === t.value ? "bg-iris/15 text-iris border-iris/25" : "text-ink/50 border-line hover:text-ink"
               }`}
             >
               {t.label}
@@ -131,7 +131,7 @@ const AdminVtuTransactions = () => {
               key={t.value}
               onClick={() => setType(t.value)}
               className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-dm text-xs whitespace-nowrap border transition-colors ${
-                type === t.value ? "bg-white/10 text-white border-white/20" : "text-white/40 border-white/10 hover:text-white/70"
+                type === t.value ? "bg-surface text-ink border-line" : "text-ink/40 border-line hover:text-ink/70"
               }`}
             >
               {t.icon && <t.icon size={12} />} {t.label}
@@ -144,7 +144,7 @@ const AdminVtuTransactions = () => {
             <FiAlertCircle className="text-red-400 mt-0.5 shrink-0" size={16} />
             <div>
               <p className="text-red-400 font-dm text-sm">{error}</p>
-              <p className="text-white/30 font-dm text-xs mt-1">
+              <p className="text-ink/30 font-dm text-xs mt-1">
                 Expected endpoint: <code>GET /api/admin/vtu-transactions</code>. See <code>ADMIN_SETUP.md</code>.
               </p>
             </div>
@@ -152,34 +152,34 @@ const AdminVtuTransactions = () => {
         )}
 
         {loading ? (
-          <div className="card-glass p-8 text-center text-white/35 font-dm text-sm">Loading...</div>
+          <div className="card-flat p-8 text-center text-ink/35 font-dm text-sm">Loading...</div>
         ) : requests.length === 0 ? (
-          <div className="card-glass p-10 text-center">
-            <FiWifi className="text-white/20 mx-auto mb-3" size={28} />
-            <p className="text-white/40 font-dm text-sm">No matching VTU transactions.</p>
+          <div className="card-flat p-10 text-center">
+            <FiWifi className="text-ink/20 mx-auto mb-3" size={28} />
+            <p className="text-ink/40 font-dm text-sm">No matching VTU transactions.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
             {requests.map((r) => {
               const TypeIcon = TYPE_ICON[r.type] || FiWifi;
               return (
-                <div key={r.id} className="card-glass p-4 sm:p-5">
+                <div key={r.id} className="card-flat p-4 sm:p-5">
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                        <TypeIcon size={14} className="text-white/60" />
+                      <div className="w-9 h-9 rounded-xl bg-surface border border-line flex items-center justify-center shrink-0">
+                        <TypeIcon size={14} className="text-ink/60" />
                       </div>
                       <div className="min-w-0">
-                        <Link to={`/admin/users/${r.uid}`} className="text-white font-dm text-sm font-medium hover:text-secondary truncate block">
+                        <Link to={`/admin/users/${r.uid}`} className="text-ink font-dm text-sm font-medium hover:text-iris truncate block">
                           {labelFor(r)}
                         </Link>
-                        <p className="text-white/35 font-dm text-xs truncate">
+                        <p className="text-ink/35 font-dm text-xs truncate">
                           {r.createdAt ? `${formatDate(r.createdAt)} ${formatTime(r.createdAt)}` : "—"} · req {r.requestId}
                         </p>
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-white font-syne font-semibold text-sm">{formatNaira(r.amount)}</p>
+                      <p className="text-ink font-syne font-semibold text-sm">{formatNaira(r.amount)}</p>
                       <StatusBadge status={r.status} />
                     </div>
                   </div>
@@ -188,7 +188,7 @@ const AdminVtuTransactions = () => {
                     <button
                       onClick={() => requery(r.requestId)}
                       disabled={requeryingId === r.requestId}
-                      className="mt-3 flex items-center gap-1.5 bg-white/5 border border-white/10 hover:bg-white/10 text-white/60 hover:text-white font-dm text-xs px-3 py-1.5 rounded-lg disabled:opacity-50"
+                      className="mt-3 flex items-center gap-1.5 bg-surface border border-line hover:bg-surface text-ink/60 hover:text-ink font-dm text-xs px-3 py-1.5 rounded-lg disabled:opacity-50"
                     >
                       <FiRefreshCw size={12} className={requeryingId === r.requestId ? "animate-spin" : ""} />
                       {requeryingId === r.requestId ? "Checking..." : "Requery VTpass"}

@@ -2,18 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Light theme (default) — customer-facing app shell only. RGB triplets,
+     not hex, so Tailwind's opacity modifiers (bg-surface/50 etc) keep working. */
+  --fp-surface: 246 243 251;    /* #F6F3FB */
+  --fp-ink: 23 17 31;           /* #17111F */
+  --fp-line: 231 225 245;       /* #E7E1F5 */
+  --fp-panel: 255 255 255;      /* #FFFFFF */
+  --fp-iris: 110 100 166;       /* #6E64A6 */
+  --fp-iris-soft: 237 234 247;  /* #EDEAF7 */
+  --fp-accent-ink: 255 255 255; /* text sitting on a solid --fp-iris fill */
+}
+:root[data-theme="dark"] {
+  --fp-surface: 18 14 28;       /* #120E1C */
+  --fp-ink: 241 238 250;        /* #F1EEFA */
+  --fp-line: 44 36 64;          /* #2C2440 */
+  --fp-panel: 28 22 41;         /* #1C1629 */
+  --fp-iris: 137 127 189;       /* #897FBD — kept mid-tone (not brightened) so --fp-accent-ink can stay white in both themes */
+  --fp-iris-soft: 44 36 74;     /* dark-tinted equivalent of the light iris-soft chip fill */
+  --fp-accent-ink: 255 255 255;
+}
+
 @layer base {
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
   body {
-    background-color: #0d1b3e;
-    color: #ffffff;
+    background-color: rgb(var(--fp-surface));
+    color: rgb(var(--fp-ink));
     font-family: 'DM Sans', sans-serif;
     -webkit-font-smoothing: antialiased;
   }
   ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: #0d1b3e; }
-  ::-webkit-scrollbar-thumb { background: #22c55e; border-radius: 3px; }
+  ::-webkit-scrollbar-track { background: rgb(var(--fp-surface)); }
+  ::-webkit-scrollbar-thumb { background: #8b5cf6; border-radius: 3px; }
 }
 
 @layer components {
@@ -33,25 +54,45 @@
     @apply w-full bg-white/5 border border-white/15 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-secondary/60 transition-all duration-200 font-dm text-base;
   }
   .section-title {
-    @apply font-syne font-bold text-3xl md:text-4xl text-white leading-tight;
+    @apply font-syne font-bold text-3xl md:text-4xl text-ink leading-tight;
   }
   .section-sub {
-    @apply font-dm text-muted text-base leading-relaxed;
+    @apply font-dm text-ink/55 text-base leading-relaxed;
   }
   .nav-link {
-    @apply text-white/70 hover:text-secondary font-dm text-sm transition-colors duration-200;
+    @apply text-ink/70 hover:text-iris font-dm text-sm transition-colors duration-200;
   }
   .stat-card {
-    @apply card-glass p-5 flex flex-col gap-1;
+    @apply card-flat p-5 flex flex-col gap-1;
   }
   .feature-card {
-    @apply card-glass p-6 hover:border-secondary/30 transition-all duration-300 cursor-default;
+    @apply card-flat p-6 hover:border-iris/30 transition-all duration-300 cursor-default;
+  }
+
+  /* Light/flat theme — customer-facing app shell (Dashboard and inside).
+     Solid surfaces and hairline borders instead of glass/blur, muted `iris`
+     instead of the vivid `secondary` used on dark pages. */
+  .card-flat {
+    @apply bg-panel border border-line rounded-2xl shadow-sm;
+  }
+  .input-field-light {
+    @apply w-full bg-panel border border-line rounded-xl px-4 py-3 text-ink placeholder-ink/40 focus:outline-none focus:border-iris/60 transition-all duration-200 font-dm text-base;
+  }
+  .btn-iris {
+    @apply bg-iris text-accent-ink font-syne font-bold px-6 py-3 rounded-xl hover:opacity-90 transition-all duration-200 text-sm tracking-wide;
+  }
+  .btn-outline-iris {
+    @apply border border-iris text-iris font-syne font-semibold px-6 py-3 rounded-xl hover:bg-iris hover:text-accent-ink transition-all duration-200 text-sm;
   }
 }
 
 @layer utilities {
+  @keyframes toast-in {
+    0% { opacity: 0; transform: translateX(16px); }
+    100% { opacity: 1; transform: translateX(0); }
+  }
   .text-gradient {
-    background: linear-gradient(135deg, #22c55e, #4ade80);
+    background: linear-gradient(135deg, #8b5cf6, #c4b5fd);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -62,16 +103,16 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
-  .glow-green {
-    box-shadow: 0 0 30px rgba(34,197,94,0.2);
+  .glow-accent {
+    box-shadow: 0 0 30px rgba(139,92,246,0.2);
   }
   .glow-gold {
     box-shadow: 0 0 30px rgba(240,165,0,0.2);
   }
   .mesh-bg {
-    background: radial-gradient(ellipse at 20% 50%, rgba(34,197,94,0.08) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 20%, rgba(26,43,94,0.3) 0%, transparent 40%),
-                radial-gradient(ellipse at 50% 80%, rgba(34,197,94,0.05) 0%, transparent 40%);
+    background: radial-gradient(ellipse at 20% 50%, rgba(139,92,246,0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.12) 0%, transparent 40%),
+                radial-gradient(ellipse at 50% 80%, rgba(139,92,246,0.05) 0%, transparent 40%);
   }
   .shimmer {
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);

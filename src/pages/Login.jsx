@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 import { FiMail, FiLock, FiArrowRight, FiEye, FiEyeOff } from "react-icons/fi";
-import abopayLogo from "../assets/abopay-logo.svg";
+import fanpayLogo from "../assets/abopay-logo.svg";
 
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -22,6 +23,7 @@ const Login = () => {
   const [error, setError] = useState("");
   const [resetSent, setResetSent] = useState(false);
   const { login, loginWithGoogle, resetPassword } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -30,9 +32,12 @@ const Login = () => {
     setLoading(true);
     try {
       await login(email, password);
+      showToast("Signed in successfully.", "success");
       navigate("/dashboard");
     } catch (err) {
-      setError("Invalid email or password. Please try again.");
+      const msg = "Invalid email or password. Please try again.";
+      setError(msg);
+      showToast(msg, "error");
     }
     setLoading(false);
   };
@@ -57,29 +62,32 @@ const Login = () => {
     setGoogleLoading(true);
     try {
       await loginWithGoogle();
+      showToast("Signed in successfully.", "success");
       navigate("/dashboard");
     } catch (err) {
       if (err.code !== "auth/popup-closed-by-user") {
-        setError("Google sign-in failed. Please try again.");
+        const msg = "Google sign-in failed. Please try again.";
+        setError(msg);
+        showToast(msg, "error");
       }
     }
     setGoogleLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-primary mesh-bg flex items-center justify-center px-4 py-12">
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-secondary to-transparent" />
+    <div className="min-h-screen bg-surface mesh-bg flex items-center justify-center px-4 py-12">
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-iris to-transparent" />
 
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center justify-center mb-6">
-            <img src={abopayLogo} alt="Abopay" className="h-10 w-auto" />
+            <img src={fanpayLogo} alt="FanPay" className="h-10 w-auto" />
           </Link>
-          <h1 className="font-syne font-bold text-2xl text-white mb-2">Welcome back</h1>
-          <p className="text-white/50 font-dm text-sm">Sign in to your account</p>
+          <h1 className="font-syne font-bold text-2xl text-ink mb-2">Welcome back</h1>
+          <p className="text-ink/50 font-dm text-sm">Sign in to your account</p>
         </div>
 
-        <div className="card-glass p-8">
+        <div className="card-flat p-8">
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-5 text-red-400 font-dm text-sm">
               {error}
@@ -87,7 +95,7 @@ const Login = () => {
           )}
 
           {resetSent && (
-            <div className="bg-secondary/10 border border-secondary/20 rounded-xl px-4 py-3 mb-5 text-secondary font-dm text-sm">
+            <div className="bg-iris/10 border border-iris/20 rounded-xl px-4 py-3 mb-5 text-iris font-dm text-sm">
               Password reset email sent to {email}. Check your inbox.
             </div>
           )}
@@ -96,7 +104,7 @@ const Login = () => {
           <button
             onClick={handleGoogle}
             disabled={googleLoading || loading}
-            className="w-full flex items-center justify-center gap-3 bg-white/5 border border-white/15 hover:bg-white/10 hover:border-white/25 text-white font-dm text-sm font-medium px-4 py-3 rounded-xl transition-all duration-200 mb-5 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-3 bg-surface border border-line hover:bg-surface hover:border-line text-ink font-dm text-sm font-medium px-4 py-3 rounded-xl transition-all duration-200 mb-5 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <GoogleIcon />
             {googleLoading ? "Signing in with Google..." : "Continue with Google"}
@@ -104,21 +112,21 @@ const Login = () => {
 
           {/* Divider */}
           <div className="flex items-center gap-3 mb-5">
-            <div className="flex-1 h-px bg-white/10" />
-            <span className="text-white/30 font-dm text-xs">or sign in with email</span>
-            <div className="flex-1 h-px bg-white/10" />
+            <div className="flex-1 h-px bg-surface" />
+            <span className="text-ink/30 font-dm text-xs">or sign in with email</span>
+            <div className="flex-1 h-px bg-surface" />
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
-              <label className="text-white/60 font-dm text-xs mb-1.5 block">Email Address</label>
+              <label className="text-ink/60 font-dm text-xs mb-1.5 block">Email Address</label>
               <div className="relative">
-                <FiMail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+                <FiMail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/30" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="input-field pl-10"
+                  className="input-field-light pl-10"
                   placeholder="you@example.com"
                   required
                 />
@@ -126,21 +134,21 @@ const Login = () => {
             </div>
 
             <div>
-              <label className="text-white/60 font-dm text-xs mb-1.5 block">Password</label>
+              <label className="text-ink/60 font-dm text-xs mb-1.5 block">Password</label>
               <div className="relative">
-                <FiLock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+                <FiLock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/30" />
                 <input
                   type={showPw ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="input-field pl-10 pr-10"
+                  className="input-field-light pl-10 pr-10"
                   placeholder="••••••••"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPw(!showPw)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/30 hover:text-ink/60"
                 >
                   {showPw ? <FiEyeOff size={15} /> : <FiEye size={15} />}
                 </button>
@@ -151,7 +159,7 @@ const Login = () => {
               <button
                 type="button"
                 onClick={handleForgotPassword}
-                className="text-secondary font-dm text-xs hover:underline"
+                className="text-iris font-dm text-xs hover:underline"
               >
                 Forgot password?
               </button>
@@ -160,23 +168,17 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading || googleLoading}
-              className="btn-primary flex items-center justify-center gap-2 mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="btn-iris flex items-center justify-center gap-2 mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loading ? "Signing in..." : <>Sign In <FiArrowRight size={14} /></>}
             </button>
           </form>
 
-          <p className="text-center text-white/40 font-dm text-sm mt-6">
+          <p className="text-center text-ink/40 font-dm text-sm mt-6">
             Don't have an account?{" "}
-            <Link to="/signup" className="text-secondary hover:underline font-medium">
+            <Link to="/signup" className="text-iris hover:underline font-medium">
               Create one
             </Link>
-          </p>
-        </div>
-
-        <div className="mt-4 card-glass p-3 text-center">
-          <p className="text-white/30 font-dm text-xs">
-            Demo: Use any email & password after signing up
           </p>
         </div>
       </div>

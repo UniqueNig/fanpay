@@ -5,12 +5,23 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Abopay – Pay Easy, Live More</title>
-    <meta name="description" content="Abopay — Nigeria's smartest payment app. Pay bills, buy airtime, transfer money, and grow your savings. Pay Easy, Live More." />
+    <title>FanPay – Pay Easy, Live More</title>
+    <meta name="description" content="FanPay — Nigeria's smartest payment app. Pay bills, buy airtime, transfer money, and grow your savings. Pay Easy, Live More." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
     <script src="https://js.paystack.co/v2/inline.js"></script>
+    <script>
+      // Set data-theme before first paint so the app shell doesn't flash the
+      // wrong theme — ThemeContext reads this same value back on mount.
+      (function () {
+        try {
+          var saved = localStorage.getItem("fanpay-theme");
+          var theme = saved || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+          document.documentElement.setAttribute("data-theme", theme);
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

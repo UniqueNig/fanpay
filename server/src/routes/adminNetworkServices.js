@@ -2,27 +2,21 @@ import { Router } from "express";
 import { body, validationResult } from "express-validator";
 import { requireAdmin } from "../middleware/requireAdmin.js";
 import { ApiError } from "../middleware/errorHandler.js";
-import { VTPASS_SERVICE } from "../services/vtpass.js";
 import { ExtraVtuService } from "../models/ExtraVtuService.js";
-import { listAvailableToAdd } from "../services/productPricing.js";
 
+// Lets an admin register a network/cable provider/electricity disco beyond
+// the hardcoded tables in services/maskawasub.js — for when Maskawasub adds
+// one that isn't already mapped (a 5th mobile network, a new cable company,
+// a disco outside the original 8). Unlike the pre-migration VTpass version
+// of this route, there's no live "available services" list to check against
+// — Maskawasub has no such discovery endpoint — so this is a manual,
+// admin-typed registration, not a picker.
 const router = Router();
-
-router.get("/available/:category", requireAdmin, async (req, res, next) => {
-  try {
-    const { category } = req.params;
-    if (!["airtime", "data", "cable"].includes(category)) throw new ApiError(400, `Unknown category: ${category}`);
-    const services = await listAvailableToAdd(category);
-    res.json({ services });
-  } catch (err) {
-    next(err);
-  }
-});
 
 router.get("/:category", requireAdmin, async (req, res, next) => {
   try {
     const { category } = req.params;
-    if (!["airtime", "data", "cable"].includes(category)) throw new ApiError(400, `Unknown category: ${category}`);
+    if (!["network", "cable", "electricity"].includes(category)) throw new ApiError(400, `Unknown category: ${category}`);
     const rows = await ExtraVtuService.find({ category }).sort({ createdAt: -1 }).lean();
     res.json({ rows });
   } catch (err) {
@@ -34,11 +28,10 @@ router.post(
   "/",
   requireAdmin,
   [
-    body("category").isIn(["airtime", "data", "cable"]),
+    body("category").isIn(["network", "cable", "electricity"]),
     body("networkKey").isString().trim().notEmpty(),
-    body("serviceID").isString().trim().notEmpty(),
-    // Required unless merging into one of the hardcoded networks.
-    body("label").optional().isString().trim(),
+    body("serviceID").isInt({ gt: 0 }).withMessage("Maskawasub's numeric id for this provider is required."),
+    body("label").isString().trim().notEmpty().withMessage("A display name is required."),
     body("color").optional().isString().trim(),
   ],
   async (req, res, next) => {
@@ -47,16 +40,12 @@ router.post(
 
     try {
       const { category, networkKey, serviceID, label, color } = req.body;
-      const isNewNetwork = !Object.prototype.hasOwnProperty.call(VTPASS_SERVICE[category] || {}, networkKey);
-      if (isNewNetwork && !label?.trim()) {
-        throw new ApiError(400, "A label is required when adding a brand-new network.");
-      }
 
-      const existing = await ExtraVtuService.findOne({ category, serviceID });
-      if (existing) throw new ApiError(400, "This service has already been added.");
+      const existing = await ExtraVtuService.findOne({ category, networkKey });
+      if (existing) throw new ApiError(400, "A provider with this key already exists in this category.");
 
       const row = await ExtraVtuService.create({
-        category, networkKey, serviceID, label: label || "", color: color || "",
+        category, networkKey, serviceID: String(serviceID), label, color: color || "",
       });
       res.status(201).json({ success: true, row });
     } catch (err) {
@@ -68,7 +57,7 @@ router.post(
 router.post("/:id/toggle", requireAdmin, async (req, res, next) => {
   try {
     const row = await ExtraVtuService.findById(req.params.id);
-    if (!row) throw new ApiError(404, "Service not found.");
+    if (!row) throw new ApiError(404, "Provider not found.");
     row.active = !row.active;
     await row.save();
     res.json({ success: true, active: row.active });

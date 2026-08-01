@@ -82,4 +82,25 @@ router.post(
   }
 );
 
+// Lets a user set/update their phone number after signup — needed since
+// Google sign-in doesn't collect one, and it's required before Aspfiy
+// virtual accounts can be reserved (routes/deposits.js).
+router.patch(
+  "/me",
+  requireAuth,
+  [body("phone").isString().trim().isLength({ min: 10, max: 15 }).withMessage("Enter a valid phone number.")],
+  async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
+
+    try {
+      const user = await User.findOneAndUpdate({ uid: req.uid }, { phone: req.body.phone }, { new: true });
+      if (!user) throw new ApiError(404, "User record not found.");
+      res.json({ success: true, phone: user.phone });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 export default router;

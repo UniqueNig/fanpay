@@ -1,26 +1,35 @@
 import mongoose from "mongoose";
 
-// An admin-added VTpass service beyond the hardcoded defaults in
-// services/vtpass.js's VTPASS_SERVICE table — either merged into an
-// existing network (data only, e.g. "glo-sme-data" merging into "glo") or a
-// brand-new standalone network/provider (e.g. "smile-direct").
+// An admin-registered network/provider beyond the hardcoded defaults in
+// services/maskawasub.js's MASKAWASUB_NETWORK/MASKAWASUB_CABLE/MASKAWASUB_DISCO
+// tables — for when Maskawasub adds an entirely new mobile network, cable
+// company, or electricity disco that isn't one of the ones already mapped.
+// Unlike the VTpass-era version of this model, there's no "merge into an
+// existing network" concept — Maskawasub's bulk /user/ catalog already
+// contains every plan for a network it knows about once that network's id
+// is registered here, so this only ever introduces a brand-new key.
+//
+// - category "network" covers both airtime and data (Maskawasub uses the
+//   same numeric network id for both, see MASKAWASUB_NETWORK).
+// - `serviceID` holds the Maskawasub numeric id, as a string (kept as
+//   String for continuity with the pre-migration schema and because
+//   Mongoose unique indexes on numbers vs strings behave the same either way).
 const extraVtuServiceSchema = new mongoose.Schema(
   {
-    category: { type: String, enum: ["airtime", "data", "cable"], required: true },
-    // Matches an existing hardcoded network key to merge into it, or is a
-    // new key entirely (in which case label/color are required — see below).
+    category: { type: String, enum: ["network", "cable", "electricity"], required: true },
+    // The internal key this provider is looked up by everywhere else
+    // (e.g. "smile", "startimes-2") — admin-chosen, must be unique per category.
     networkKey: { type: String, required: true },
+    // Maskawasub's numeric id for this network/cable/disco, as a string.
     serviceID: { type: String, required: true },
-    // Only meaningful when networkKey introduces a brand-new network —
-    // ignored when merging into an existing one (the existing label/color
-    // already used there applies).
-    label: { type: String, default: "" },
+    label: { type: String, required: true },
+    // Only meaningful for category "network" (airtime/data network-picker color).
     color: { type: String, default: "" },
     active: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
 
-extraVtuServiceSchema.index({ category: 1, serviceID: 1 }, { unique: true });
+extraVtuServiceSchema.index({ category: 1, networkKey: 1 }, { unique: true });
 
 export const ExtraVtuService = mongoose.model("ExtraVtuService", extraVtuServiceSchema);

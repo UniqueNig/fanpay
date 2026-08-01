@@ -63,17 +63,17 @@ const AdminLoginLogs = () => {
     <AdminLayout>
       <div className="p-5 lg:p-8 max-w-4xl">
         <div className="mb-6">
-          <h1 className="font-syne font-bold text-white text-2xl">Login Logs</h1>
-          <p className="text-white/40 font-dm text-sm mt-1">Recent sign-ins across the platform</p>
+          <h1 className="font-syne font-bold text-ink text-2xl">Login Logs</h1>
+          <p className="text-ink/40 font-dm text-sm mt-1">Recent sign-ins across the platform</p>
         </div>
 
         <form onSubmit={handleSearch} className="relative mb-6">
-          <FiSearch size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+          <FiSearch size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/30" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="input-field pl-10"
+            className="input-field-light pl-10"
             placeholder="Search by email or user ID..."
           />
         </form>
@@ -83,7 +83,7 @@ const AdminLoginLogs = () => {
             <FiAlertCircle className="text-red-400 mt-0.5 shrink-0" size={16} />
             <div>
               <p className="text-red-400 font-dm text-sm">{error}</p>
-              <p className="text-white/30 font-dm text-xs mt-1">
+              <p className="text-ink/30 font-dm text-xs mt-1">
                 Expected endpoint: <code>GET /api/admin/login-logs</code>. See <code>ADMIN_SETUP.md</code>.
               </p>
             </div>
@@ -91,39 +91,39 @@ const AdminLoginLogs = () => {
         )}
 
         {loading ? (
-          <div className="card-glass p-8 text-center text-white/35 font-dm text-sm">Loading logs...</div>
+          <div className="card-flat p-8 text-center text-ink/35 font-dm text-sm">Loading logs...</div>
         ) : logs.length === 0 ? (
-          <div className="card-glass p-10 text-center">
-            <FiLogIn className="text-white/20 mx-auto mb-3" size={28} />
-            <p className="text-white/40 font-dm text-sm">No login activity found.</p>
+          <div className="card-flat p-10 text-center">
+            <FiLogIn className="text-ink/20 mx-auto mb-3" size={28} />
+            <p className="text-ink/40 font-dm text-sm">No login activity found.</p>
           </div>
         ) : (
-          <div className="card-glass overflow-hidden">
+          <div className="card-flat overflow-hidden">
             {logs.map((log, i) => (
               <Link
                 key={log.id}
                 to={`/admin/users/${log.uid}`}
-                className={`flex items-center justify-between p-4 hover:bg-white/5 transition-colors ${
-                  i < logs.length - 1 ? "border-b border-white/5" : ""
+                className={`flex items-center justify-between p-4 hover:bg-surface transition-colors ${
+                  i < logs.length - 1 ? "border-b border-line" : ""
                 }`}
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                    <FiLogIn size={15} className="text-secondary" />
+                  <div className="w-10 h-10 rounded-xl bg-surface border border-line flex items-center justify-center shrink-0">
+                    <FiLogIn size={15} className="text-iris" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-white font-dm text-sm font-medium truncate">{log.email || log.uid}</p>
-                    <p className="text-white/35 font-dm text-xs truncate">
+                    <p className="text-ink font-dm text-sm font-medium truncate">{log.email || log.uid}</p>
+                    <p className="text-ink/35 font-dm text-xs truncate">
                       {log.ip || "unknown IP"} · {log.userAgent ? log.userAgent.slice(0, 40) : "unknown device"}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0 pl-3">
                   <div className="text-right">
-                    <p className="text-white/70 font-dm text-xs">{formatDate(log.timestamp)}</p>
-                    <p className="text-white/35 font-dm text-xs">{formatTime(log.timestamp)}</p>
+                    <p className="text-ink/70 font-dm text-xs">{formatDate(log.timestamp)}</p>
+                    <p className="text-ink/35 font-dm text-xs">{formatTime(log.timestamp)}</p>
                   </div>
-                  <FiChevronRight size={14} className="text-white/25" />
+                  <FiChevronRight size={14} className="text-ink/25" />
                 </div>
               </Link>
             ))}
@@ -135,14 +135,14 @@ const AdminLoginLogs = () => {
             <button
               onClick={goPrev}
               disabled={history.length === 0}
-              className="font-dm text-sm text-white/50 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+              className="font-dm text-sm text-ink/50 hover:text-ink disabled:opacity-30 disabled:cursor-not-allowed"
             >
               ← Previous
             </button>
             <button
               onClick={goNext}
               disabled={!nextCursor}
-              className="font-dm text-sm text-white/50 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+              className="font-dm text-sm text-ink/50 hover:text-ink disabled:opacity-30 disabled:cursor-not-allowed"
             >
               Next →
             </button>

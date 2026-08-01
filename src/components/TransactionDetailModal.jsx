@@ -2,13 +2,19 @@ import React, { useRef, useState } from "react";
 import { FiX, FiShare2, FiDownload, FiArrowUpRight, FiArrowDownLeft, FiFlag } from "react-icons/fi";
 import { formatNaira, formatDate, formatTime } from "../utils/helpers";
 import { api } from "../api";
-import abopayLogo from "../assets/abopay-logo.svg";
+import FanPayLogo from "./FanPayLogo";
 
 // Fields already shown elsewhere in the receipt, or internal-only — hidden
 // from the generic "extra details" list so it doesn't look redundant/noisy.
+// buyingPrice/sellingPrice/maskawasubId are deliberately hidden too — the
+// customer already sees what they actually paid as the headline amount;
+// our wholesale cost margin and the backend VTU provider's identity are
+// internal, not something to expose (and naming a third-party provider on a
+// customer-facing receipt reads as bad marketing regardless).
 const HIDDEN_KEYS = new Set([
   "id", "type", "title", "amount", "date", "category", "reference",
-  "recipientCode", "transferStatus", "vtpassTxId",
+  "recipientCode", "transferStatus", "vtpassTxId", "maskawasubId",
+  "buyingPrice", "sellingPrice",
 ]);
 
 const LABELS = {
@@ -41,7 +47,7 @@ const TransactionDetailModal = ({ transaction, onClose }) => {
 
   const captureReceipt = async () => {
     const html2canvas = (await import("html2canvas")).default;
-    const canvas = await html2canvas(receiptRef.current, { backgroundColor: "#0a1a3a", scale: 2 });
+    const canvas = await html2canvas(receiptRef.current, { backgroundColor: "#F6F3FB", scale: 2 });
     return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
   };
 
@@ -50,15 +56,15 @@ const TransactionDetailModal = ({ transaction, onClose }) => {
     setShareError("");
     try {
       const blob = await captureReceipt();
-      const file = new File([blob], `abopay-receipt-${tx.reference}.png`, { type: "image/png" });
+      const file = new File([blob], `fanpay-receipt-${tx.reference}.png`, { type: "image/png" });
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: "Abopay Receipt", text: tx.title });
+        await navigator.share({ files: [file], title: "FanPay Receipt", text: tx.title });
       } else {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `abopay-receipt-${tx.reference}.png`;
+        a.download = `fanpay-receipt-${tx.reference}.png`;
         a.click();
         URL.revokeObjectURL(url);
       }
@@ -88,53 +94,53 @@ const TransactionDetailModal = ({ transaction, onClose }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="w-full max-w-sm bg-[#0d2248] border border-white/15 rounded-2xl overflow-hidden shadow-2xl max-h-[90vh] overflow-y-auto"
+        className="w-full max-w-sm bg-panel border border-line rounded-2xl overflow-hidden shadow-2xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
-          <h3 className="font-syne font-semibold text-white text-base">Transaction Details</h3>
-          <button onClick={onClose} className="text-white/40 hover:text-white">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-line">
+          <h3 className="font-syne font-semibold text-ink text-base">Transaction Details</h3>
+          <button onClick={onClose} className="text-ink/40 hover:text-ink">
             <FiX size={18} />
           </button>
         </div>
 
         {/* Receipt content — captured as an image for sharing */}
-        <div ref={receiptRef} className="bg-[#0a1a3a] p-6">
+        <div ref={receiptRef} className="bg-surface p-6">
           <div className="flex items-center justify-center mb-5">
-            <img src={abopayLogo} alt="Abopay" className="h-7 w-auto" />
+            <FanPayLogo className="h-7 w-auto" />
           </div>
 
           <div className="flex flex-col items-center text-center mb-6">
-            <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-2xl mb-3">
+            <div className="w-14 h-14 rounded-2xl bg-panel border border-line flex items-center justify-center text-2xl mb-3">
               {tx.category}
             </div>
             <div className="flex items-center gap-1.5">
               {tx.type === "credit" ? (
-                <FiArrowDownLeft size={14} className="text-secondary" />
+                <FiArrowDownLeft size={14} className="text-iris" />
               ) : (
                 <FiArrowUpRight size={14} className="text-red-400" />
               )}
-              <span className={`font-syne font-bold text-2xl ${tx.type === "credit" ? "text-secondary" : "text-red-400"}`}>
+              <span className={`font-syne font-bold text-2xl ${tx.type === "credit" ? "text-iris" : "text-red-400"}`}>
                 {tx.type === "debit" ? "-" : "+"}{formatNaira(tx.amount)}
               </span>
             </div>
-            <p className="text-white/60 font-dm text-sm mt-1">{tx.title}</p>
+            <p className="text-ink/60 font-dm text-sm mt-1">{tx.title}</p>
           </div>
 
-          <div className="flex flex-col rounded-xl overflow-hidden border border-white/10">
+          <div className="flex flex-col rounded-xl overflow-hidden border border-line">
             {[
               { label: "Date", val: `${formatDate(tx.date)} · ${formatTime(tx.date)}` },
               { label: "Reference", val: tx.reference },
               ...extraEntries.map(([key, val]) => ({ label: toLabel(key), val: String(val) })),
             ].map((r, i) => (
-              <div key={i} className={`flex items-center justify-between gap-4 px-4 py-3 ${i % 2 === 0 ? "bg-white/3" : "bg-white/5"}`}>
-                <span className="text-white/45 font-dm text-xs shrink-0">{r.label}</span>
-                <span className="text-white font-dm text-xs font-medium text-right break-all">{r.val}</span>
+              <div key={i} className={`flex items-center justify-between gap-4 px-4 py-3 ${i % 2 === 0 ? "bg-panel/60" : "bg-transparent"}`}>
+                <span className="text-ink/45 font-dm text-xs shrink-0">{r.label}</span>
+                <span className="text-ink font-dm text-xs font-medium text-right break-all">{r.val}</span>
               </div>
             ))}
           </div>
 
-          <p className="text-white/25 font-dm text-[10px] text-center mt-5">Powered by Abopay</p>
+          <p className="text-ink/25 font-dm text-[10px] text-center mt-5">Powered by FanPay</p>
         </div>
 
         <div className="p-5 pt-4">
@@ -142,14 +148,14 @@ const TransactionDetailModal = ({ transaction, onClose }) => {
           <button
             onClick={handleShare}
             disabled={sharing}
-            className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-60"
+            className="btn-iris w-full flex items-center justify-center gap-2 disabled:opacity-60"
           >
             {navigator.share ? <FiShare2 size={15} /> : <FiDownload size={15} />}
             {sharing ? "Generating..." : navigator.share ? "Share Receipt" : "Download Receipt"}
           </button>
 
           {reportSuccess ? (
-            <p className="text-secondary font-dm text-xs text-center mt-4">
+            <p className="text-iris font-dm text-xs text-center mt-4">
               Reported — our team will review this transaction.
             </p>
           ) : reporting ? (
@@ -157,14 +163,14 @@ const TransactionDetailModal = ({ transaction, onClose }) => {
               <textarea
                 value={reportReason}
                 onChange={(e) => setReportReason(e.target.value)}
-                className="input-field min-h-[70px] resize-none text-sm"
+                className="input-field-light min-h-[70px] resize-none text-sm"
                 placeholder="What went wrong with this transaction?"
               />
               {reportError && <p className="text-red-400 font-dm text-xs mt-2">{reportError}</p>}
               <div className="flex gap-2 mt-2">
                 <button
                   onClick={() => { setReporting(false); setReportError(""); }}
-                  className="flex-1 font-dm text-xs text-white/50 hover:text-white border border-white/10 rounded-xl py-2.5"
+                  className="flex-1 font-dm text-xs text-ink/50 hover:text-ink border border-line rounded-xl py-2.5"
                 >
                   Cancel
                 </button>
@@ -180,7 +186,7 @@ const TransactionDetailModal = ({ transaction, onClose }) => {
           ) : (
             <button
               onClick={() => setReporting(true)}
-              className="w-full flex items-center justify-center gap-1.5 text-white/40 hover:text-red-400 font-dm text-xs mt-4"
+              className="w-full flex items-center justify-center gap-1.5 text-ink/40 hover:text-red-400 font-dm text-xs mt-4"
             >
               <FiFlag size={12} /> Report a problem
             </button>

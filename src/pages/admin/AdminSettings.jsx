@@ -9,7 +9,7 @@ const Toggle = ({ on, onClick }) => (
   <button
     type="button"
     onClick={onClick}
-    className={`w-11 h-6 rounded-full transition-colors relative shrink-0 ${on ? "bg-secondary" : "bg-white/15"}`}
+    className={`w-11 h-6 rounded-full transition-colors relative shrink-0 ${on ? "bg-iris" : "bg-line"}`}
   >
     <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${on ? "left-5" : "left-0.5"}`} />
   </button>
@@ -60,15 +60,15 @@ const AdminSettings = () => {
       <div className="p-5 lg:p-8 max-w-2xl">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="font-syne font-bold text-white text-2xl">Settings</h1>
-            <p className="text-white/40 font-dm text-sm mt-1">System settings, service toggles, and pricing</p>
+            <h1 className="font-syne font-bold text-ink text-2xl">Settings</h1>
+            <p className="text-ink/40 font-dm text-sm mt-1">System settings, service toggles, and pricing</p>
           </div>
-          {saved && <span className="flex items-center gap-1.5 text-secondary font-dm text-xs"><FiCheck size={13} /> Saved</span>}
+          {saved && <span className="flex items-center gap-1.5 text-iris font-dm text-xs"><FiCheck size={13} /> Saved</span>}
         </div>
 
         <div className="flex gap-2 mb-6">
           {TABS.map((t, i) => (
-            <button key={t} onClick={() => setTab(i)} className={`px-4 py-2 rounded-xl font-dm text-sm border transition-colors ${tab === i ? "bg-secondary/15 text-secondary border-secondary/25" : "text-white/50 border-white/10 hover:text-white"}`}>
+            <button key={t} onClick={() => setTab(i)} className={`px-4 py-2 rounded-xl font-dm text-sm border transition-colors ${tab === i ? "bg-iris/15 text-iris border-iris/25" : "text-ink/50 border-line hover:text-ink"}`}>
               {t}
             </button>
           ))}
@@ -82,13 +82,13 @@ const AdminSettings = () => {
         )}
 
         {loading || !settings ? (
-          <div className="card-glass p-8 text-center text-white/35 font-dm text-sm">Loading settings...</div>
+          <div className="card-flat p-8 text-center text-ink/35 font-dm text-sm">Loading settings...</div>
         ) : tab === 0 ? (
-          <div className="card-glass p-6 flex flex-col gap-5">
+          <div className="card-flat p-6 flex flex-col gap-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-white font-dm text-sm font-medium">Maintenance Mode</p>
-                <p className="text-white/35 font-dm text-xs">Blocks new deposits/transfers app-wide when on</p>
+                <p className="text-ink font-dm text-sm font-medium">Maintenance Mode</p>
+                <p className="text-ink/35 font-dm text-xs">Blocks new deposits/transfers app-wide when on</p>
               </div>
               <Toggle on={settings.maintenanceMode} onClick={() => save({ maintenanceMode: !settings.maintenanceMode })} />
             </div>
@@ -101,59 +101,73 @@ const AdminSettings = () => {
               </div>
             )}
             <div>
-              <label className="text-white/60 font-dm text-xs mb-1.5 block">Support Email</label>
-              <input className="input-field" defaultValue={general.supportEmail} onBlur={(e) => save({ general: { ...general, supportEmail: e.target.value } })} placeholder="support@abopay.ng" />
+              <label className="text-ink/60 font-dm text-xs mb-1.5 block">Support Email</label>
+              <input className="input-field-light" defaultValue={general.supportEmail} onBlur={(e) => save({ general: { ...general, supportEmail: e.target.value } })} placeholder="support@fanpay.ng" />
             </div>
             <div>
-              <label className="text-white/60 font-dm text-xs mb-1.5 block">Support Phone</label>
-              <input className="input-field" defaultValue={general.supportPhone} onBlur={(e) => save({ general: { ...general, supportPhone: e.target.value } })} placeholder="+234..." />
+              <label className="text-ink/60 font-dm text-xs mb-1.5 block">Support Phone</label>
+              <input className="input-field-light" defaultValue={general.supportPhone} onBlur={(e) => save({ general: { ...general, supportPhone: e.target.value } })} placeholder="+234..." />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-white/60 font-dm text-xs mb-1.5 block">Min Transfer (₦)</label>
-                <input type="number" className="input-field" defaultValue={general.minTransfer} onBlur={(e) => save({ general: { ...general, minTransfer: Number(e.target.value) } })} />
+                <label className="text-ink/60 font-dm text-xs mb-1.5 block">Min Transfer (₦)</label>
+                <input type="number" className="input-field-light" defaultValue={general.minTransfer} onBlur={(e) => save({ general: { ...general, minTransfer: Number(e.target.value) } })} />
               </div>
               <div>
-                <label className="text-white/60 font-dm text-xs mb-1.5 block">Max Transfer (₦)</label>
-                <input type="number" className="input-field" defaultValue={general.maxTransfer} onBlur={(e) => save({ general: { ...general, maxTransfer: Number(e.target.value) } })} />
+                <label className="text-ink/60 font-dm text-xs mb-1.5 block">Max Transfer (₦)</label>
+                <input type="number" className="input-field-light" defaultValue={general.maxTransfer} onBlur={(e) => save({ general: { ...general, maxTransfer: Number(e.target.value) } })} />
               </div>
             </div>
           </div>
         ) : tab === 1 ? (
-          <div className="card-glass p-6 flex flex-col gap-4">
-            <p className="text-white/30 font-dm text-xs mb-1">
+          <div className="card-flat p-6 flex flex-col gap-4">
+            <p className="text-ink/30 font-dm text-xs mb-1">
               Turning a service off blocks that action for every user immediately.
             </p>
             {Object.entries(services).map(([key, val]) => (
               <div key={key} className="flex items-center justify-between">
-                <p className="text-white font-dm text-sm capitalize">{key}</p>
+                <p className="text-ink font-dm text-sm capitalize">{key}</p>
                 <Toggle on={val} onClick={() => save({ servicesEnabled: { ...services, [key]: !val } })} />
               </div>
             ))}
           </div>
         ) : (
-          <div className="card-glass p-6 flex flex-col gap-5">
+          <div className="card-flat p-6 flex flex-col gap-5">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-white/60 font-dm text-xs mb-1.5 block">Transfer Fee (flat ₦)</label>
-                <input type="number" className="input-field" defaultValue={pricing.transferFeeFlat} onBlur={(e) => save({ pricing: { ...pricing, transferFeeFlat: Number(e.target.value) } })} />
+                <label className="text-ink/60 font-dm text-xs mb-1.5 block">Transfer Fee (flat ₦)</label>
+                <input type="number" className="input-field-light" defaultValue={pricing.transferFeeFlat} onBlur={(e) => save({ pricing: { ...pricing, transferFeeFlat: Number(e.target.value) } })} />
               </div>
               <div>
-                <label className="text-white/60 font-dm text-xs mb-1.5 block">Transfer Fee (%)</label>
-                <input type="number" step="0.1" className="input-field" defaultValue={pricing.transferFeePercent} onBlur={(e) => save({ pricing: { ...pricing, transferFeePercent: Number(e.target.value) } })} />
+                <label className="text-ink/60 font-dm text-xs mb-1.5 block">Transfer Fee (%)</label>
+                <input type="number" step="0.1" className="input-field-light" defaultValue={pricing.transferFeePercent} onBlur={(e) => save({ pricing: { ...pricing, transferFeePercent: Number(e.target.value) } })} />
               </div>
               <div>
-                <label className="text-white/60 font-dm text-xs mb-1.5 block">Bill Payment Fee (flat ₦)</label>
-                <input type="number" className="input-field" defaultValue={pricing.billFeeFlat} onBlur={(e) => save({ pricing: { ...pricing, billFeeFlat: Number(e.target.value) } })} />
+                <label className="text-ink/60 font-dm text-xs mb-1.5 block">Bill Payment Fee (flat ₦)</label>
+                <input type="number" className="input-field-light" defaultValue={pricing.billFeeFlat} onBlur={(e) => save({ pricing: { ...pricing, billFeeFlat: Number(e.target.value) } })} />
+              </div>
+              <div>
+                <label className="text-ink/60 font-dm text-xs mb-1.5 block">Paystack Deposit Fee (%)</label>
+                <input type="number" step="0.1" className="input-field-light" defaultValue={pricing.paystackDepositFeePercent} onBlur={(e) => save({ pricing: { ...pricing, paystackDepositFeePercent: Number(e.target.value) } })} />
+              </div>
+              <div>
+                <label className="text-ink/60 font-dm text-xs mb-1.5 block">Aspfiy Deposit Fee (%)</label>
+                <input type="number" step="0.1" className="input-field-light" defaultValue={pricing.aspfiyDepositFeePercent} onBlur={(e) => save({ pricing: { ...pricing, aspfiyDepositFeePercent: Number(e.target.value) } })} />
               </div>
             </div>
-            <p className="text-white/30 font-dm text-xs">
+            <p className="text-ink/30 font-dm text-xs">
               Transfer Fee and Bill Payment Fee are charged ON TOP of the amount (customer pays more) —
-              coupon codes can discount these, capped so they never cost more than Abopay's own margin.
+              coupon codes can discount these, capped so they never cost more than FanPay's own margin.
             </p>
-            <p className="text-white/30 font-dm text-xs">
-              Airtime, data, and cable pricing moved to <strong className="text-white/50">Admin → Pricing
-              Catalog</strong> — buying price vs. selling price per network/plan, since VTpass sells those
+            <p className="text-ink/30 font-dm text-xs">
+              Paystack Deposit Fee is also charged ON TOP (customer pays amount + fee, wallet gets exactly
+              the amount they asked for). Aspfiy Deposit Fee works the other way — Aspfiy settles a transfer
+              minus their own cut with no way to see the exact figure via their API, so this is deducted
+              from what actually arrives before crediting the wallet.
+            </p>
+            <p className="text-ink/30 font-dm text-xs">
+              Airtime, data, and cable pricing moved to <strong className="text-ink/50">Admin → Pricing
+              Catalog</strong> — buying price vs. selling price per network/plan, since Maskawasub sells those
               below face value rather than charging a flat percentage.
             </p>
           </div>

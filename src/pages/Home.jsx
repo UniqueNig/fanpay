@@ -8,10 +8,10 @@ import { FiArrowRight } from "react-icons/fi";
 
 const HowItWorks = () => (
   <section id="how" className="py-24 relative">
-    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-secondary/3 to-transparent pointer-events-none" />
+    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-iris/3 to-transparent pointer-events-none" />
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="text-center mb-16">
-        <span className="text-secondary font-dm text-sm font-medium tracking-widest uppercase">
+        <span className="text-iris font-dm text-sm font-medium tracking-widest uppercase">
           Simple Process
         </span>
         <h2 className="section-title mt-3 mb-4">
@@ -24,13 +24,13 @@ const HowItWorks = () => (
           { step: "02", title: "Fund Your Wallet", desc: "Add money via bank transfer or card payment. Paystack ensures every kobo is safe.", icon: "💳" },
           { step: "03", title: "Start Banking", desc: "Pay bills, send money, buy airtime, and grow your savings — all from your dashboard.", icon: "🚀" },
         ].map((s, i) => (
-          <div key={i} className="relative flex flex-col items-center text-center card-glass p-8">
-            <div className="absolute -top-4 left-6 font-syne font-extrabold text-6xl text-white/5 select-none">
+          <div key={i} className="relative flex flex-col items-center text-center card-flat p-8">
+            <div className="absolute -top-4 left-6 font-syne font-extrabold text-6xl text-ink/5 select-none">
               {s.step}
             </div>
             <div className="text-4xl mb-4">{s.icon}</div>
-            <h3 className="font-syne font-bold text-white text-lg mb-2">{s.title}</h3>
-            <p className="text-white/50 font-dm text-sm leading-relaxed">{s.desc}</p>
+            <h3 className="font-syne font-bold text-ink text-lg mb-2">{s.title}</h3>
+            <p className="text-ink/50 font-dm text-sm leading-relaxed">{s.desc}</p>
           </div>
         ))}
       </div>
@@ -41,9 +41,9 @@ const HowItWorks = () => (
 const Security = () => (
   <section id="security" className="py-24">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="card-glass p-10 md:p-16 flex flex-col md:flex-row items-center justify-between gap-10 glow-green">
+      <div className="card-flat p-10 md:p-16 flex flex-col md:flex-row items-center justify-between gap-10 glow-accent">
         <div className="max-w-lg">
-          <span className="text-secondary font-dm text-sm font-medium tracking-widest uppercase">Bank-Grade Security</span>
+          <span className="text-iris font-dm text-sm font-medium tracking-widest uppercase">Bank-Grade Security</span>
           <h2 className="section-title mt-3 mb-4">
             Your Money is <span className="text-gradient">Safe With Us</span>
           </h2>
@@ -53,17 +53,17 @@ const Security = () => (
           </p>
           <div className="grid grid-cols-2 gap-4">
             {["256-bit Encryption", "2FA Enabled", "NDIC Insured", "CBN Licensed", "24/7 Monitoring", "Zero Data Breach"].map((b, i) => (
-              <div key={i} className="flex items-center gap-2 text-white/60 font-dm text-sm">
-                <span className="text-secondary">✓</span> {b}
+              <div key={i} className="flex items-center gap-2 text-ink/60 font-dm text-sm">
+                <span className="text-iris">✓</span> {b}
               </div>
             ))}
           </div>
         </div>
         <div className="flex-shrink-0 text-center">
-          <div className="w-36 h-36 rounded-3xl bg-secondary/10 border border-secondary/20 flex items-center justify-center mx-auto mb-4">
+          <div className="w-36 h-36 rounded-3xl bg-iris/10 border border-iris/20 flex items-center justify-center mx-auto mb-4">
             <span className="text-6xl">🔐</span>
           </div>
-          <Link to="/signup" className="btn-primary flex items-center gap-2 w-fit mx-auto">
+          <Link to="/signup" className="btn-iris flex items-center gap-2 w-fit mx-auto">
             Open Account <FiArrowRight size={14} />
           </Link>
         </div>
@@ -73,7 +73,7 @@ const Security = () => (
 );
 
 const Home = () => (
-  <div className="bg-primary min-h-screen">
+  <div className="bg-surface min-h-screen">
     <Navbar />
     <Hero />
     <Features />

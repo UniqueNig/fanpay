@@ -1,8 +1,7 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import { getSettings } from "../services/settings.js";
-import { getAirtimeRate } from "../services/productPricing.js";
-import { VTPASS_SERVICE } from "../services/vtpass.js";
+import { getAirtimeRate, MASKAWASUB_NETWORK } from "../services/maskawasubPricing.js";
 
 // Lets the frontend preview the real fee/markup-inclusive total before a
 // user confirms a transfer/purchase — the backend routes are what actually
@@ -14,14 +13,20 @@ router.get("/", requireAuth, async (req, res, next) => {
     const settings = await getSettings();
 
     // Airtime prices per-network via the product-pricing catalog now, not a
-    // blanket percentage — see services/productPricing.js.
+    // blanket percentage — see services/maskawasubPricing.js.
     const airtimeRates = {};
-    for (const [network, serviceID] of Object.entries(VTPASS_SERVICE.airtime)) {
-      const rate = await getAirtimeRate(serviceID);
+    for (const network of Object.keys(MASKAWASUB_NETWORK)) {
+      const rate = await getAirtimeRate(network);
       airtimeRates[network] = rate.sellingPrice;
     }
 
-    res.json({ pricing: settings.pricing, airtimeRates });
+    // Nested under `pricing`, not a sibling key — both Recharge.jsx and
+    // Pricing.jsx read it as `pricing.airtimeRates`. It used to be a sibling
+    // here, which meant that path was always undefined and every airtime
+    // rate silently fell back to the "unconfigured network" 100% default —
+    // real purchases were still charged correctly (vtu.js calls
+    // getAirtimeRate directly, server-side), this only broke the preview.
+    res.json({ pricing: { ...settings.pricing, airtimeRates } });
   } catch (err) {
     next(err);
   }

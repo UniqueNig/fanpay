@@ -2,21 +2,20 @@ import { Router } from "express";
 import { body, validationResult } from "express-validator";
 import { requireAdmin } from "../middleware/requireAdmin.js";
 import { ApiError } from "../middleware/errorHandler.js";
-import { VTPASS_SERVICE } from "../services/vtpass.js";
 import { ProductPrice } from "../models/ProductPrice.js";
-import { ExtraVtuService } from "../models/ExtraVtuService.js";
-import {
-  listCatalog, getAirtimeRate, getServiceIDs, listAvailableToAdd,
-} from "../services/productPricing.js";
+import { resolveProviderId, listExtraProviders, MASKAWASUB_NETWORK, MASKAWASUB_CABLE } from "../services/maskawasub.js";
+import { listDataCatalog, listCableCatalog, getAirtimeRate } from "../services/maskawasubPricing.js";
 
 const router = Router();
 
 router.get("/airtime", requireAdmin, async (req, res, next) => {
   try {
+    const extras = await listExtraProviders("network");
+    const networks = [...Object.keys(MASKAWASUB_NETWORK), ...extras.map((e) => e.id)];
     const rows = await Promise.all(
-      Object.entries(VTPASS_SERVICE.airtime).map(async ([network, serviceID]) => {
-        const rate = await getAirtimeRate(serviceID);
-        return { network, serviceID, buyingPrice: rate.buyingPrice, sellingPrice: rate.sellingPrice };
+      networks.map(async (network) => {
+        const rate = await getAirtimeRate(network);
+        return { network, serviceID: network, buyingPrice: rate.buyingPrice, sellingPrice: rate.sellingPrice };
       })
     );
     res.json({ rows });
@@ -27,10 +26,10 @@ router.get("/airtime", requireAdmin, async (req, res, next) => {
 
 router.get("/data/:network", requireAdmin, async (req, res, next) => {
   try {
-    const serviceIDs = await getServiceIDs("data", req.params.network.toLowerCase());
-    if (serviceIDs.length === 0) throw new ApiError(400, `Unknown network: ${req.params.network}`);
-    const rows = (await Promise.all(serviceIDs.map((id) => listCatalog("data", id)))).flat();
-    res.json({ serviceIDs, rows });
+    const networkKey = req.params.network.toLowerCase();
+    if (!(await resolveProviderId("network", networkKey))) throw new ApiError(400, `Unknown network: ${req.params.network}`);
+    const rows = await listDataCatalog(networkKey);
+    res.json({ rows });
   } catch (err) {
     next(err);
   }
@@ -38,10 +37,9 @@ router.get("/data/:network", requireAdmin, async (req, res, next) => {
 
 router.get("/cable/:provider", requireAdmin, async (req, res, next) => {
   try {
-    const serviceIDs = await getServiceIDs("cable", req.params.provider);
-    if (serviceIDs.length === 0) throw new ApiError(400, `Unknown cable provider: ${req.params.provider}`);
-    const rows = (await Promise.all(serviceIDs.map((id) => listCatalog("cable", id)))).flat();
-    res.json({ serviceIDs, rows });
+    if (!(await resolveProviderId("cable", req.params.provider))) throw new ApiError(400, `Unknown cable provider: ${req.params.provider}`);
+    const rows = await listCableCatalog(req.params.provider);
+    res.json({ rows });
   } catch (err) {
     next(err);
   }
@@ -87,5 +85,32 @@ router.post("/:id/toggle", requireAdmin, async (req, res, next) => {
     next(err);
   }
 });
+
+// Hide/show every plan in a whole type group at once (e.g. all of a
+// network's "SME" plans) — one bulk update rather than N individual toggle
+// calls. Operates on the same `active` field the per-plan toggle above
+// does, so an admin can still flip any single plan back afterward; there's
+// no separate "category active" concept to keep in sync.
+router.post(
+  "/bulk-toggle",
+  requireAdmin,
+  [
+    body("ids").isArray({ min: 1 }),
+    body("ids.*").isMongoId(),
+    body("active").isBoolean(),
+  ],
+  async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
+
+    try {
+      const { ids, active } = req.body;
+      await ProductPrice.updateMany({ _id: { $in: ids } }, { active });
+      res.json({ success: true, active, count: ids.length });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 export default router;

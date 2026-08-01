@@ -45,13 +45,13 @@ const AdminPinRequests = () => {
     <AdminLayout>
       <div className="p-5 lg:p-8 max-w-3xl">
         <div className="mb-6">
-          <h1 className="font-syne font-bold text-white text-2xl">PIN Management</h1>
-          <p className="text-white/40 font-dm text-sm mt-1">Transaction PIN reset requests</p>
+          <h1 className="font-syne font-bold text-ink text-2xl">PIN Management</h1>
+          <p className="text-ink/40 font-dm text-sm mt-1">Transaction PIN reset requests</p>
         </div>
 
         <div className="flex gap-2 mb-6 overflow-x-auto">
           {TABS.map((t) => (
-            <button key={t.value} onClick={() => setTab(t.value)} className={`px-4 py-2 rounded-xl font-dm text-sm whitespace-nowrap border transition-colors ${tab === t.value ? "bg-secondary/15 text-secondary border-secondary/25" : "text-white/50 border-white/10 hover:text-white"}`}>
+            <button key={t.value} onClick={() => setTab(t.value)} className={`px-4 py-2 rounded-xl font-dm text-sm whitespace-nowrap border transition-colors ${tab === t.value ? "bg-iris/15 text-iris border-iris/25" : "text-ink/50 border-line hover:text-ink"}`}>
               {t.label}
             </button>
           ))}
@@ -65,24 +65,24 @@ const AdminPinRequests = () => {
         )}
 
         {loading ? (
-          <div className="card-glass p-8 text-center text-white/35 font-dm text-sm">Loading...</div>
+          <div className="card-flat p-8 text-center text-ink/35 font-dm text-sm">Loading...</div>
         ) : requests.length === 0 ? (
-          <div className="card-glass p-10 text-center">
-            <FiKey className="text-white/20 mx-auto mb-3" size={28} />
-            <p className="text-white/40 font-dm text-sm">No {tab !== "all" ? tab : ""} requests.</p>
+          <div className="card-flat p-10 text-center">
+            <FiKey className="text-ink/20 mx-auto mb-3" size={28} />
+            <p className="text-ink/40 font-dm text-sm">No {tab !== "all" ? tab : ""} requests.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
             {requests.map((r) => (
-              <div key={r.id} className="card-glass p-5 flex items-center justify-between gap-4">
+              <div key={r.id} className="card-flat p-5 flex items-center justify-between gap-4">
                 <div className="min-w-0">
-                  <Link to={`/admin/users/${r.uid}`} className="text-white font-dm text-sm font-medium hover:text-secondary truncate block">{r.email || r.uid}</Link>
-                  <p className="text-white/35 font-dm text-xs mt-1">Requested {r.requestedAt ? formatDate(r.requestedAt) : "—"}</p>
+                  <Link to={`/admin/users/${r.uid}`} className="text-ink font-dm text-sm font-medium hover:text-iris truncate block">{r.email || r.uid}</Link>
+                  <p className="text-ink/35 font-dm text-xs mt-1">Requested {r.requestedAt ? formatDate(r.requestedAt) : "—"}</p>
                 </div>
                 {r.status === "pending" && (
                   <div className="flex gap-2 shrink-0">
-                    <button onClick={() => resolve(r.id, "approve")} className="flex items-center gap-1.5 bg-secondary/15 border border-secondary/25 text-secondary hover:bg-secondary/25 font-dm text-xs px-3 py-2 rounded-lg"><FiCheck size={13} /> Approve</button>
-                    <button onClick={() => resolve(r.id, "reject")} className="flex items-center gap-1.5 text-white/50 hover:text-white border border-white/10 font-dm text-xs px-3 py-2 rounded-lg"><FiX size={13} /> Reject</button>
+                    <button onClick={() => resolve(r.id, "approve")} className="flex items-center gap-1.5 bg-iris/15 border border-iris/25 text-iris hover:bg-iris/25 font-dm text-xs px-3 py-2 rounded-lg"><FiCheck size={13} /> Approve</button>
+                    <button onClick={() => resolve(r.id, "reject")} className="flex items-center gap-1.5 text-ink/50 hover:text-ink border border-line font-dm text-xs px-3 py-2 rounded-lg"><FiX size={13} /> Reject</button>
                   </div>
                 )}
               </div>

@@ -4,7 +4,7 @@ import PinConfirmModal from "../components/PinConfirmModal";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../api";
 import { BILL_TYPES, formatNaira } from "../utils/helpers";
-import { FiCheckCircle, FiAlertCircle } from "react-icons/fi";
+import { FiCheckCircle, FiAlertCircle, FiLoader } from "react-icons/fi";
 import { Link, useNavigate } from "react-router-dom";
 
 const Bills = () => {
@@ -30,6 +30,7 @@ const Bills = () => {
   const [pricing, setPricing] = useState(null);
   const [couponCode, setCouponCode] = useState("");
   const [extraCableProviders, setExtraCableProviders] = useState([]);
+  const [extraDiscoProviders, setExtraDiscoProviders] = useState([]);
   const balance = userData?.balance ?? 0;
   const isCable = selectedType?.id === "cable";
   const isElectricity = selectedType?.id === "electricity";
@@ -44,8 +45,16 @@ const Bills = () => {
     api.get("/networks/cable").then((res) => setExtraCableProviders(res.networks || [])).catch(() => setExtraCableProviders([]));
   }, [isCable]);
 
+  // Admin-added electricity discos beyond the hardcoded 8 — same pattern as cable above.
+  useEffect(() => {
+    if (!isElectricity) return;
+    api.get("/networks/electricity").then((res) => setExtraDiscoProviders(res.networks || [])).catch(() => setExtraDiscoProviders([]));
+  }, [isElectricity]);
+
   const providerOptions = isCable
     ? [...selectedType.providers.map((p) => ({ value: p, label: p })), ...extraCableProviders.map((n) => ({ value: n.id, label: n.label }))]
+    : isElectricity
+    ? [...selectedType.providers.map((p) => ({ value: p, label: p })), ...extraDiscoProviders.map((n) => ({ value: n.id, label: n.label }))]
     : (selectedType?.providers || []).map((p) => ({ value: p, label: p }));
 
   const handleChange = (f) => (e) => setForm((p) => ({ ...p, [f]: e.target.value }));
@@ -78,21 +87,34 @@ const Bills = () => {
 
   // Confirms the smartcard is a real active subscription and shows the
   // account holder's name before payment — same trust pattern as resolving
-  // a bank account name before a transfer.
+  // a bank account name before a transfer. Debounced (waits for typing to
+  // pause) and guards against stale responses — without both, rapid typing
+  // fires one request per keystroke and whichever happens to resolve last
+  // (not necessarily the one for the final, complete number) wins, which
+  // could leave the UI stuck on "Verifying..." or showing a mismatched result.
   useEffect(() => {
     if (!isCable || !form.provider || form.meterNumber.length < 10) {
       setCableVerify(null);
       setVerifyError("");
+      setVerifyLoading(false);
       return;
     }
+    let cancelled = false;
     setVerifyLoading(true);
     setVerifyError("");
     setCableVerify(null);
-    api
-      .get(`/vtu/verify-cable/${form.provider}/${form.meterNumber}`)
-      .then((res) => setCableVerify(res))
-      .catch(() => setVerifyError("Could not verify this smartcard number."))
-      .finally(() => setVerifyLoading(false));
+    const t = setTimeout(() => {
+      api
+        .get(`/vtu/verify-cable/${form.provider}/${form.meterNumber}`)
+        .then((res) => {
+          if (cancelled) return;
+          if (res.customerName) setCableVerify(res);
+          else setVerifyError("Smartcard not found. Check the number and try again.");
+        })
+        .catch(() => { if (!cancelled) setVerifyError("Could not verify this smartcard number."); })
+        .finally(() => { if (!cancelled) setVerifyLoading(false); });
+    }, 500);
+    return () => { cancelled = true; clearTimeout(t); };
   }, [isCable, form.provider, form.meterNumber]);
 
   // Same trust pattern as cable — confirm the meter is real and show the
@@ -101,16 +123,25 @@ const Bills = () => {
     if (!isElectricity || !form.provider || form.meterNumber.length < 10) {
       setElecVerify(null);
       setVerifyError("");
+      setVerifyLoading(false);
       return;
     }
+    let cancelled = false;
     setVerifyLoading(true);
     setVerifyError("");
     setElecVerify(null);
-    api
-      .get(`/vtu/verify-electricity/${form.provider}/${form.meterNumber}?type=${form.meterType || "prepaid"}`)
-      .then((res) => setElecVerify(res))
-      .catch(() => setVerifyError("Could not verify this meter number."))
-      .finally(() => setVerifyLoading(false));
+    const t = setTimeout(() => {
+      api
+        .get(`/vtu/verify-electricity/${form.provider}/${form.meterNumber}?type=${form.meterType || "prepaid"}`)
+        .then((res) => {
+          if (cancelled) return;
+          if (res.customerName) setElecVerify(res);
+          else setVerifyError("Meter not found. Check the number and try again.");
+        })
+        .catch(() => { if (!cancelled) setVerifyError("Could not verify this meter number."); })
+        .finally(() => { if (!cancelled) setVerifyLoading(false); });
+    }, 500);
+    return () => { cancelled = true; clearTimeout(t); };
   }, [isElectricity, form.provider, form.meterNumber, form.meterType]);
 
   const displayAmount = isCable ? parseFloat(selectedPlan?.variation_amount || 0) : parseFloat(form.amount || 0);
@@ -147,7 +178,6 @@ const Bills = () => {
         amount: amt,
         meterType: form.meterType || "prepaid",
         variationCode: isCable ? selectedPlan?.variation_code : "",
-        serviceID: isCable ? selectedPlan?.serviceID : undefined,
         phone: form.phone,
         accountName: verifiedAccountName || undefined,
         couponCode: couponCode.trim() || undefined,
@@ -178,46 +208,46 @@ const Bills = () => {
     <DashboardLayout>
       <div className="p-5 lg:p-8 max-w-2xl">
         <div className="mb-7">
-          <h1 className="font-syne font-bold text-white text-2xl">Pay Bills</h1>
-          <p className="text-white/40 font-dm text-sm mt-1">Electricity, cable TV, and more — paid from your wallet</p>
+          <h1 className="font-syne font-bold text-ink text-2xl">Pay Bills</h1>
+          <p className="text-ink/40 font-dm text-sm mt-1">Electricity, cable TV, and more — paid from your wallet</p>
         </div>
 
         {success ? (
-          <div className="card-glass p-10 flex flex-col items-center text-center gap-5">
+          <div className="card-flat p-10 flex flex-col items-center text-center gap-5">
             <div className="w-20 h-20 rounded-full bg-orange-400/15 border-2 border-orange-400/30 flex items-center justify-center">
               <FiCheckCircle size={36} className="text-orange-400" />
             </div>
             <div>
-              <h2 className="font-syne font-bold text-white text-xl mb-2">Bill Paid!</h2>
-              <p className="text-white/60 font-dm text-sm">
+              <h2 className="font-syne font-bold text-ink text-xl mb-2">Bill Paid!</h2>
+              <p className="text-ink/60 font-dm text-sm">
                 <span className="text-orange-400 font-bold">{formatNaira(paidAmount)}</span> paid to {form.provider}
               </p>
               {successData?.electricityToken && (
-                <div className="mt-3 bg-secondary/10 border border-secondary/20 rounded-xl px-4 py-3">
-                  <p className="text-white/50 font-dm text-xs mb-1">Electricity Token</p>
-                  <p className="text-secondary font-syne font-bold text-lg tracking-widest">{successData.electricityToken}</p>
-                  <p className="text-white/35 font-dm text-xs mt-1">Enter this token on your meter</p>
+                <div className="mt-3 bg-iris/10 border border-iris/20 rounded-xl px-4 py-3">
+                  <p className="text-ink/50 font-dm text-xs mb-1">Electricity Token</p>
+                  <p className="text-iris font-syne font-bold text-lg tracking-widest">{successData.electricityToken}</p>
+                  <p className="text-ink/35 font-dm text-xs mt-1">Enter this token on your meter</p>
                 </div>
               )}
             </div>
-            <div className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 flex justify-between">
-              <span className="text-white/50 font-dm text-sm">Remaining Balance</span>
-              <span className="text-white font-syne font-bold">{formatNaira(userData?.balance ?? 0)}</span>
+            <div className="w-full bg-surface border border-line rounded-2xl px-5 py-4 flex justify-between">
+              <span className="text-ink/50 font-dm text-sm">Remaining Balance</span>
+              <span className="text-ink font-syne font-bold">{formatNaira(userData?.balance ?? 0)}</span>
             </div>
-            <button onClick={reset} className="btn-primary w-full">Pay Another Bill</button>
+            <button onClick={reset} className="btn-iris w-full">Pay Another Bill</button>
           </div>
         ) : (
           <>
             {/* Bill type selector */}
             {!selectedType && (
               <div>
-                <h2 className="font-syne font-semibold text-white text-base mb-4">Select Bill Type</h2>
+                <h2 className="font-syne font-semibold text-ink text-base mb-4">Select Bill Type</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {BILL_TYPES.map((bt) => (
                     <button key={bt.id} onClick={() => setSelectedType(bt)}
-                      className="card-glass p-6 flex flex-col items-center gap-4 hover:border-orange-400/40 hover:bg-orange-400/5 transition-all duration-200 group">
+                      className="card-flat p-6 flex flex-col items-center gap-4 hover:border-orange-400/40 hover:bg-orange-400/5 transition-all duration-200 group">
                       <span className="text-4xl group-hover:scale-110 transition-transform duration-200">{bt.icon}</span>
-                      <span className="text-white font-dm text-sm font-semibold">{bt.label}</span>
+                      <span className="text-ink font-dm text-sm font-semibold">{bt.label}</span>
                     </button>
                   ))}
                 </div>
@@ -225,24 +255,24 @@ const Bills = () => {
             )}
 
             {selectedType && (
-              <div className="card-glass p-6">
-                <div className="flex items-center gap-3 pb-5 mb-5 border-b border-white/8">
+              <div className="card-flat p-6">
+                <div className="flex items-center gap-3 pb-5 mb-5 border-b border-line">
                   <span className="text-3xl">{selectedType.icon}</span>
                   <div>
-                    <h2 className="font-syne font-semibold text-white text-base">{selectedType.label}</h2>
+                    <h2 className="font-syne font-semibold text-ink text-base">{selectedType.label}</h2>
                     <button onClick={() => { setSelectedType(null); setError(""); }}
-                      className="text-secondary font-dm text-xs hover:underline">← Change bill type</button>
+                      className="text-iris font-dm text-xs hover:underline">← Change bill type</button>
                   </div>
                 </div>
 
                 {/* Balance */}
                 <div className={`${balance === 0 ? "bg-red-500/8 border-red-500/20" : "bg-orange-400/8 border-orange-400/20"} border rounded-2xl px-5 py-4 mb-5 flex items-center justify-between`}>
                   <div>
-                    <p className="text-white/50 font-dm text-xs uppercase tracking-wider mb-1">Wallet Balance</p>
+                    <p className="text-ink/50 font-dm text-xs uppercase tracking-wider mb-1">Wallet Balance</p>
                     <p className={`font-syne font-bold text-xl ${balance === 0 ? "text-red-400" : "text-orange-400"}`}>{formatNaira(balance)}</p>
                   </div>
                   {balance === 0 && (
-                    <Link to="/deposit" className="text-secondary font-dm text-xs border border-secondary/30 rounded-xl px-3 py-1.5 hover:bg-secondary/10 transition-colors">Add funds →</Link>
+                    <Link to="/deposit" className="text-iris font-dm text-xs border border-iris/30 rounded-xl px-3 py-1.5 hover:bg-iris/10 transition-colors">Add funds →</Link>
                   )}
                 </div>
 
@@ -256,14 +286,14 @@ const Bills = () => {
                 <form onSubmit={handlePayClick} className="flex flex-col gap-4">
                   {/* Provider buttons */}
                   <div>
-                    <label className="text-white/80 font-dm text-sm font-medium mb-2 block">Provider</label>
+                    <label className="text-ink/80 font-dm text-sm font-medium mb-2 block">Provider</label>
                     <div className="flex flex-col gap-2">
                       {providerOptions.map((p) => (
                         <button key={p.value} type="button" onClick={() => setForm(prev => ({ ...prev, provider: p.value }))}
                           className={`flex items-center justify-between px-4 py-3.5 rounded-xl border font-dm text-sm transition-all duration-200 ${
                             form.provider === p.value
                               ? "bg-orange-400/15 border-orange-400/40 text-orange-400 font-semibold"
-                              : "bg-white/5 border-white/15 text-white hover:bg-white/10 hover:border-white/25"
+                              : "bg-surface border-line text-ink hover:bg-line hover:border-iris/30"
                           }`}>
                           {p.label} {form.provider === p.value && <span>✓</span>}
                         </button>
@@ -274,12 +304,12 @@ const Bills = () => {
                   {/* Meter type (electricity only) */}
                   {selectedType.id === "electricity" && (
                     <div>
-                      <label className="text-white/80 font-dm text-sm font-medium mb-2 block">Meter Type</label>
+                      <label className="text-ink/80 font-dm text-sm font-medium mb-2 block">Meter Type</label>
                       <div className="flex gap-2">
                         {["prepaid", "postpaid"].map((mt) => (
                           <button key={mt} type="button" onClick={() => setForm(p => ({ ...p, meterType: mt }))}
                             className={`flex-1 py-3 rounded-xl font-dm text-sm font-semibold capitalize border transition-all duration-200 ${
-                              form.meterType === mt ? "bg-orange-400/15 border-orange-400/40 text-orange-400" : "bg-white/5 border-white/15 text-white/60 hover:text-white"
+                              form.meterType === mt ? "bg-orange-400/15 border-orange-400/40 text-orange-400" : "bg-surface border-line text-ink/60 hover:text-ink"
                             }`}>
                             {mt}
                           </button>
@@ -289,55 +319,57 @@ const Bills = () => {
                   )}
 
                   <div>
-                    <label className="text-white/80 font-dm text-sm font-medium mb-2 block">
+                    <label className="text-ink/80 font-dm text-sm font-medium mb-2 block">
                       {selectedType.id === "electricity" ? "Meter Number" : selectedType.id === "cable" ? "Smart Card / IUC Number" : "Account / Customer ID"}
                     </label>
                     <input type="text" value={form.meterNumber} onChange={handleChange("meterNumber")}
-                      className="input-field text-base" placeholder="Enter your number" required />
+                      className="input-field-light text-base" placeholder="Enter your number" required />
                     {isCable && form.meterNumber.length >= 10 && (
                       verifyLoading ? (
-                        <p className="text-white/40 font-dm text-xs mt-2">Verifying smartcard...</p>
+                        <p className="text-ink/40 font-dm text-xs mt-2">Verifying smartcard...</p>
                       ) : verifyError ? (
                         <p className="text-red-400 font-dm text-xs mt-2">{verifyError}</p>
                       ) : cableVerify?.customerName ? (
-                        <div className="bg-secondary/10 border border-secondary/20 rounded-xl px-4 py-2.5 mt-2">
-                          <p className="text-white/50 font-dm text-[11px] mb-0.5">Verified Account</p>
-                          <p className="text-secondary font-syne font-semibold text-sm">{cableVerify.customerName}</p>
+                        <div className="bg-iris/10 border border-iris/20 rounded-xl px-4 py-2.5 mt-2">
+                          <p className="text-ink/50 font-dm text-[11px] mb-0.5">Verified Account</p>
+                          <p className="text-iris font-syne font-semibold text-sm">{cableVerify.customerName}</p>
                         </div>
                       ) : null
                     )}
                     {isElectricity && form.meterNumber.length >= 10 && (
                       verifyLoading ? (
-                        <p className="text-white/40 font-dm text-xs mt-2">Verifying meter...</p>
+                        <p className="text-ink/40 font-dm text-xs mt-2">Verifying meter...</p>
                       ) : verifyError ? (
                         <p className="text-red-400 font-dm text-xs mt-2">{verifyError}</p>
                       ) : elecVerify?.customerName ? (
-                        <div className="bg-secondary/10 border border-secondary/20 rounded-xl px-4 py-2.5 mt-2">
-                          <p className="text-white/50 font-dm text-[11px] mb-0.5">Verified Meter Owner</p>
-                          <p className="text-secondary font-syne font-semibold text-sm">{elecVerify.customerName}</p>
-                          {elecVerify.address && <p className="text-white/40 font-dm text-xs mt-0.5">{elecVerify.address}</p>}
+                        <div className="bg-iris/10 border border-iris/20 rounded-xl px-4 py-2.5 mt-2">
+                          <p className="text-ink/50 font-dm text-[11px] mb-0.5">Verified Meter Owner</p>
+                          <p className="text-iris font-syne font-semibold text-sm">{elecVerify.customerName}</p>
+                          {elecVerify.address && <p className="text-ink/40 font-dm text-xs mt-0.5">{elecVerify.address}</p>}
                         </div>
                       ) : null
                     )}
                   </div>
 
                   <div>
-                    <label className="text-white/80 font-dm text-sm font-medium mb-2 block">Phone Number</label>
+                    <label className="text-ink/80 font-dm text-sm font-medium mb-2 block">Phone Number</label>
                     <input type="tel" value={form.phone} onChange={handleChange("phone")}
-                      className="input-field text-base" placeholder="08012345678" maxLength={11} required />
+                      className="input-field-light text-base" placeholder="08012345678" maxLength={11} required />
                   </div>
 
                   {isCable ? (
                     <div>
-                      <label className="text-white/80 font-dm text-sm font-medium mb-2 block">Select Bouquet</label>
+                      <label className="text-ink/80 font-dm text-sm font-medium mb-2 block">Select Bouquet</label>
                       {!form.provider ? (
-                        <p className="text-white/40 font-dm text-sm">Select a provider first</p>
+                        <p className="text-ink/40 font-dm text-sm">Select a provider first</p>
                       ) : plansLoading ? (
-                        <p className="text-white/40 font-dm text-sm">Loading bouquets...</p>
+                        <div className="flex items-center gap-2 text-ink/40 font-dm text-sm py-4">
+                          <FiLoader size={15} className="animate-spin" /> Loading bouquets...
+                        </div>
                       ) : plansError ? (
                         <p className="text-red-400 font-dm text-sm">{plansError}</p>
                       ) : cablePlans.length === 0 ? (
-                        <p className="text-white/40 font-dm text-sm">No bouquets available for this provider right now.</p>
+                        <p className="text-ink/40 font-dm text-sm">No bouquets available for this provider right now.</p>
                       ) : (
                         <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-1">
                           {cablePlans.map((plan) => (
@@ -346,7 +378,7 @@ const Bills = () => {
                               className={`flex items-center justify-between px-4 py-3 rounded-xl border font-dm text-sm transition-all duration-200 ${
                                 selectedPlan?.variation_code === plan.variation_code
                                   ? "bg-orange-400/15 border-orange-400/40 text-orange-400"
-                                  : "bg-white/5 border-white/15 text-white hover:bg-white/10 hover:border-white/25"
+                                  : "bg-surface border-line text-ink hover:bg-line hover:border-iris/30"
                               }`}>
                               <span>{plan.name}</span>
                               <span className="font-syne font-bold">{formatNaira(parseFloat(plan.variation_amount))}</span>
@@ -357,34 +389,34 @@ const Bills = () => {
                     </div>
                   ) : (
                     <div>
-                      <label className="text-white/80 font-dm text-sm font-medium mb-2 block">Amount (₦)</label>
+                      <label className="text-ink/80 font-dm text-sm font-medium mb-2 block">Amount (₦)</label>
                       <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/60 font-syne font-bold text-base">₦</span>
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-ink/60 font-syne font-bold text-base">₦</span>
                         <input type="number" value={form.amount} onChange={handleChange("amount")}
-                          className="input-field pl-9 text-base" placeholder="1000" min="500" required />
+                          className="input-field-light pl-9 text-base" placeholder="1000" min="500" required />
                       </div>
                     </div>
                   )}
 
                   <div>
-                    <label className="text-white/80 font-dm text-sm font-medium mb-2 block">
-                      Coupon Code <span className="text-white/35 font-normal">(optional)</span>
+                    <label className="text-ink/80 font-dm text-sm font-medium mb-2 block">
+                      Coupon Code <span className="text-ink/35 font-normal">(optional)</span>
                     </label>
                     <input type="text" value={couponCode} onChange={(e) => setCouponCode(e.target.value)}
-                      className="input-field text-base uppercase" placeholder="Have a code?" maxLength={20} />
+                      className="input-field-light text-base uppercase" placeholder="Have a code?" maxLength={20} />
                   </div>
 
                   {fee > 0 && (
-                    <p className="text-white/40 font-dm text-xs -mt-1">Fee: {formatNaira(fee)} · Total: {formatNaira(totalAmount)}</p>
+                    <p className="text-ink/40 font-dm text-xs -mt-1">Fee: {formatNaira(fee)} · Total: {formatNaira(totalAmount)}</p>
                   )}
 
                   <button type="submit" disabled={loading || !form.provider || !form.phone || (isCable && (!selectedPlan || !cableVerify?.customerName)) || (isElectricity && !elecVerify?.customerName)}
-                    className="btn-primary mt-2 flex items-center justify-center gap-2 py-4 text-base disabled:opacity-60">
+                    className="btn-iris mt-2 flex items-center justify-center gap-2 py-4 text-base disabled:opacity-60">
                     {loading ? "Processing..." : `Pay ${displayAmount ? formatNaira(totalAmount) : "Bill"} from Wallet`}
                   </button>
 
-                  <p className="text-white/30 font-dm text-xs text-center">
-                    Powered by VTpass · Charged from your wallet balance
+                  <p className="text-ink/30 font-dm text-xs text-center">
+                    Delivered instantly · Charged from your wallet balance
                   </p>
                 </form>
               </div>
@@ -395,7 +427,14 @@ const Bills = () => {
         {showPinModal && (
           <PinConfirmModal
             title="Confirm Payment"
-            subtitle={`Enter your PIN to pay ${formatNaira(totalAmount || 0)}`}
+            amount={totalAmount}
+            balance={balance}
+            summary={[
+              { label: "Provider", value: form.provider },
+              { label: isCable ? "Smart Card Number" : "Meter Number", value: form.meterNumber },
+              isCable ? { label: "Bouquet", value: selectedPlan?.name } : { label: "Meter Type", value: form.meterType },
+              { label: "Account Name", value: verifiedAccountName },
+            ].filter((row) => row.value)}
             onConfirm={handlePinConfirm}
             onClose={() => { setShowPinModal(false); setPinError(""); }}
             submitting={loading}

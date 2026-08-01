@@ -3,9 +3,7 @@ import "dotenv/config";
 const required = [
   "MONGODB_URI",
   "PAYSTACK_SECRET_KEY",
-  "VTPASS_API_KEY",
-  "VTPASS_PUBLIC_KEY",
-  "VTPASS_SECRET_KEY",
+  "MASKAWASUB_API_KEY",
 ];
 
 const missing = required.filter((key) => !process.env[key]);
@@ -31,6 +29,30 @@ export const env = {
   firebaseServiceAccountJson: process.env.FIREBASE_SERVICE_ACCOUNT_JSON,
   firebaseServiceAccountPath: process.env.FIREBASE_SERVICE_ACCOUNT_PATH,
   paystackSecretKey: process.env.PAYSTACK_SECRET_KEY,
+  maskawasubApiKey: process.env.MASKAWASUB_API_KEY,
+  maskawasubBaseUrl: process.env.MASKAWASUB_BASE_URL || "https://www.maskawasub.com/api",
+  // Not in `required` above yet — the virtual-account funding feature isn't
+  // built out on the frontend yet, so the server should still boot without
+  // it while that's in progress.
+  aspfiySecretKey: process.env.ASPFIY_SECRET_KEY,
+  aspfiyBaseUrl: process.env.ASPFIY_BASE_URL || "https://api-v1.aspfiy.com",
+  // Aspfiy needs a real, internet-reachable URL to send funding webhooks to
+  // — passed at reservation time (services/aspfiy.js). localhost only works
+  // once this is actually deployed, or tunneled (ngrok etc.) for local testing.
+  publicApiUrl: process.env.PUBLIC_API_URL || `http://localhost:${process.env.PORT || 4000}`,
+  // Not required — the AI support chat can't work without it, but nothing
+  // else in the app depends on it, so the server shouldn't refuse to boot
+  // for accounts that haven't set this up yet.
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+  anthropicModel: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
+  // VTpass is decommissioned — vtu.js no longer calls it. Left optional
+  // (not in `required` above) purely so reconcileVtu.js's cron job can
+  // still settle any VTpass-era transactions still marked pending in the
+  // DB from before the cutover, without the server refusing to boot for
+  // accounts that have since removed these credentials. Safe to delete
+  // entirely, along with services/vtpass.js, services/productPricing.js,
+  // and reconcileVtu.js's VTpass branch, once the DB has no pending
+  // AIR-/DATA-/BILL- transactions older than the cutover date.
   vtpassApiKey: process.env.VTPASS_API_KEY,
   vtpassPublicKey: process.env.VTPASS_PUBLIC_KEY,
   vtpassSecretKey: process.env.VTPASS_SECRET_KEY,

@@ -3,7 +3,7 @@ import { body, validationResult } from "express-validator";
 import { requireAdmin } from "../middleware/requireAdmin.js";
 import { Transaction } from "../models/Transaction.js";
 import { Expense } from "../models/Expense.js";
-import { vtpassBalance } from "../services/vtpass.js";
+import { maskawasubBalance } from "../services/maskawasub.js";
 import { getPaystackBalance } from "../services/paystack.js";
 
 // Mounted at the same /api/admin base as routes/admin.js — three separate
@@ -126,13 +126,13 @@ router.post(
 
 router.get("/api-wallet", requireAdmin, async (req, res, next) => {
   const errors = [];
-  let vtpass = null;
+  let maskawasub = null;
   let paystack = null;
 
   try {
-    vtpass = await vtpassBalance();
+    maskawasub = await maskawasubBalance();
   } catch (err) {
-    errors.push(`VTpass: ${err.publicMessage || err.message}`);
+    errors.push(`Maskawasub: ${err.publicMessage || err.message}`);
   }
 
   try {
@@ -141,7 +141,7 @@ router.get("/api-wallet", requireAdmin, async (req, res, next) => {
     errors.push(`Paystack: ${err.publicMessage || err.message}`);
   }
 
-  res.json({ vtpass, paystack, errors });
+  res.json({ maskawasub, paystack, errors });
 });
 
 export default router;
