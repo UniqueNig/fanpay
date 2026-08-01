@@ -24,7 +24,6 @@ const Bills = () => {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [cableVerify, setCableVerify] = useState(null);
   const [verifyLoading, setVerifyLoading] = useState(false);
-  const [verifyError, setVerifyError] = useState("");
   const [elecVerify, setElecVerify] = useState(null);
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinError, setPinError] = useState("");
@@ -93,26 +92,25 @@ const Bills = () => {
   // fires one request per keystroke and whichever happens to resolve last
   // (not necessarily the one for the final, complete number) wins, which
   // could leave the UI stuck on "Verifying..." or showing a mismatched result.
+  // A meter/smartcard that fails to verify (invalid, or Maskawasub's
+  // validate endpoint erroring — the latter has proven unreliable in
+  // practice) no longer blocks payment; cableVerify/elecVerify just stay
+  // null and the form shows a caution notice instead of the confirmed
+  // name, same purchase button either way.
   useEffect(() => {
     if (!isCable || !form.provider || form.meterNumber.length < 10) {
       setCableVerify(null);
-      setVerifyError("");
       setVerifyLoading(false);
       return;
     }
     let cancelled = false;
     setVerifyLoading(true);
-    setVerifyError("");
     setCableVerify(null);
     const t = setTimeout(() => {
       api
         .get(`/vtu/verify-cable/${form.provider}/${form.meterNumber}`)
-        .then((res) => {
-          if (cancelled) return;
-          if (res.customerName) setCableVerify(res);
-          else setVerifyError("Smartcard not found. Check the number and try again.");
-        })
-        .catch(() => { if (!cancelled) setVerifyError("Could not verify this smartcard number."); })
+        .then((res) => { if (!cancelled && res.customerName) setCableVerify(res); })
+        .catch(() => {})
         .finally(() => { if (!cancelled) setVerifyLoading(false); });
     }, 500);
     return () => { cancelled = true; clearTimeout(t); };
@@ -123,23 +121,17 @@ const Bills = () => {
   useEffect(() => {
     if (!isElectricity || !form.provider || form.meterNumber.length < 10) {
       setElecVerify(null);
-      setVerifyError("");
       setVerifyLoading(false);
       return;
     }
     let cancelled = false;
     setVerifyLoading(true);
-    setVerifyError("");
     setElecVerify(null);
     const t = setTimeout(() => {
       api
         .get(`/vtu/verify-electricity/${form.provider}/${form.meterNumber}?type=${form.meterType || "prepaid"}`)
-        .then((res) => {
-          if (cancelled) return;
-          if (res.customerName) setElecVerify(res);
-          else setVerifyError("Meter not found. Check the number and try again.");
-        })
-        .catch(() => { if (!cancelled) setVerifyError("Could not verify this meter number."); })
+        .then((res) => { if (!cancelled && res.customerName) setElecVerify(res); })
+        .catch(() => {})
         .finally(() => { if (!cancelled) setVerifyLoading(false); });
     }, 500);
     return () => { cancelled = true; clearTimeout(t); };
@@ -202,7 +194,7 @@ const Bills = () => {
     setSuccess(false); setSuccessData(null); setPaidAmount(0);
     setSelectedType(null); setForm({ provider: "", meterNumber: "", amount: "", meterType: "prepaid", phone: userData?.phone || "" }); setError("");
     setSelectedPlan(null); setCablePlans([]);
-    setCableVerify(null); setElecVerify(null); setVerifyError(""); setCouponCode("");
+    setCableVerify(null); setElecVerify(null); setCouponCode("");
   };
 
   return (
@@ -342,27 +334,37 @@ const Bills = () => {
                     {isCable && form.meterNumber.length >= 10 && (
                       verifyLoading ? (
                         <p className="text-ink/40 font-dm text-xs mt-2">Verifying smartcard...</p>
-                      ) : verifyError ? (
-                        <p className="text-red-400 font-dm text-xs mt-2">{verifyError}</p>
                       ) : cableVerify?.customerName ? (
                         <div className="bg-iris/10 border border-iris/20 rounded-xl px-4 py-2.5 mt-2">
                           <p className="text-ink/50 font-dm text-[11px] mb-0.5">Verified Account</p>
                           <p className="text-iris font-syne font-semibold text-sm">{cableVerify.customerName}</p>
                         </div>
-                      ) : null
+                      ) : (
+                        <div className="bg-yellow-500/10 border border-yellow-500/25 rounded-xl px-4 py-2.5 mt-2">
+                          <p className="text-yellow-500 font-dm text-xs">
+                            Couldn't confirm the name on this smartcard — you can still pay, but double-check the
+                            number is correct first. A payment to the wrong number can't be automatically refunded.
+                          </p>
+                        </div>
+                      )
                     )}
                     {isElectricity && form.meterNumber.length >= 10 && (
                       verifyLoading ? (
                         <p className="text-ink/40 font-dm text-xs mt-2">Verifying meter...</p>
-                      ) : verifyError ? (
-                        <p className="text-red-400 font-dm text-xs mt-2">{verifyError}</p>
                       ) : elecVerify?.customerName ? (
                         <div className="bg-iris/10 border border-iris/20 rounded-xl px-4 py-2.5 mt-2">
                           <p className="text-ink/50 font-dm text-[11px] mb-0.5">Verified Meter Owner</p>
                           <p className="text-iris font-syne font-semibold text-sm">{elecVerify.customerName}</p>
                           {elecVerify.address && <p className="text-ink/40 font-dm text-xs mt-0.5">{elecVerify.address}</p>}
                         </div>
-                      ) : null
+                      ) : (
+                        <div className="bg-yellow-500/10 border border-yellow-500/25 rounded-xl px-4 py-2.5 mt-2">
+                          <p className="text-yellow-500 font-dm text-xs">
+                            Couldn't confirm the name on this meter — you can still pay, but double-check the
+                            number is correct first. A payment to the wrong number can't be automatically refunded.
+                          </p>
+                        </div>
+                      )
                     )}
                   </div>
 
@@ -426,7 +428,7 @@ const Bills = () => {
                     <p className="text-ink/40 font-dm text-xs -mt-1">Fee: {formatNaira(fee)} · Total: {formatNaira(totalAmount)}</p>
                   )}
 
-                  <button type="submit" disabled={loading || !form.provider || !form.phone || (isCable && (!selectedPlan || !cableVerify?.customerName)) || (isElectricity && !elecVerify?.customerName)}
+                  <button type="submit" disabled={loading || !form.provider || !form.phone || (isCable && !selectedPlan)}
                     className="btn-iris mt-2 flex items-center justify-center gap-2 py-4 text-base disabled:opacity-60">
                     {loading ? "Processing..." : `Pay ${displayAmount ? formatNaira(totalAmount) : "Bill"} from Wallet`}
                   </button>
@@ -451,6 +453,7 @@ const Bills = () => {
               isCable ? { label: "Bouquet", value: selectedPlan?.name } : { label: "Meter Type", value: form.meterType },
               { label: "Account Name", value: verifiedAccountName },
             ].filter((row) => row.value)}
+            warning={!verifiedAccountName ? "We couldn't confirm the name on this number. Double-check it's correct — a payment to the wrong meter or smartcard can't be automatically refunded." : undefined}
             onConfirm={handlePinConfirm}
             onClose={() => { setShowPinModal(false); setPinError(""); }}
             submitting={loading}

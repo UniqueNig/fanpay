@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { FiX, FiLock } from "react-icons/fi";
+import { FiX, FiLock, FiAlertTriangle } from "react-icons/fi";
 import { formatNaira } from "../utils/helpers";
 
 // 4-digit PIN entry, one box per digit with auto-advance/auto-submit — same
@@ -10,10 +10,15 @@ import { formatNaira } from "../utils/helpers";
 // receipt-style breakdown above the PIN boxes (product, recipient, plan,
 // etc) so the user sees exactly what they're paying for before confirming,
 // not just a generic amount in the subtitle. `amount`/`balance` (optional)
-// render as their own highlighted rows. Matches the confirm-purchase
-// pattern most VTU/wallet apps use (Maskawasub's own consumer app included).
+// render as their own highlighted rows. `warning` (optional) — a short
+// caution message shown right above the PIN boxes, for cases like an
+// unverified meter/smartcard number where the purchase is still allowed but
+// the risk (paying into the wrong account) needs to be explicit right
+// before the user commits, not just earlier on the form. Matches the
+// confirm-purchase pattern most VTU/wallet apps use (Maskawasub's own
+// consumer app included).
 const PinConfirmModal = ({
-  title = "Enter your PIN", subtitle, summary, amount, balance,
+  title = "Enter your PIN", subtitle, summary, amount, balance, warning,
   onConfirm, onClose, submitting, error,
 }) => {
   const [digits, setDigits] = useState(["", "", "", ""]);
@@ -72,6 +77,13 @@ const PinConfirmModal = ({
                 <span className="text-ink font-dm text-sm font-medium text-right">{row.value}</span>
               </div>
             ))}
+          </div>
+        )}
+
+        {warning && (
+          <div className="mx-6 mt-4 flex items-start gap-2 bg-yellow-500/10 border border-yellow-500/25 rounded-xl px-3 py-2.5">
+            <FiAlertTriangle size={14} className="text-yellow-500 mt-0.5 shrink-0" />
+            <p className="text-yellow-500 font-dm text-xs">{warning}</p>
           </div>
         )}
 
