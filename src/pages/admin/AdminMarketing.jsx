@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
+import ConfirmModal from "../../components/ConfirmModal";
 import { api } from "../../api";
 import { formatDate } from "../../utils/helpers";
 import { FiAlertCircle, FiPlusCircle, FiTag, FiX, FiSend, FiGift } from "react-icons/fi";
@@ -9,6 +10,8 @@ const TABS = ["Coupons & Discounts", "Notifications", "Referral & Rewards"];
 const AdminMarketing = () => {
   const [tab, setTab] = useState(0);
   const [error, setError] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Coupons
   const [coupons, setCoupons] = useState([]);
@@ -62,10 +65,14 @@ const AdminMarketing = () => {
     catch (err) { setError(err.message); }
   };
 
-  const deleteCoupon = async (id) => {
-    if (!window.confirm("Delete this coupon?")) return;
-    try { await api.post(`/admin/coupons/${id}`, { action: "delete" }); loadCoupons(); }
-    catch (err) { setError(err.message); }
+  const deleteCoupon = async () => {
+    setDeleting(true);
+    try {
+      await api.post(`/admin/coupons/${deleteTarget}`, { action: "delete" });
+      setDeleteTarget(null);
+      loadCoupons();
+    } catch (err) { setError(err.message); }
+    setDeleting(false);
   };
 
   const sendNotification = async (e) => {
@@ -144,7 +151,7 @@ const AdminMarketing = () => {
                       <span className={`text-[10px] font-dm px-2 py-0.5 rounded-full border ${c.active ? "bg-iris/15 text-iris border-iris/25" : "bg-surface text-ink/40 border-line"}`} onClick={() => toggleCoupon(c.id)} role="button">
                         {c.active ? "Active" : "Inactive"}
                       </span>
-                      <button onClick={() => deleteCoupon(c.id)} className="text-ink/30 hover:text-red-400"><FiX size={15} /></button>
+                      <button onClick={() => setDeleteTarget(c.id)} className="text-ink/30 hover:text-red-400"><FiX size={15} /></button>
                     </div>
                   </div>
                 ))}
@@ -198,6 +205,17 @@ const AdminMarketing = () => {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        open={!!deleteTarget}
+        title="Delete this coupon?"
+        message="This can't be undone — customers will no longer be able to redeem it."
+        confirmLabel="Delete"
+        danger
+        submitting={deleting}
+        onConfirm={deleteCoupon}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </AdminLayout>
   );
 };

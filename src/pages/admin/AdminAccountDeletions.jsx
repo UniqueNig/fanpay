@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import AdminLayout from "../../components/AdminLayout";
+import ConfirmModal from "../../components/ConfirmModal";
 import { api } from "../../api";
 import { formatDate } from "../../utils/helpers";
 import { FiUserX, FiAlertCircle, FiCheck, FiX } from "react-icons/fi";
@@ -18,6 +19,7 @@ const AdminAccountDeletions = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState(null);
+  const [approveTarget, setApproveTarget] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -34,7 +36,6 @@ const AdminAccountDeletions = () => {
   useEffect(() => { load(); }, [tab]);
 
   const resolve = async (id, action) => {
-    if (action === "approve" && !window.confirm("This permanently deletes the account and all its data. Continue?")) return;
     setBusyId(id);
     try {
       await api.post(`/admin/account-deletions/${id}/resolve`, { action });
@@ -43,6 +44,12 @@ const AdminAccountDeletions = () => {
       setError(err.message || "Failed to process request.");
     }
     setBusyId(null);
+  };
+
+  const confirmApprove = async () => {
+    const id = approveTarget;
+    setApproveTarget(null);
+    await resolve(id, "approve");
   };
 
   return (
@@ -102,7 +109,7 @@ const AdminAccountDeletions = () => {
                 {r.status === "pending" && (
                   <div className="flex gap-2 shrink-0">
                     <button
-                      onClick={() => resolve(r.id, "approve")}
+                      onClick={() => setApproveTarget(r.id)}
                       disabled={busyId === r.id}
                       className="flex items-center gap-1.5 bg-red-500/10 border border-red-500/25 text-red-400 hover:bg-red-500/20 font-dm text-xs px-3 py-2 rounded-lg disabled:opacity-60"
                     >
@@ -122,6 +129,16 @@ const AdminAccountDeletions = () => {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        open={!!approveTarget}
+        title="Permanently delete this account?"
+        message="This deletes the account and all its data. It cannot be undone."
+        confirmLabel="Delete Account"
+        danger
+        onConfirm={confirmApprove}
+        onCancel={() => setApproveTarget(null)}
+      />
     </AdminLayout>
   );
 };

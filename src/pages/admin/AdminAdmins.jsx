@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
+import ConfirmModal from "../../components/ConfirmModal";
 import { useAuth } from "../../context/AuthContext";
 import { api } from "../../api";
 import { formatDate } from "../../utils/helpers";
@@ -13,6 +14,8 @@ const AdminAdmins = () => {
   const [email, setEmail] = useState("");
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState("");
+  const [revokeTarget, setRevokeTarget] = useState(null);
+  const [revoking, setRevoking] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -42,14 +45,16 @@ const AdminAdmins = () => {
     setInviting(false);
   };
 
-  const revoke = async (uid) => {
-    if (!window.confirm("Remove admin access for this account?")) return;
+  const revoke = async () => {
+    setRevoking(true);
     try {
-      await api.post(`/admin/admins/${uid}/revoke`, {});
+      await api.post(`/admin/admins/${revokeTarget}/revoke`, {});
+      setRevokeTarget(null);
       load();
     } catch (err) {
       setError(err.message || "Failed to revoke admin access.");
     }
+    setRevoking(false);
   };
 
   return (
@@ -113,7 +118,7 @@ const AdminAdmins = () => {
                 </div>
                 {a.uid !== user?.uid && (
                   <button
-                    onClick={() => revoke(a.uid)}
+                    onClick={() => setRevokeTarget(a.uid)}
                     className="flex items-center gap-1.5 text-red-400 hover:bg-red-500/10 font-dm text-xs px-3 py-2 rounded-lg shrink-0 ml-2"
                   >
                     <FiX size={13} /> Revoke
@@ -124,6 +129,17 @@ const AdminAdmins = () => {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        open={!!revokeTarget}
+        title="Remove admin access?"
+        message="This account will lose all admin permissions immediately."
+        confirmLabel="Revoke"
+        danger
+        submitting={revoking}
+        onConfirm={revoke}
+        onCancel={() => setRevokeTarget(null)}
+      />
     </AdminLayout>
   );
 };
