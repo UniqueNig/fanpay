@@ -14,6 +14,7 @@ import Deposit from "./pages/Deposit";
 import Transfer from "./pages/Transfer";
 import Bills from "./pages/Bills";
 import Recharge from "./pages/Recharge";
+import ResultChecker from "./pages/ResultChecker";
 import Pricing from "./pages/Pricing";
 import Savings from "./pages/Savings";
 import Settings from "./pages/Settings";
@@ -64,6 +65,7 @@ function App() {
           <Route path="/transfer" element={<ProtectedRoute><Transfer /></ProtectedRoute>} />
           <Route path="/bills" element={<ProtectedRoute><Bills /></ProtectedRoute>} />
           <Route path="/recharge" element={<ProtectedRoute><Recharge /></ProtectedRoute>} />
+          <Route path="/result-checker" element={<ProtectedRoute><ResultChecker /></ProtectedRoute>} />
           <Route path="/pricing" element={<ProtectedRoute><Pricing /></ProtectedRoute>} />
           <Route path="/savings" element={<ProtectedRoute><Savings /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />

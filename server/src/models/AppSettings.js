@@ -18,6 +18,7 @@ const appSettingsSchema = new mongoose.Schema(
       airtime: { type: Boolean, default: true },
       data: { type: Boolean, default: true },
       bills: { type: Boolean, default: true },
+      exam: { type: Boolean, default: true },
     },
     // Airtime/data pricing lives in the ProductPrice catalog now (see
     // models/ProductPrice.js, services/productPricing.js) — per-network

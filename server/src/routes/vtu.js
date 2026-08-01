@@ -3,14 +3,17 @@ import { body, validationResult } from "express-validator";
 import { requireAuth } from "../middleware/auth.js";
 import { ApiError } from "../middleware/errorHandler.js";
 import {
-  maskawasubBuyAirtime, maskawasubBuyData, maskawasubBuyElectricity, maskawasubBuyCable,
+  maskawasubBuyAirtime, maskawasubBuyData, maskawasubBuyElectricity, maskawasubBuyCable, maskawasubBuyExamPin,
   maskawasubValidateMeter, maskawasubValidateIUC, resolveProviderId,
 } from "../services/maskawasub.js";
 import { debitWallet, creditWallet } from "../services/wallet.js";
 import { verifyTransactionPin } from "../services/pin.js";
 import { getSettings, assertNotMaintenance, assertServiceEnabled } from "../services/settings.js";
 import { previewCoupon, recordRedemption } from "../services/coupons.js";
-import { getAirtimeRate, resolveDataPlanPrice, resolveCablePlanPrice, listDataCatalog, listCableCatalog } from "../services/maskawasubPricing.js";
+import {
+  getAirtimeRate, resolveDataPlanPrice, resolveCablePlanPrice, listDataCatalog, listCableCatalog,
+  resolveExamPrice, listExamCatalog,
+} from "../services/maskawasubPricing.js";
 import { User } from "../models/User.js";
 import { Transaction } from "../models/Transaction.js";
 import { KycSubmission } from "../models/KycSubmission.js";
@@ -48,7 +51,7 @@ async function assertWithinKycLimit(uid, userId, chargeAmount, settings) {
       $match: {
         userId,
         type: "debit",
-        reference: { $regex: /^(AIR|DATA|BILL)-/ },
+        reference: { $regex: /^(AIR|DATA|BILL|EXAM)-/ },
         createdAt: { $gte: startOfToday },
       },
     },
@@ -58,7 +61,7 @@ async function assertWithinKycLimit(uid, userId, chargeAmount, settings) {
   if (total + chargeAmount > unverifiedDailyLimit) {
     throw new ApiError(
       403,
-      `Unverified accounts can spend up to ₦${unverifiedDailyLimit.toLocaleString()} per day on airtime, data, and bills. Complete KYC verification to increase this, or try again tomorrow.`
+      `Unverified accounts can spend up to ₦${unverifiedDailyLimit.toLocaleString()} per day on airtime, data, bills, and result checker pins. Complete KYC verification to increase this, or try again tomorrow.`
     );
   }
 }
@@ -143,6 +146,21 @@ router.get("/cable-plans/:provider", requireAuth, async (req, res, next) => {
     const cableKey = req.params.provider;
     if (!(await resolveProviderId("cable", cableKey))) throw new ApiError(400, `Unknown cable provider: ${req.params.provider}`);
     const rows = await listCableCatalog(cableKey);
+    res.json({
+      content: {
+        varations: rows.filter((r) => r.active).map((r) => ({
+          variation_code: r.variationCode, name: r.label, variation_amount: String(r.sellingPrice),
+        })),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/exam-plans", requireAuth, async (req, res, next) => {
+  try {
+    const rows = await listExamCatalog();
     res.json({
       content: {
         varations: rows.filter((r) => r.active).map((r) => ({
@@ -459,6 +477,75 @@ router.post(
       if (couponResult) await recordRedemption(couponResult.coupon._id, req.uid, ref);
 
       res.json({ success: true, status: maskawasubRes?.Status, requestId, reference: ref, electricityToken, amountCharged: chargeAmount });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.post(
+  "/exam",
+  requireAuth,
+  [
+    body("examName").isIn(["WAEC", "NECO"]).withMessage("Unknown exam type."),
+    PIN_RULE,
+  ],
+  async (req, res, next) => {
+    if (!checkValidation(req, res)) return;
+    try {
+      const { examName, pin } = req.body;
+
+      const settings = await getSettings();
+      assertNotMaintenance(settings);
+      assertServiceEnabled(settings, "exam");
+
+      // Same catalog-based, tamper-proof pricing as data/cable — never
+      // trusts a client-supplied amount.
+      const priced = await resolveExamPrice(examName);
+      const chargeAmount = priced.sellingPrice;
+
+      await requireBalanceAndPin(req.uid, chargeAmount, pin, settings);
+
+      const requestId = Date.now().toString();
+      const ref = "EXAM-" + requestId;
+      const title = `${examName} Result Checker PIN`;
+
+      const maskawasubRes = await debitThenPurchase(
+        req.uid,
+        chargeAmount,
+        ref,
+        title,
+        "🎓",
+        { examName, buyingPrice: priced.buyingPrice, sellingPrice: priced.sellingPrice },
+        () => maskawasubBuyExamPin({ exam_name: examName })
+      );
+
+      // Field name for the actual PIN/serial is unconfirmed (see
+      // maskawasubBuyExamPin's comment — never live-tested against a real
+      // purchase). Checked across the plausible names other Maskawasub
+      // responses have used; meta.apiResponse (the human-readable
+      // confirmation text) is stored regardless as the fallback, same
+      // pattern as the electricity token.
+      const pinCode = maskawasubRes?.pin || maskawasubRes?.Pin || maskawasubRes?.epin || maskawasubRes?.serial || null;
+      const serialNumber = maskawasubRes?.serial_number || maskawasubRes?.serialNumber || null;
+
+      await Transaction.updateOne(
+        { reference: ref },
+        {
+          $set: {
+            "meta.maskawasubId": maskawasubRes?.id,
+            "meta.deliveryStatus": maskawasubRes?.Status,
+            "meta.apiResponse": maskawasubRes?.api_response,
+            "meta.pin": pinCode,
+            "meta.serialNumber": serialNumber,
+          },
+        }
+      );
+
+      res.json({
+        success: true, status: maskawasubRes?.Status, requestId, reference: ref,
+        pin: pinCode, serialNumber, apiResponse: maskawasubRes?.api_response, amountCharged: chargeAmount,
+      });
     } catch (err) {
       next(err);
     }

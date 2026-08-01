@@ -6,10 +6,13 @@ import { reconcileOneVtuTransaction } from "../jobs/reconcileVtu.js";
 
 const router = Router();
 
-const TYPE_PREFIX = { airtime: "AIR-", data: "DATA-", bill: "BILL-" };
+const TYPE_PREFIX = { airtime: "AIR-", data: "DATA-", bill: "BILL-", exam: "EXAM-" };
 
 function shapeVtuTx(tx) {
-  const type = tx.reference.startsWith("AIR-") ? "airtime" : tx.reference.startsWith("DATA-") ? "data" : "bill";
+  const type = tx.reference.startsWith("AIR-") ? "airtime"
+    : tx.reference.startsWith("DATA-") ? "data"
+    : tx.reference.startsWith("EXAM-") ? "exam"
+    : "bill";
   const requestId = tx.reference.slice(tx.reference.indexOf("-") + 1);
   return {
     id: tx.reference,
@@ -24,13 +27,15 @@ function shapeVtuTx(tx) {
     provider: tx.meta?.provider,
     billType: tx.meta?.billType,
     billersCode: tx.meta?.billersCode,
+    examName: tx.meta?.examName,
+    pin: tx.meta?.pin,
   };
 }
 
 // Backed by the existing Transaction collection, filtered to VTU purchases
-// (reference prefix AIR-/DATA-/BILL-) — no separate log needed since a
-// Transaction is only ever created once VTpass returns at least a "099
-// processing" response (see services/wallet.js). Outright immediate
+// (reference prefix AIR-/DATA-/BILL-/EXAM-) — no separate log needed since a
+// Transaction is only ever created once Maskawasub returns at least a
+// "pending" response (see services/wallet.js). Outright immediate
 // failures (never charged, never recorded) won't appear here — that would
 // need a pre-attempt log this app doesn't keep.
 router.get("/", requireAdmin, async (req, res, next) => {
@@ -40,7 +45,7 @@ router.get("/", requireAdmin, async (req, res, next) => {
 
     const filter = {};
     if (type === "all") {
-      filter.reference = { $regex: /^(AIR|DATA|BILL)-/ };
+      filter.reference = { $regex: /^(AIR|DATA|BILL|EXAM)-/ };
     } else if (TYPE_PREFIX[type]) {
       filter.reference = { $regex: new RegExp(`^${TYPE_PREFIX[type]}`) };
     } else {
@@ -64,7 +69,7 @@ router.post("/:requestId/requery", requireAdmin, async (req, res, next) => {
   try {
     const { requestId } = req.params;
     const txn = await Transaction.findOne({
-      reference: { $in: [`AIR-${requestId}`, `DATA-${requestId}`, `BILL-${requestId}`] },
+      reference: { $in: [`AIR-${requestId}`, `DATA-${requestId}`, `BILL-${requestId}`, `EXAM-${requestId}`] },
     });
     if (!txn) throw new ApiError(404, "No VTU transaction found with that request ID.");
 

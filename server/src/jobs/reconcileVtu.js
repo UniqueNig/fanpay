@@ -14,6 +14,7 @@ const PENDING_STATUSES = ["pending", "initiated", "processing"];
 function requeryKindFor(txn) {
   if (txn.reference.startsWith("AIR-")) return "airtime";
   if (txn.reference.startsWith("DATA-")) return "data";
+  if (txn.reference.startsWith("EXAM-")) return "exam";
   if (txn.reference.startsWith("BILL-")) return txn.meta?.billType === "cable" ? "cable" : "electricity";
   return null;
 }
@@ -71,7 +72,7 @@ export function startVtuReconciliation() {
   cron.schedule("*/5 * * * *", async () => {
     const stale = new Date(Date.now() - 3 * 60_000); // give Maskawasub at least 3 min
     const candidates = await Transaction.find({
-      reference: { $regex: /^(AIR|DATA|BILL)-/ },
+      reference: { $regex: /^(AIR|DATA|BILL|EXAM)-/ },
       "meta.deliveryStatus": { $in: PENDING_STATUSES },
       createdAt: { $lte: stale },
     }).limit(50);

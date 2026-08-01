@@ -176,7 +176,7 @@ function assertDelivered(data, label) {
 // since airtime/data return "successful" immediately in every case seen so
 // far and rarely need requerying, and no electricity purchase has been made
 // yet to test against.
-const REQUERY_PATH = { airtime: "topup", data: "data", cable: "cablesub", electricity: "billpayment" };
+const REQUERY_PATH = { airtime: "topup", data: "data", cable: "cablesub", electricity: "billpayment", exam: "epin" };
 
 export async function maskawasubRequery(kind, id) {
   const path = REQUERY_PATH[kind];
@@ -261,6 +261,30 @@ export async function maskawasubBuyCable({ cablename, cableplan, smart_card_numb
   } catch (err) {
     if (err instanceof ApiError) throw err;
     console.error("Maskawasub cablesub error:", err.response?.data || err.message);
+    throw new ApiError(502, err.response?.data?.error?.[0] || "Could not complete delivery. No charge made.");
+  }
+}
+
+// WAEC/NECO/NABTEB result checker PIN. Confirmed live (2026-08-01) that
+// POST /epin/ is the real endpoint and `exam_name` is the required field —
+// {"exam_name":["This field is required."]} came back for every other guess
+// (exam, name, exam_type). A successful purchase was NOT tested (that would
+// spend real money — cheapest live option is NECO at ₦2,100), so the exact
+// success response shape is unconfirmed. assertDelivered's Status check and
+// the pin/serial field-name guesses below follow the same convention every
+// other Maskawasub endpoint has used so far; worth a real purchase to
+// confirm the first time this actually runs.
+export async function maskawasubBuyExamPin({ exam_name }) {
+  try {
+    const res = await axios.post(
+      `${env.maskawasubBaseUrl}/epin/`,
+      { exam_name },
+      { headers: headers(), timeout: 30000 }
+    );
+    return assertDelivered(res.data, "Result checker pin");
+  } catch (err) {
+    if (err instanceof ApiError) throw err;
+    console.error("Maskawasub epin error:", err.response?.data || err.message);
     throw new ApiError(502, err.response?.data?.error?.[0] || "Could not complete delivery. No charge made.");
   }
 }

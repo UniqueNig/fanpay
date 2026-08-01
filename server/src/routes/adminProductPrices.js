@@ -4,7 +4,7 @@ import { requireAdmin } from "../middleware/requireAdmin.js";
 import { ApiError } from "../middleware/errorHandler.js";
 import { ProductPrice } from "../models/ProductPrice.js";
 import { resolveProviderId, listExtraProviders, MASKAWASUB_NETWORK, MASKAWASUB_CABLE } from "../services/maskawasub.js";
-import { listDataCatalog, listCableCatalog, getAirtimeRate } from "../services/maskawasubPricing.js";
+import { listDataCatalog, listCableCatalog, listExamCatalog, getAirtimeRate } from "../services/maskawasubPricing.js";
 
 const router = Router();
 
@@ -45,12 +45,21 @@ router.get("/cable/:provider", requireAdmin, async (req, res, next) => {
   }
 });
 
+router.get("/exam", requireAdmin, async (req, res, next) => {
+  try {
+    const rows = await listExamCatalog();
+    res.json({ rows });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post(
   "/",
   requireAdmin,
   [
     body("id").optional().isMongoId(),
-    body("category").isIn(["airtime", "data", "cable"]),
+    body("category").isIn(["airtime", "data", "cable", "exam"]),
     body("serviceID").isString().trim().notEmpty(),
     body("key").isString().trim().notEmpty(),
     body("label").optional().isString().trim(),

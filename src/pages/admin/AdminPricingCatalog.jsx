@@ -5,7 +5,7 @@ import { FiAlertCircle, FiCheck, FiEyeOff, FiEye, FiPlusCircle } from "react-ico
 
 const NETWORKS = ["mtn", "airtel", "glo", "9mobile"];
 const CABLE_PROVIDERS = ["DSTV", "GOtv", "StarTimes"];
-const TABS = ["Airtime", "Data", "Cable", "Electricity"];
+const TABS = ["Airtime", "Data", "Cable", "Electricity", "Exam Pins"];
 
 const PlanTable = ({ rows, loading, onSave, onToggle }) => {
   if (loading) return <div className="card-flat p-8 text-center text-ink/35 font-dm text-sm">Loading...</div>;
@@ -283,6 +283,9 @@ const AdminPricingCatalog = () => {
   const [cableRows, setCableRows] = useState([]);
   const [cableLoading, setCableLoading] = useState(false);
 
+  const [examRows, setExamRows] = useState([]);
+  const [examLoading, setExamLoading] = useState(false);
+
   const flashSaved = () => { setSaved(true); setTimeout(() => setSaved(false), 1500); };
 
   const loadAirtime = async () => {
@@ -319,11 +322,21 @@ const AdminPricingCatalog = () => {
     setCableLoading(false);
   };
 
+  const loadExam = async () => {
+    setExamLoading(true);
+    try {
+      const data = await api.get("/admin/product-prices/exam");
+      setExamRows(data.rows || []);
+    } catch (err) { setError(err.message); }
+    setExamLoading(false);
+  };
+
   useEffect(() => { loadAirtime(); }, []);
   useEffect(() => { loadExtraNetworks("data", setExtraDataNetworks); }, []);
   useEffect(() => { loadExtraNetworks("cable", setExtraCableProviders); }, []);
   useEffect(() => { if (tab === 1) loadData(dataNetwork); }, [tab, dataNetwork]);
   useEffect(() => { if (tab === 2) loadCable(cableProvider); }, [tab, cableProvider]);
+  useEffect(() => { if (tab === 4) loadExam(); }, [tab]);
 
   const saveAirtimeRow = async (row, field, value) => {
     const num = Number(value);
@@ -483,6 +496,19 @@ const AdminPricingCatalog = () => {
               Electricity has no per-plan catalog — customers type any amount, charged a flat fee (set in Settings).
               Registering a disco here only makes it available as a provider; it doesn't need per-plan pricing.
             </p>
+          </>
+        )}
+
+        {tab === 4 && (
+          <>
+            <p className="text-ink/30 font-dm text-xs mb-4">
+              WAEC/NECO result checker PINs. Priced from Maskawasub's own live rates — same buying/selling
+              margin pattern as everything else. The Plan ID here is the exact exam name the purchase flow
+              sends (WAEC/NECO) — don't rename it, that would break purchases for that exam. NABTEB isn't
+              included — Maskawasub's own site marks it "Coming Soon" and its purchase endpoint currently
+              errors; add it back here once Maskawasub actually turns it on.
+            </p>
+            <PlanTable rows={examRows} loading={examLoading} onSave={savePlanRow("exam", setExamRows)} onToggle={toggleRow(setExamRows)} />
           </>
         )}
       </div>

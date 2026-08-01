@@ -5,7 +5,7 @@ import { api } from "../../api";
 import { formatNaira, formatDate, formatTime } from "../../utils/helpers";
 import {
   FiAlertCircle, FiWifi, FiSmartphone, FiZap, FiTv, FiRefreshCw,
-  FiClock, FiCheckCircle, FiXCircle, FiRotateCcw, FiLoader,
+  FiClock, FiCheckCircle, FiXCircle, FiRotateCcw, FiLoader, FiBookOpen,
 } from "react-icons/fi";
 
 const STATUS_TABS = [
@@ -22,6 +22,7 @@ const TYPE_TABS = [
   { value: "data", label: "Data", icon: FiWifi },
   { value: "airtime", label: "Airtime", icon: FiSmartphone },
   { value: "bill", label: "Bills", icon: FiZap },
+  { value: "exam", label: "Exam Pins", icon: FiBookOpen },
 ];
 
 const STATUS_META = {
@@ -32,7 +33,7 @@ const STATUS_META = {
   reversed: { color: "text-orange-400 bg-orange-500/10 border-orange-500/25", icon: FiRotateCcw, label: "Reversed" },
 };
 
-const TYPE_ICON = { data: FiWifi, airtime: FiSmartphone, bill: FiZap };
+const TYPE_ICON = { data: FiWifi, airtime: FiSmartphone, bill: FiZap, exam: FiBookOpen };
 
 const StatusBadge = ({ status }) => {
   const meta = STATUS_META[status] || STATUS_META.initiated;
@@ -81,6 +82,7 @@ const AdminVtuTransactions = () => {
     if (r.type === "data") return `${(r.network || "").toUpperCase()} Data · ${r.phone}`;
     if (r.type === "airtime") return `${(r.network || "").toUpperCase()} Airtime · ${r.phone}`;
     if (r.type === "bill") return `${r.provider || ""} ${r.billType || ""} · ${r.billersCode || ""}`;
+    if (r.type === "exam") return `${r.examName || ""} Result Checker PIN`;
     return r.type;
   };
 
@@ -185,6 +187,9 @@ const AdminVtuTransactions = () => {
                     </div>
                   </div>
                   {r.reason && <p className="text-red-400/70 font-dm text-xs mt-1">{r.reason}</p>}
+                  {r.type === "exam" && r.pin && (
+                    <p className="text-iris font-dm text-xs mt-1 tracking-wide">PIN: {r.pin}</p>
+                  )}
                   {(r.status === "pending" || r.status === "initiated") && (
                     <button
                       onClick={() => requery(r.requestId)}

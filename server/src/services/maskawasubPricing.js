@@ -170,4 +170,53 @@ export async function listCableCatalog(cableKey) {
   return rows;
 }
 
+// WAEC/NECO result checker PINs — a tiny fixed catalog (2 items, unlike
+// data's 100+ plans), so no need for listManualRows-style handling of plans
+// Maskawasub might drop; the set of exam types itself barely changes.
+// Priced from the /user/ response's `Exam` key ({WAEC:{amount:5050}, ...}),
+// confirmed live (2026-08-01) — the purchase endpoint itself (POST /epin/,
+// body {exam_name}) was only confirmed for its required-field validation,
+// not an actual successful purchase, since testing that would have spent
+// real money. See services/maskawasub.js's maskawasubBuyExamPin.
+//
+// NABTEB is deliberately excluded — Maskawasub's own site marks it "Coming
+// Soon", and a live test confirmed POST /epin/ {exam_name: "NABTEB"} errors
+// (500) even though /user/'s Exam key lists a price for it. Add it back
+// once Maskawasub actually turns it on (an admin can also just re-add it
+// manually via "Add a plan manually by id" in the meantime if it starts
+// working before this gets updated).
+export const EXAM_TYPES = ["WAEC", "NECO"];
+
+export async function resolveExamPrice(examName) {
+  const key = (examName || "").toUpperCase();
+  const existing = await ProductPrice.findOne({ serviceID: "exam", key });
+  if (existing) {
+    if (!existing.active) throw new ApiError(400, "This exam pin is currently unavailable.");
+    return existing;
+  }
+
+  const data = await maskawasubUser();
+  const cost = data?.Exam?.[key]?.amount;
+  if (cost == null) throw new ApiError(400, "Unknown or unavailable exam type.");
+
+  const priced = await batchSyncPrices("exam", "exam", [{ key, label: `${key} Result Checker PIN`, cost }]);
+  return priced.get(key);
+}
+
+export async function listExamCatalog() {
+  const data = await maskawasubUser();
+  const entries = EXAM_TYPES
+    .filter((k) => data?.Exam?.[k]?.amount != null)
+    .map((k) => ({ key: k, label: `${k} Result Checker PIN`, cost: data.Exam[k].amount }));
+  const priced = await batchSyncPrices("exam", "exam", entries);
+
+  return entries.map((e) => {
+    const stored = priced.get(e.key);
+    return {
+      id: stored._id, serviceID: "exam", variationCode: e.key, label: stored.label,
+      liveMaskawasubPrice: e.cost, buyingPrice: stored.buyingPrice, sellingPrice: stored.sellingPrice, active: stored.active,
+    };
+  });
+}
+
 export { MASKAWASUB_NETWORK, MASKAWASUB_CABLE };

@@ -7,7 +7,7 @@ import mongoose from "mongoose";
 // is VTpass's variation_code for that specific bundle/bouquet.
 const productPriceSchema = new mongoose.Schema(
   {
-    category: { type: String, enum: ["airtime", "data", "cable"], required: true },
+    category: { type: String, enum: ["airtime", "data", "cable", "exam"], required: true },
     serviceID: { type: String, required: true },
     key: { type: String, required: true },
     label: { type: String, default: "" },

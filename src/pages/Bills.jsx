@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import PinConfirmModal from "../components/PinConfirmModal";
+import ProviderCustomerCare from "../components/ProviderCustomerCare";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../api";
 import { BILL_TYPES, formatNaira } from "../utils/helpers";
@@ -400,6 +401,7 @@ const Bills = () => {
                           ))}
                         </div>
                       )}
+                      <ProviderCustomerCare />
                     </div>
                   ) : (
                     <div>
