@@ -8,6 +8,26 @@ import { errorHandler } from "./middleware/errorHandler.js";
 import { startVtuReconciliation } from "./jobs/reconcileVtu.js";
 import { startChatAiListener } from "./services/chatListener.js";
 
+// Safety net, not the primary error-handling path — every request-cycle
+// error already goes through errorHandler.js below, and every fire-and-forget
+// async spot (webhooks, the chat listener, the reconcile cron) already has
+// its own try/catch + console.error. This exists purely to guarantee that
+// something NOT covered by those — a future bug, a stray unawaited promise —
+// still prints a clear line to stdout/stderr instead of failing silently or
+// with a cryptic default trace. Render (and most hosts) capture both streams
+// verbatim in their Logs tab, so this is what actually makes those visible there.
+// uncaughtException exits deliberately — Node's own guidance is that process
+// state after one is unreliable; Render restarts the service automatically.
+// unhandledRejection only logs — crashing the whole API over one bad promise
+// elsewhere would be a worse outcome than the bug itself in most cases.
+process.on("uncaughtException", (err) => {
+  console.error("UNCAUGHT EXCEPTION — restarting:", err);
+  process.exit(1);
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("UNHANDLED REJECTION:", reason);
+});
+
 import webhooksRouter from "./routes/webhooks.js";
 import usersRouter from "./routes/users.js";
 import depositsRouter from "./routes/deposits.js";
