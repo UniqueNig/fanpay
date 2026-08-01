@@ -174,9 +174,9 @@ const Signup = () => {
 
             <p className="text-ink/30 font-dm text-xs">
               By creating an account, you agree to our{" "}
-              <a href="#" className="text-iris hover:underline">Terms of Service</a>{" "}
+              <Link to="/terms" target="_blank" className="text-iris hover:underline">Terms of Service</Link>{" "}
               and{" "}
-              <a href="#" className="text-iris hover:underline">Privacy Policy</a>.
+              <Link to="/privacy" target="_blank" className="text-iris hover:underline">Privacy Policy</Link>.
             </p>
 
             <button

@@ -46,12 +46,14 @@ import AdminPricingCatalog from "./pages/admin/AdminPricingCatalog";
 import AdminLiveChat from "./pages/admin/AdminLiveChat";
 import AdminAssistant from "./pages/admin/AdminAssistant";
 import ChatWidget from "./components/ChatWidget";
+import ScrollToHash from "./components/ScrollToHash";
 
 function App() {
   return (
     <ToastProvider>
     <AuthProvider>
       <BrowserRouter>
+        <ScrollToHash />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />

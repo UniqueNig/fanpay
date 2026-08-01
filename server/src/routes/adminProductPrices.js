@@ -49,6 +49,7 @@ router.post(
   "/",
   requireAdmin,
   [
+    body("id").optional().isMongoId(),
     body("category").isIn(["airtime", "data", "cable"]),
     body("serviceID").isString().trim().notEmpty(),
     body("key").isString().trim().notEmpty(),
@@ -61,7 +62,28 @@ router.post(
     if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
 
     try {
-      const { category, serviceID, key, label, buyingPrice, sellingPrice } = req.body;
+      const { id, category, serviceID, key, label, buyingPrice, sellingPrice } = req.body;
+
+      // Editing an existing row (including changing its `key` — the actual
+      // Maskawasub plan id used at purchase time, see
+      // maskawasubPricing.js's resolveDataPlanPrice/resolveCablePlanPrice) —
+      // `key` can't be part of the lookup filter here the way the upsert
+      // path below uses it, or "changing the id" would just create a second
+      // row instead of renaming the existing one.
+      if (id) {
+        const row = await ProductPrice.findByIdAndUpdate(
+          id,
+          { category, serviceID, key, label: label || "", buyingPrice, sellingPrice },
+          { new: true }
+        );
+        if (!row) throw new ApiError(404, "Plan not found.");
+        return res.json({ success: true, row });
+      }
+
+      // No id — either a brand new manually-added plan (AddPlanForm) or a
+      // sync from the live Maskawasub catalog, both keyed by
+      // {serviceID, key} since that's the natural identity before a row
+      // (and therefore an _id) exists yet.
       const row = await ProductPrice.findOneAndUpdate(
         { serviceID, key },
         { category, serviceID, key, label: label || "", buyingPrice, sellingPrice },

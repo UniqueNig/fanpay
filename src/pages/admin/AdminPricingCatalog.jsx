@@ -25,6 +25,11 @@ const PlanTable = ({ rows, loading, onSave, onToggle }) => {
           </div>
           <div className="flex gap-3 shrink-0 items-end">
             <div>
+              <label className="text-ink/40 font-dm text-[11px] mb-1 block">Plan ID</label>
+              <input defaultValue={row.variationCode} className="input-field-light !py-2 text-sm w-24"
+                onBlur={(e) => onSave(row, "variationCode", e.target.value)} title="Maskawasub's plan id — used at purchase time. Only change this if the id is genuinely wrong." />
+            </div>
+            <div>
               <label className="text-ink/40 font-dm text-[11px] mb-1 block">Buying (₦)</label>
               <input type="number" defaultValue={row.buyingPrice} className="input-field-light !py-2 text-sm w-28"
                 onBlur={(e) => onSave(row, "buyingPrice", e.target.value)} />
@@ -335,13 +340,23 @@ const AdminPricingCatalog = () => {
   };
 
   const savePlanRow = (category, setter) => async (row, field, value) => {
-    const num = Number(value);
-    if (Number.isNaN(num)) return;
-    const next = { ...row, [field]: num };
+    let next;
+    if (field === "variationCode") {
+      const trimmed = value.trim();
+      if (!trimmed || trimmed === row.variationCode) return;
+      next = { ...row, variationCode: trimmed };
+    } else {
+      const num = Number(value);
+      if (Number.isNaN(num)) return;
+      next = { ...row, [field]: num };
+    }
     setter((rows) => rows.map((r) => (r.id === row.id ? next : r)));
     try {
+      // `id` routes this through the by-id update path server-side, which is
+      // what makes editing the plan ID itself (the `key`) a rename instead
+      // of silently creating a second row under the new id.
       await api.post("/admin/product-prices", {
-        category, serviceID: row.serviceID, key: row.variationCode, label: row.label,
+        id: row.id, category, serviceID: row.serviceID, key: next.variationCode, label: row.label,
         buyingPrice: next.buyingPrice, sellingPrice: next.sellingPrice,
       });
       flashSaved();
