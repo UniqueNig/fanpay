@@ -66,7 +66,10 @@ const Login = () => {
       navigate("/dashboard");
     } catch (err) {
       if (err.code !== "auth/popup-closed-by-user") {
-        const msg = "Google sign-in failed. Please try again.";
+        const msg =
+          err.code === "auth/unauthorized-domain"
+            ? "This site isn't authorized for Google sign-in yet — add it under Firebase Console → Authentication → Settings → Authorized domains."
+            : "Google sign-in failed. Please try again.";
         setError(msg);
         showToast(msg, "error");
       }
