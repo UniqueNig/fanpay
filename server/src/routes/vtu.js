@@ -23,9 +23,17 @@ const router = Router();
 const PIN_RULE = body("pin").isString().matches(/^\d{4}$/).withMessage("A valid 4-digit PIN is required.");
 const COUPON_RULE = body("couponCode").optional().isString().trim();
 
-// meterType comes from the frontend as "prepaid"/"postpaid" (unchanged UX);
-// Maskawasub's API wants it as 1/2 — this is the only place that mapping happens.
-const METER_TYPE = { prepaid: 1, postpaid: 2 };
+// meterType comes from the frontend as "prepaid"/"postpaid" (unchanged UX).
+// Maskawasub's own docs claim /billpayment/ wants MeterType as 1/2, but a
+// live purchase attempt (2026-08-01) proved that wrong — the API rejected
+// "1" with "not a valid choice". Probed the actual accepted values directly
+// against their endpoint (safe: no disco_name/meter_number, so nothing could
+// complete) and confirmed it's the capitalized words "Prepaid"/"Postpaid".
+// /validatemeter's separate `mtype` param is untouched — tested Prepaid,
+// Postpaid, 1, and 2 there too; all return a clean {invalid:true}, so its
+// unreliability is a real data-lookup issue on Maskawasub's side, not a
+// value-format bug like this one was.
+const METER_TYPE = { prepaid: "Prepaid", postpaid: "Postpaid" };
 
 // Unverified accounts can hold and receive money freely — the fraud/AML
 // risk is in moving it back out as something resellable (airtime especially),
