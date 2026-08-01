@@ -90,7 +90,7 @@ const AdminVtuTransactions = () => {
         <div className="flex items-start justify-between mb-2">
           <div>
             <h1 className="font-syne font-bold text-ink text-2xl">VTU Transactions</h1>
-            <p className="text-ink/40 font-dm text-sm mt-1">Data, airtime & bill purchase flow via VTpass</p>
+            <p className="text-ink/40 font-dm text-sm mt-1">Data, airtime & bill purchase flow via Maskawasub</p>
           </div>
           <button
             onClick={load}
@@ -103,11 +103,12 @@ const AdminVtuTransactions = () => {
 
         <div className="bg-surface border border-line rounded-xl px-4 py-3 mb-6 mt-4">
           <p className="text-ink/40 font-dm text-xs leading-relaxed">
-            Flow: <span className="text-ink/70">initiated</span> (VTpass called) →{" "}
-            <span className="text-yellow-400/80">pending</span> (still processing — try Requery) →{" "}
+            Flow: <span className="text-ink/70">initiated</span> (Maskawasub called) →{" "}
+            <span className="text-yellow-400/80">pending</span> (still processing — cable/electricity commonly
+            land here first, unlike airtime/data) →{" "}
             <span className="text-iris/80">delivered</span> or{" "}
             <span className="text-red-400/80">failed</span>/<span className="text-orange-400/80">reversed</span>{" "}
-            (wallet auto-refunded). VTpass also pushes updates to <code>vtpassWebhook</code> on its own —
+            (wallet auto-refunded). Maskawasub has no webhook — a background job checks every 5 minutes,
             Requery is for checking sooner.
           </p>
         </div>
@@ -191,7 +192,7 @@ const AdminVtuTransactions = () => {
                       className="mt-3 flex items-center gap-1.5 bg-surface border border-line hover:bg-surface text-ink/60 hover:text-ink font-dm text-xs px-3 py-1.5 rounded-lg disabled:opacity-50"
                     >
                       <FiRefreshCw size={12} className={requeryingId === r.requestId ? "animate-spin" : ""} />
-                      {requeryingId === r.requestId ? "Checking..." : "Requery VTpass"}
+                      {requeryingId === r.requestId ? "Checking..." : "Requery"}
                     </button>
                   )}
                 </div>
