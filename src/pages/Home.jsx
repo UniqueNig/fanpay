@@ -45,7 +45,7 @@ const ORG_SCHEMA = {
   "@context": "https://schema.org",
   "@type": "Organization",
   name: "FanFi",
-  description: "Fund your wallet, buy airtime and data, and pay electricity and cable TV bills — all in one simple app.",
+  description: "Buy airtime, data, pay utility bills, access developer APIs, and manage your digital payment services from one secure platform.",
   url: "https://fanpay-peach.vercel.app/",
   email: "support@fanfi.ng",
   telephone: "+2348147261388",
@@ -55,8 +55,8 @@ const ORG_SCHEMA = {
 const Home = () => (
   <div className="bg-surface min-h-screen">
     <SEO
-      title="FanFi – Fund Your Wallet, Sort Every Bill"
-      description="Buy airtime and data, pay electricity and cable TV bills — all from one simple wallet."
+      title="FanFi – Simple, Secure Digital Payments"
+      description="Buy airtime, data, pay utility bills, access developer APIs, and manage your digital payment services from one secure platform."
       path="/"
     />
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ORG_SCHEMA) }} />

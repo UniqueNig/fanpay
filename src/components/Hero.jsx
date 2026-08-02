@@ -1,6 +1,13 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { FiArrowRight, FiLock, FiZap } from "react-icons/fi";
+import { FaWhatsapp } from "react-icons/fa";
+
+// Real number (see Footer.jsx), opens an actual WhatsApp chat — there's no
+// automated ordering bot behind it yet (that needs its own Meta Business
+// verification, tracked separately), so replies are handled manually for
+// now rather than instantly. The link itself is real, not a placeholder.
+const WHATSAPP_LINK = "https://wa.me/2348147261388?text=" + encodeURIComponent("Hi, I'd like to place an order.");
 
 const Hero = () => {
   return (
@@ -23,22 +30,27 @@ const Hero = () => {
             </div>
 
             <h1 className="font-syne font-extrabold text-4xl sm:text-5xl lg:text-6xl text-ink leading-[1.1]">
-              Fund Your Wallet,<br />
-              <span className="text-gradient">Sort Every Bill.</span>
+              Simple, Secure<br />
+              <span className="text-gradient">Digital Payments.</span>
             </h1>
 
             <p className="section-sub max-w-md text-base leading-relaxed">
-              Buy airtime and data, pay electricity and cable TV bills — all from one simple wallet.
-              Fund it by card, bank transfer, or a dedicated account number.
+              Buy airtime, data, pay utility bills, access developer APIs, and manage your
+              digital payment services from one secure platform.
             </p>
 
             <div className="flex flex-col xs:flex-row gap-3 pt-2">
               <Link to="/signup" className="btn-iris flex items-center justify-center gap-2 text-sm">
-                Open Free Account <FiArrowRight size={15} />
+                Get Started <FiArrowRight size={15} />
               </Link>
-              <Link to="/login" className="btn-outline-iris text-sm text-center">
-                Login to Dashboard
-              </Link>
+              <a
+                href={WHATSAPP_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-outline-iris text-sm text-center flex items-center justify-center gap-2"
+              >
+                <FaWhatsapp size={15} /> Order on WhatsApp
+              </a>
             </div>
 
             {/* Trust badges */}
