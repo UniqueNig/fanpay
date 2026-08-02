@@ -17,7 +17,7 @@ router.get("/airtime", requireAdmin, async (req, res, next) => {
     const rows = await Promise.all(
       networks.map(async (network) => {
         const rate = await getAirtimeRate(network);
-        return { network, serviceID: network, buyingPrice: rate.buyingPrice, sellingPrice: rate.sellingPrice };
+        return { network, serviceID: network, buyingPrice: rate.buyingPrice, sellingPrice: rate.sellingPrice, apiPrice: rate.apiPrice };
       })
     );
     res.json({ rows });
@@ -72,13 +72,14 @@ router.post(
     body("label").optional().isString().trim(),
     body("buyingPrice").isFloat({ min: 0 }),
     body("sellingPrice").isFloat({ min: 0 }),
+    body("apiPrice").isFloat({ min: 0 }),
   ],
   async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
 
     try {
-      const { id, category, serviceID, key, label, buyingPrice, sellingPrice } = req.body;
+      const { id, category, serviceID, key, label, buyingPrice, sellingPrice, apiPrice } = req.body;
 
       // Editing an existing row (including changing its `key` — the actual
       // provider plan id used at purchase time: Maskawasub's for data, see
@@ -90,7 +91,7 @@ router.post(
       if (id) {
         const row = await ProductPrice.findByIdAndUpdate(
           id,
-          { category, serviceID, key, label: label || "", buyingPrice, sellingPrice },
+          { category, serviceID, key, label: label || "", buyingPrice, sellingPrice, apiPrice },
           { new: true }
         );
         if (!row) throw new ApiError(404, "Plan not found.");
@@ -103,7 +104,7 @@ router.post(
       // (and therefore an _id) exists yet.
       const row = await ProductPrice.findOneAndUpdate(
         { serviceID, key },
-        { category, serviceID, key, label: label || "", buyingPrice, sellingPrice },
+        { category, serviceID, key, label: label || "", buyingPrice, sellingPrice, apiPrice },
         { new: true, upsert: true }
       );
       res.json({ success: true, row });

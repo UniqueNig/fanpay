@@ -41,6 +41,11 @@ const PlanTable = ({ rows, loading, onSave, onToggle }) => {
               <input type="number" defaultValue={row.sellingPrice} className="input-field-light !py-2 text-sm w-28"
                 onBlur={(e) => onSave(row, "sellingPrice", e.target.value)} />
             </div>
+            <div>
+              <label className="text-ink/40 font-dm text-[11px] mb-1 block">API (₦)</label>
+              <input type="number" defaultValue={row.apiPrice ?? row.buyingPrice} className="input-field-light !py-2 text-sm w-28"
+                onBlur={(e) => onSave(row, "apiPrice", e.target.value)} title="What approved live-API developers pay instead of the selling price." />
+            </div>
             <div className="flex flex-col justify-end pb-2.5 w-20">
               <span className={`font-dm text-xs whitespace-nowrap ${row.sellingPrice - row.buyingPrice >= 0 ? "text-iris" : "text-red-400"}`}>
                 {row.sellingPrice - row.buyingPrice >= 0 ? "+" : ""}₦{(row.sellingPrice - row.buyingPrice).toLocaleString()}
@@ -117,21 +122,22 @@ const AddPlanForm = ({ category, serviceID, onAdded }) => {
   const [label, setLabel] = useState("");
   const [buying, setBuying] = useState("");
   const [selling, setSelling] = useState("");
+  const [apiPrice, setApiPrice] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [open, setOpen] = useState(false);
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!planId.trim() || !label.trim() || buying === "" || selling === "") return;
+    if (!planId.trim() || !label.trim() || buying === "" || selling === "" || apiPrice === "") return;
     setSaving(true);
     setError("");
     try {
       await api.post("/admin/product-prices", {
         category, serviceID, key: planId.trim(), label: label.trim(),
-        buyingPrice: Number(buying), sellingPrice: Number(selling),
+        buyingPrice: Number(buying), sellingPrice: Number(selling), apiPrice: Number(apiPrice),
       });
-      setPlanId(""); setLabel(""); setBuying(""); setSelling(""); setOpen(false);
+      setPlanId(""); setLabel(""); setBuying(""); setSelling(""); setApiPrice(""); setOpen(false);
       onAdded();
     } catch (err) { setError(err.message); }
     setSaving(false);
@@ -158,6 +164,7 @@ const AddPlanForm = ({ category, serviceID, onAdded }) => {
         <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Display name" className="input-field-light !py-2 text-sm" />
         <input type="number" value={buying} onChange={(e) => setBuying(e.target.value)} placeholder="Buying (₦)" className="input-field-light !py-2 text-sm" />
         <input type="number" value={selling} onChange={(e) => setSelling(e.target.value)} placeholder="Selling (₦)" className="input-field-light !py-2 text-sm" />
+        <input type="number" value={apiPrice} onChange={(e) => setApiPrice(e.target.value)} placeholder="API price (₦)" className="input-field-light !py-2 text-sm" />
       </div>
       <div className="flex gap-2 mt-1">
         <button type="button" onClick={() => setOpen(false)} className="btn-outline-iris !w-auto px-4 py-2 text-xs">Cancel</button>
@@ -366,6 +373,7 @@ const AdminPricingCatalog = () => {
       await api.post("/admin/product-prices", {
         category: "airtime", serviceID: row.serviceID, key: row.serviceID,
         label: row.network.toUpperCase(), buyingPrice: next.buyingPrice, sellingPrice: next.sellingPrice,
+        apiPrice: next.apiPrice ?? next.buyingPrice,
       });
       flashSaved();
     } catch (err) { setError(err.message); }
@@ -389,7 +397,7 @@ const AdminPricingCatalog = () => {
       // of silently creating a second row under the new id.
       await api.post("/admin/product-prices", {
         id: row.id, category, serviceID: row.serviceID, key: next.variationCode, label: row.label,
-        buyingPrice: next.buyingPrice, sellingPrice: next.sellingPrice,
+        buyingPrice: next.buyingPrice, sellingPrice: next.sellingPrice, apiPrice: next.apiPrice ?? next.buyingPrice,
       });
       flashSaved();
     } catch (err) { setError(err.message); }
@@ -447,7 +455,7 @@ const AdminPricingCatalog = () => {
                 airtimeRows.map((row, i) => (
                   <div key={row.serviceID} className={`flex items-center gap-4 p-4 ${i < airtimeRows.length - 1 ? "border-b border-line" : ""}`}>
                     <p className="text-ink font-dm text-sm font-medium w-20 uppercase shrink-0">{row.network}</p>
-                    <div className="flex-1 grid grid-cols-2 gap-3">
+                    <div className="flex-1 grid grid-cols-3 gap-3">
                       <div>
                         <label className="text-ink/40 font-dm text-[11px] mb-1 block">Buying %</label>
                         <input type="number" step="0.1" defaultValue={row.buyingPrice} className="input-field-light !py-2 text-sm"
@@ -457,6 +465,11 @@ const AdminPricingCatalog = () => {
                         <label className="text-ink/40 font-dm text-[11px] mb-1 block">Selling %</label>
                         <input type="number" step="0.1" defaultValue={row.sellingPrice} className="input-field-light !py-2 text-sm"
                           onBlur={(e) => saveAirtimeRow(row, "sellingPrice", e.target.value)} />
+                      </div>
+                      <div>
+                        <label className="text-ink/40 font-dm text-[11px] mb-1 block">API %</label>
+                        <input type="number" step="0.1" defaultValue={row.apiPrice ?? row.buyingPrice} className="input-field-light !py-2 text-sm"
+                          onBlur={(e) => saveAirtimeRow(row, "apiPrice", e.target.value)} title="What approved live-API developers pay instead of the selling price." />
                       </div>
                     </div>
                     <p className={`font-dm text-xs w-24 text-right shrink-0 ${row.sellingPrice - row.buyingPrice >= 0 ? "text-iris" : "text-red-400"}`}>

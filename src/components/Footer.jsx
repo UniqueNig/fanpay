@@ -14,6 +14,13 @@ const COLUMNS = [
     ],
   },
   {
+    title: "Developers",
+    links: [
+      { label: "Developer API", to: "/developer" },
+      { label: "Documentation", to: "/developer/docs" },
+    ],
+  },
+  {
     title: "Support",
     links: [
       { label: "Help Center", to: "/help" },
@@ -27,7 +34,7 @@ const COLUMNS = [
 const Footer = () => (
   <footer className="border-t border-line py-16">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="grid md:grid-cols-3 gap-10 mb-12">
+      <div className="grid md:grid-cols-4 gap-10 mb-12">
         <div className="md:col-span-1">
           <Link to="/" className="flex items-center mb-4">
             <FanFiLogo className="h-9 w-auto" />

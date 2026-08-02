@@ -23,9 +23,20 @@ export async function getAirtimeRate(serviceID) {
 // admin bothers to configure a margin) if this plan has never been seen
 // before. Called by both the purchase routes (for the authoritative price —
 // closes the client-`amount`-tampering gap) and the admin catalog page.
+// Self-heals rows created before apiPrice existed the first time they're
+// touched again, rather than needing a separate migration — defaults to
+// buyingPrice (cost, zero API margin) same as a brand-new row.
+async function backfillApiPrice(row) {
+  if (row.apiPrice == null) {
+    row.apiPrice = row.buyingPrice;
+    await row.save();
+  }
+  return row;
+}
+
 export async function getOrSyncPlanPrice(category, serviceID, variationCode, label, liveVtpassAmount) {
   const existing = await ProductPrice.findOne({ serviceID, key: variationCode });
-  if (existing) return existing;
+  if (existing) return backfillApiPrice(existing);
 
   return ProductPrice.create({
     category,
@@ -34,6 +45,7 @@ export async function getOrSyncPlanPrice(category, serviceID, variationCode, lab
     label,
     buyingPrice: liveVtpassAmount,
     sellingPrice: liveVtpassAmount,
+    apiPrice: liveVtpassAmount,
   });
 }
 
@@ -49,7 +61,7 @@ export async function resolvePlanPrice(category, serviceID, variationCode) {
     // Blocks a direct purchase attempt against a plan an admin has hidden,
     // even if the request bypasses the (already-filtered) listing endpoint.
     if (!existing.active) throw new ApiError(400, "This plan is currently unavailable.");
-    return existing;
+    return backfillApiPrice(existing);
   }
 
   const live = await vtpassVariations(serviceID);
@@ -80,6 +92,7 @@ export async function listCatalog(category, serviceID) {
       liveVtpassPrice: liveAmount,
       buyingPrice: stored.buyingPrice,
       sellingPrice: stored.sellingPrice,
+      apiPrice: stored.apiPrice ?? stored.buyingPrice,
       active: stored.active,
     });
   }

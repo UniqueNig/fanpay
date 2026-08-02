@@ -12,6 +12,7 @@ import { verifyTransactionPin } from "../services/pin.js";
 import { getSettings, assertNotMaintenance, assertServiceEnabled } from "../services/settings.js";
 import { previewCoupon, recordRedemption } from "../services/coupons.js";
 import { getAirtimeRate, resolveDataPlanPrice, listDataCatalog } from "../services/maskawasubPricing.js";
+import { resolveEffectivePrice, isApprovedApiDeveloper } from "../services/developerPricing.js";
 import { User } from "../models/User.js";
 import { Transaction } from "../models/Transaction.js";
 import { KycSubmission } from "../models/KycSubmission.js";
@@ -275,7 +276,11 @@ router.post(
       // real wholesale rate for this account.
       const rate = await getAirtimeRate(networkKey);
       const buyingPrice = amount * (rate.buyingPrice / 100);
-      const chargeAmount = amount * (rate.sellingPrice / 100);
+      // Approved live-API developers get the same wholesale-ish rate on
+      // their regular dashboard purchases too, not just via /api/v1/* —
+      // see services/developerPricing.js.
+      const effectiveRate = (await resolveEffectivePrice(req.uid, rate)) / 100;
+      const chargeAmount = amount * effectiveRate;
 
       await requireBalanceAndPin(req.uid, chargeAmount, pin, settings);
 
@@ -340,7 +345,7 @@ router.post(
       // Maskawasub price per plan id (unlike airtime's free-typed amount).
       // Also confirms planId actually belongs to networkKey.
       const priced = await resolveDataPlanPrice(networkKey, planId);
-      const chargeAmount = priced.sellingPrice;
+      const chargeAmount = await resolveEffectivePrice(req.uid, priced);
 
       await requireBalanceAndPin(req.uid, chargeAmount, pin, settings);
 
@@ -428,7 +433,11 @@ router.post(
         // amount, no fixed VTpass "plan" to catalog-price like data/cable.
         if (!(amount > 0)) throw new ApiError(400, "A valid amount is required.");
         faceValue = amount;
-        fee = settings.pricing.billFeeFlat;
+        // Electricity has no buying/selling spread to give an API developer
+        // a wholesale rate on (face value passes straight through) — this
+        // flat fee is the only real margin, so it's what gets discounted
+        // instead. See AppSettings.js's apiBillFeeFlat.
+        fee = (await isApprovedApiDeveloper(req.uid)) ? settings.pricing.apiBillFeeFlat : settings.pricing.billFeeFlat;
         couponResult = await previewCoupon(couponCode, req.uid, fee);
         discount = couponResult?.discount || 0;
         chargeAmount = faceValue + fee - discount;
@@ -454,7 +463,7 @@ router.post(
         // id like Maskawasub used — no Number()/isInteger check needed.
         const priced = await resolvePlanPrice("cable", serviceID, variationCode);
         faceValue = priced.buyingPrice;
-        chargeAmount = priced.sellingPrice;
+        chargeAmount = await resolveEffectivePrice(req.uid, priced);
         buyingPrice = priced.buyingPrice;
         sellingPrice = priced.sellingPrice;
 
@@ -549,7 +558,7 @@ router.post(
       // Same catalog-based, tamper-proof pricing as data/cable — never
       // trusts a client-supplied amount.
       const priced = await resolvePlanPrice("exam", serviceID, variationCode);
-      const chargeAmount = priced.sellingPrice;
+      const chargeAmount = await resolveEffectivePrice(req.uid, priced);
 
       const user = await requireBalanceAndPin(req.uid, chargeAmount, pin, settings);
 

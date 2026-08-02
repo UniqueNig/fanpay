@@ -42,11 +42,13 @@ router.post(
       assertNotMaintenance(settings);
       assertServiceEnabled(settings, "airtime");
 
-      // Same wholesale-rate pricing the consumer app uses (routes/vtu.js) —
-      // one shared source of truth for margin, not a duplicated rate table.
+      // Always the apiPrice tier here — requireApiKey already guarantees a
+      // "live" request only ever reaches this point for an approved
+      // developer, and sandbox requests use it too so a developer sees the
+      // same numbers testing as they will in production.
       const rate = await getAirtimeRate(networkKey);
       const buyingPrice = amount * (rate.buyingPrice / 100);
-      const chargeAmount = amount * (rate.sellingPrice / 100);
+      const chargeAmount = amount * ((rate.apiPrice ?? rate.buyingPrice) / 100);
 
       await requireApiKeyAndBalance(req.apiKey, req.developer, chargeAmount);
 

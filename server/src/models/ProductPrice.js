@@ -13,6 +13,15 @@ const productPriceSchema = new mongoose.Schema(
     label: { type: String, default: "" },
     buyingPrice: { type: Number, required: true, min: 0 },
     sellingPrice: { type: Number, required: true, min: 0 },
+    // What an approved live-API developer pays instead of sellingPrice —
+    // a wholesale-ish rate so they have real margin to resell to their own
+    // users. Defaults to buyingPrice (cost, zero API margin) for any row
+    // created after this field existed. NOT required — ~145 rows already
+    // existed before this field was added, and requiring it would break
+    // reading/re-saving them; every place that reads apiPrice falls back
+    // to buyingPrice with `?? row.buyingPrice` for that reason (see
+    // services/maskawasubPricing.js, services/productPricing.js).
+    apiPrice: { type: Number, min: 0, default: null },
     // Hidden from customers (data-plans/cable-plans listings) and rejected
     // at purchase time when false — lets an admin pull a specific plan
     // without losing its pricing history.

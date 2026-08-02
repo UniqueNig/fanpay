@@ -34,6 +34,25 @@ router.post("/register", requireAuth, async (req, res, next) => {
   }
 });
 
+router.post(
+  "/website",
+  requireAuth,
+  [body("websiteUrl").isURL({ require_protocol: true }).withMessage("Enter a full website URL, e.g. https://example.com")],
+  async (req, res, next) => {
+    if (!checkValidation(req, res)) return;
+    try {
+      const developer = await DeveloperAccount.findOne({ uid: req.uid });
+      if (!developer) throw new ApiError(404, "Register as a developer first.");
+
+      developer.websiteUrl = req.body.websiteUrl.trim();
+      await developer.save();
+      res.json({ success: true, developer });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 router.get("/account", requireAuth, async (req, res, next) => {
   try {
     const developer = await DeveloperAccount.findOne({ uid: req.uid });
@@ -66,6 +85,14 @@ router.post(
       if (!developer) throw new ApiError(404, "Register as a developer first.");
 
       const { environment, name } = req.body;
+
+      // A live key is a request for real, unsupervised spend access — an
+      // admin reviewing it needs to see what's actually being built before
+      // approving (DeveloperAccount.status), so this is required up front,
+      // not just encouraged. Sandbox keys have no such requirement.
+      if (environment === "live" && !developer.websiteUrl) {
+        throw new ApiError(400, "Add your website URL before requesting live API access.");
+      }
 
       // 32 random bytes, base64url — 256 bits of entropy, infeasible to
       // brute-force regardless of hash speed (see models/ApiKey.js for why

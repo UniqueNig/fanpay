@@ -1,16 +1,21 @@
 import React, { useEffect, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
+import ConfirmModal from "../../components/ConfirmModal";
+import { useToast } from "../../context/ToastContext";
 import { api } from "../../api";
 import { formatNaira, formatDate } from "../../utils/helpers";
-import { FiAlertCircle, FiTrash2, FiChevronDown, FiChevronUp } from "react-icons/fi";
+import { FiAlertCircle, FiTrash2, FiChevronDown, FiChevronUp, FiGlobe } from "react-icons/fi";
 
 const TABS = ["Developers", "Usage"];
 const STATUS_OPTIONS = ["pending", "approved", "suspended"];
 
 const DeveloperRow = ({ dev, onStatusChange }) => {
+  const { showToast } = useToast();
   const [open, setOpen] = useState(false);
   const [keys, setKeys] = useState(null);
   const [loadingKeys, setLoadingKeys] = useState(false);
+  const [revokeTarget, setRevokeTarget] = useState(null);
+  const [revoking, setRevoking] = useState(false);
 
   const toggle = async () => {
     setOpen(!open);
@@ -26,11 +31,17 @@ const DeveloperRow = ({ dev, onStatusChange }) => {
     }
   };
 
-  const revokeKey = async (id) => {
+  const revokeKey = async () => {
+    setRevoking(true);
     try {
-      await api.post(`/admin/developer-accounts/keys/${id}/revoke`, {});
-      setKeys((ks) => ks.map((k) => (k.id === id ? { ...k, status: "revoked" } : k)));
-    } catch { /* surfaced via the row staying unchanged */ }
+      await api.post(`/admin/developer-accounts/keys/${revokeTarget}/revoke`, {});
+      setKeys((ks) => ks.map((k) => (k.id === revokeTarget ? { ...k, status: "revoked" } : k)));
+      setRevokeTarget(null);
+      showToast("API key revoked.", "success");
+    } catch (err) {
+      showToast(err.message || "Could not revoke this key.", "error");
+    }
+    setRevoking(false);
   };
 
   return (
@@ -43,6 +54,19 @@ const DeveloperRow = ({ dev, onStatusChange }) => {
             <p className="text-ink/35 font-dm text-xs">
               {dev.companyName || "No company name"} · Wallet {formatNaira(dev.walletBalance || 0)} · {dev.keyCount} key{dev.keyCount === 1 ? "" : "s"}
             </p>
+            {dev.websiteUrl ? (
+              <a
+                href={dev.websiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="text-iris font-dm text-xs flex items-center gap-1 mt-0.5 hover:underline w-fit"
+              >
+                <FiGlobe size={11} /> {dev.websiteUrl}
+              </a>
+            ) : (
+              <p className="text-yellow-500/70 font-dm text-[11px] mt-0.5">No website on file yet</p>
+            )}
           </div>
         </button>
         <select
@@ -64,23 +88,39 @@ const DeveloperRow = ({ dev, onStatusChange }) => {
             <p className="text-ink/35 font-dm text-xs">No API keys yet.</p>
           ) : (
             <div className="bg-surface border border-line rounded-xl overflow-hidden">
-              {keys.map((k, i) => (
-                <div key={k.id} className={`flex items-center justify-between gap-3 px-3 py-2.5 ${i < keys.length - 1 ? "border-b border-line" : ""} ${k.status === "revoked" ? "opacity-50" : ""}`}>
-                  <div className="min-w-0">
-                    <p className="text-ink font-dm text-xs font-medium truncate">{k.name || "Unnamed key"} <span className="text-ink/30 font-mono">{k.keyPrefix}</span></p>
-                    <p className="text-ink/30 font-dm text-[11px] capitalize">{k.environment} · {k.status} · {k.rateLimitPerMinute}/min</p>
+              {keys.map((k, i) => {
+                const awaitingApproval = k.environment === "live" && k.status === "active" && dev.status !== "approved";
+                return (
+                  <div key={k.id} className={`flex items-center justify-between gap-3 px-3 py-2.5 ${i < keys.length - 1 ? "border-b border-line" : ""} ${k.status === "revoked" ? "opacity-50" : ""}`}>
+                    <div className="min-w-0">
+                      <p className="text-ink font-dm text-xs font-medium truncate">{k.name || "Unnamed key"} <span className="text-ink/30 font-mono">{k.keyPrefix}</span></p>
+                      <p className={`font-dm text-[11px] capitalize ${awaitingApproval ? "text-yellow-500" : "text-ink/30"}`}>
+                        {k.environment} · {awaitingApproval ? "active, awaiting approval" : k.status} · {k.rateLimitPerMinute}/min
+                      </p>
+                    </div>
+                    {k.status === "active" && (
+                      <button onClick={() => setRevokeTarget(k.id)} className="text-ink/40 hover:text-red-400 shrink-0" title="Revoke">
+                        <FiTrash2 size={13} />
+                      </button>
+                    )}
                   </div>
-                  {k.status === "active" && (
-                    <button onClick={() => revokeKey(k.id)} className="text-ink/40 hover:text-red-400 shrink-0" title="Revoke">
-                      <FiTrash2 size={13} />
-                    </button>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
       )}
+
+      <ConfirmModal
+        open={!!revokeTarget}
+        title="Revoke this API key?"
+        message="Any app using this key will immediately stop being able to make purchases. This can't be undone."
+        confirmLabel="Revoke"
+        danger
+        submitting={revoking}
+        onConfirm={revokeKey}
+        onCancel={() => setRevokeTarget(null)}
+      />
     </div>
   );
 };

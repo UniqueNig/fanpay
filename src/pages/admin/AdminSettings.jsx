@@ -148,6 +148,10 @@ const AdminSettings = () => {
                 <input type="number" className="input-field-light" defaultValue={pricing.billFeeFlat} onBlur={(e) => save({ pricing: { ...pricing, billFeeFlat: Number(e.target.value) } })} />
               </div>
               <div>
+                <label className="text-ink/60 font-dm text-xs mb-1.5 block">Bill Payment Fee for API Developers (flat ₦)</label>
+                <input type="number" className="input-field-light" defaultValue={pricing.apiBillFeeFlat} onBlur={(e) => save({ pricing: { ...pricing, apiBillFeeFlat: Number(e.target.value) } })} />
+              </div>
+              <div>
                 <label className="text-ink/60 font-dm text-xs mb-1.5 block">Paystack Deposit Fee (%)</label>
                 <input type="number" step="0.1" className="input-field-light" defaultValue={pricing.paystackDepositFeePercent} onBlur={(e) => save({ pricing: { ...pricing, paystackDepositFeePercent: Number(e.target.value) } })} />
               </div>

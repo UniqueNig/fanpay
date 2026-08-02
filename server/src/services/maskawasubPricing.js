@@ -23,10 +23,21 @@ import {
 
 const NETWORK_LABEL = { mtn: "MTN", glo: "GLO", "9mobile": "9MOBILE", airtel: "AIRTEL" };
 
+// Self-heals rows created before apiPrice existed (~145 of them) the first
+// time they're touched again, rather than needing a separate migration —
+// defaults to buyingPrice (cost, zero API margin) same as a brand-new row.
+async function backfillApiPrice(row) {
+  if (row.apiPrice == null) {
+    row.apiPrice = row.buyingPrice;
+    await row.save();
+  }
+  return row;
+}
+
 async function getOrSyncPrice(category, serviceID, key, label, cost) {
   const existing = await ProductPrice.findOne({ serviceID, key });
-  if (existing) return existing;
-  return ProductPrice.create({ category, serviceID, key, label, buyingPrice: cost, sellingPrice: cost });
+  if (existing) return backfillApiPrice(existing);
+  return ProductPrice.create({ category, serviceID, key, label, buyingPrice: cost, sellingPrice: cost, apiPrice: cost });
 }
 
 // Batched version of getOrSyncPrice, for seeding an entire network/cable
@@ -44,13 +55,27 @@ async function batchSyncPrices(category, serviceID, entries) {
   const existing = await ProductPrice.find({ serviceID, key: { $in: keys } }).lean();
   const priced = new Map(existing.map((r) => [r.key, r]));
 
+  // Self-heal rows from before apiPrice existed, same as getOrSyncPrice —
+  // .lean() results can't be .save()'d, so this is a direct bulk update
+  // instead. Cheap no-op once every row's been touched once.
+  const needsBackfill = existing.filter((r) => r.apiPrice == null);
+  if (needsBackfill.length > 0) {
+    await ProductPrice.bulkWrite(
+      needsBackfill.map((r) => ({
+        updateOne: { filter: { _id: r._id }, update: { $set: { apiPrice: r.buyingPrice } } },
+      })),
+      { ordered: false }
+    );
+    needsBackfill.forEach((r) => priced.set(r.key, { ...r, apiPrice: r.buyingPrice }));
+  }
+
   const missing = entries.filter((e) => !priced.has(e.key));
   if (missing.length > 0) {
     await ProductPrice.bulkWrite(
       missing.map((e) => ({
         updateOne: {
           filter: { serviceID, key: e.key },
-          update: { $setOnInsert: { category, serviceID, key: e.key, label: e.label, buyingPrice: e.cost, sellingPrice: e.cost } },
+          update: { $setOnInsert: { category, serviceID, key: e.key, label: e.label, buyingPrice: e.cost, sellingPrice: e.cost, apiPrice: e.cost } },
           upsert: true,
         },
       })),
@@ -73,7 +98,8 @@ async function listManualRows(category, serviceID, seenKeys) {
   const manual = await ProductPrice.find({ category, serviceID, key: { $nin: [...seenKeys] } }).lean();
   return manual.map((m) => ({
     id: m._id, serviceID, variationCode: m.key, label: m.label, validity: null,
-    liveMaskawasubPrice: null, buyingPrice: m.buyingPrice, sellingPrice: m.sellingPrice, active: m.active,
+    liveMaskawasubPrice: null, buyingPrice: m.buyingPrice, sellingPrice: m.sellingPrice,
+    apiPrice: m.apiPrice ?? m.buyingPrice, active: m.active,
   }));
 }
 
@@ -86,13 +112,16 @@ async function listManualRows(category, serviceID, seenKeys) {
 // 100/100 (face value, zero margin) same as any other unconfigured network.
 export async function getAirtimeRate(networkKey) {
   const existing = await ProductPrice.findOne({ category: "airtime", serviceID: networkKey, key: networkKey });
-  if (existing) return { buyingPrice: existing.buyingPrice, sellingPrice: existing.sellingPrice };
+  if (existing) {
+    await backfillApiPrice(existing);
+    return { buyingPrice: existing.buyingPrice, sellingPrice: existing.sellingPrice, apiPrice: existing.apiPrice };
+  }
 
   const data = await maskawasubUser();
   const label = NETWORK_LABEL[networkKey];
   const percent = data?.topuppercentage?.[label]?.VTU ?? 100;
   const row = await getOrSyncPrice("airtime", networkKey, networkKey, label || networkKey, percent);
-  return { buyingPrice: row.buyingPrice, sellingPrice: row.sellingPrice };
+  return { buyingPrice: row.buyingPrice, sellingPrice: row.sellingPrice, apiPrice: row.apiPrice };
 }
 
 // Authoritative price for one data-plan purchase — never trusts a
@@ -104,7 +133,7 @@ export async function resolveDataPlanPrice(networkKey, planId) {
   const existing = await ProductPrice.findOne({ serviceID: networkKey, key });
   if (existing) {
     if (!existing.active) throw new ApiError(400, "This plan is currently unavailable.");
-    return existing;
+    return backfillApiPrice(existing);
   }
 
   const networkId = await resolveProviderId("network", networkKey);
@@ -147,7 +176,8 @@ export async function listDataCatalog(networkKey) {
     return {
       id: stored._id, serviceID: networkKey, variationCode: String(p.id), label: stored.label,
       validity: p.month_validate, planType: p.plan_type, sizeLabel: p.plan,
-      liveMaskawasubPrice: parseFloat(p.TopUser_price), buyingPrice: stored.buyingPrice, sellingPrice: stored.sellingPrice, active: stored.active,
+      liveMaskawasubPrice: parseFloat(p.TopUser_price), buyingPrice: stored.buyingPrice, sellingPrice: stored.sellingPrice,
+      apiPrice: stored.apiPrice ?? stored.buyingPrice, active: stored.active,
     };
   });
   rows.push(...(await listManualRows("data", networkKey, new Set(plans.map((p) => String(p.id))))));

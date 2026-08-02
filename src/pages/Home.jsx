@@ -2,6 +2,7 @@ import React from "react";
 import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
 import Features from "../components/Features";
+import DeveloperShowcase from "../components/DeveloperShowcase";
 import PlansShowcase from "../components/PlansShowcase";
 import FAQAccordion from "../components/FAQAccordion";
 import Footer from "../components/Footer";
@@ -64,6 +65,7 @@ const Home = () => (
     <Hero />
     <Features />
     <HowItWorks />
+    <DeveloperShowcase />
     <PlansShowcase />
     <FAQAccordion />
     <Footer />

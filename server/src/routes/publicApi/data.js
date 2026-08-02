@@ -45,10 +45,11 @@ router.post(
       assertNotMaintenance(settings);
       assertServiceEnabled(settings, "data");
 
-      // Same authoritative, server-resolved pricing the consumer app uses
-      // (routes/vtu.js) — never trusts a client-supplied amount.
+      // Authoritative, server-resolved pricing — always the apiPrice tier
+      // here (see airtime.js's comment: requireApiKey already guarantees a
+      // "live" request only reaches this point for an approved developer).
       const priced = await resolveDataPlanPrice(networkKey, planId);
-      const chargeAmount = priced.sellingPrice;
+      const chargeAmount = priced.apiPrice ?? priced.buyingPrice;
 
       await requireApiKeyAndBalance(req.apiKey, req.developer, chargeAmount);
 

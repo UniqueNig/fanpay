@@ -28,6 +28,12 @@ const appSettingsSchema = new mongoose.Schema(
       transferFeeFlat: { type: Number, default: 0 },
       transferFeePercent: { type: Number, default: 0 },
       billFeeFlat: { type: Number, default: 0 },
+      // Electricity has no per-plan buying/selling spread to give an
+      // approved live-API developer a wholesale rate on (face value is a
+      // pure pass-through) — this flat fee is the only real margin, so it's
+      // the API-tier equivalent of billFeeFlat for that one service.
+      // Defaults equal to billFeeFlat (no discount) until an admin lowers it.
+      apiBillFeeFlat: { type: Number, default: 0 },
       // Deducted from what Aspfiy actually settles before crediting a
       // virtual-account deposit (routes/webhooks.js) — covers Aspfiy's own
       // real cut (~0.75%, confirmed live) plus a margin. Admin-editable

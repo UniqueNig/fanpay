@@ -1,24 +1,33 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
+import ConfirmModal from "../../components/ConfirmModal";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 import { api } from "../../api";
 import { formatNaira } from "../../utils/helpers";
-import { FiCode, FiCopy, FiCheck, FiPlusCircle, FiTrash2, FiAlertCircle, FiBook } from "react-icons/fi";
+import { FiCode, FiCopy, FiCheck, FiPlusCircle, FiTrash2, FiAlertCircle, FiBook, FiGlobe } from "react-icons/fi";
 
 // Register, generate/revoke sandbox and live API keys, see your own wallet
-// balance. Sandbox keys work immediately; live keys exist but stay gated
-// behind admin approval (DeveloperAccount.status, see the admin Developer
-// Platform page). Live purchases debit this same wallet balance directly —
-// no separate API balance — so what's shown here is exactly what a live
-// /api/v1/airtime or /api/v1/data call can spend.
+// balance. Sandbox keys work immediately; live keys need a website URL on
+// file AND admin approval (DeveloperAccount.status, see the admin
+// Developer Platform page) before they'll actually authorize a purchase —
+// see middleware/requireApiKey.js. Live purchases debit this same wallet
+// balance directly — no separate API balance — so what's shown here is
+// exactly what a live /api/v1/airtime or /api/v1/data call can spend, at
+// the same apiPrice rate this account also gets on its own dashboard
+// purchases once approved (services/developerPricing.js).
 const DeveloperPortal = () => {
   const { userData } = useAuth();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [developer, setDeveloper] = useState(null);
   const [keys, setKeys] = useState([]);
   const [error, setError] = useState("");
   const [registering, setRegistering] = useState(false);
+
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [savingWebsite, setSavingWebsite] = useState(false);
 
   const [showCreate, setShowCreate] = useState(false);
   const [keyName, setKeyName] = useState("");
@@ -28,12 +37,16 @@ const DeveloperPortal = () => {
   const [revealedKey, setRevealedKey] = useState(null);
   const [copied, setCopied] = useState(false);
 
+  const [revokeTarget, setRevokeTarget] = useState(null);
+  const [revoking, setRevoking] = useState(false);
+
   const load = async () => {
     setLoading(true);
     setError("");
     try {
       const data = await api.get("/developer/account");
       setDeveloper(data.developer);
+      setWebsiteUrl(data.developer?.websiteUrl || "");
       setKeys(data.keys || []);
     } catch (err) {
       if (err.message?.includes("Not registered")) {
@@ -59,6 +72,20 @@ const DeveloperPortal = () => {
     setRegistering(false);
   };
 
+  const handleSaveWebsite = async (e) => {
+    e.preventDefault();
+    setSavingWebsite(true);
+    setError("");
+    try {
+      await api.post("/developer/website", { websiteUrl: websiteUrl.trim() });
+      showToast("Website saved.", "success");
+      await load();
+    } catch (err) {
+      setError(err.message || "Could not save website. Check the URL and try again.");
+    }
+    setSavingWebsite(false);
+  };
+
   const handleCreateKey = async (e) => {
     e.preventDefault();
     setCreating(true);
@@ -75,13 +102,17 @@ const DeveloperPortal = () => {
     setCreating(false);
   };
 
-  const handleRevoke = async (id) => {
+  const handleRevoke = async () => {
+    setRevoking(true);
     try {
-      await api.post(`/developer/keys/${id}/revoke`, {});
+      await api.post(`/developer/keys/${revokeTarget}/revoke`, {});
+      setRevokeTarget(null);
+      showToast("API key revoked.", "success");
       await load();
     } catch (err) {
       setError(err.message || "Could not revoke this key.");
     }
+    setRevoking(false);
   };
 
   const handleCopy = (text) => {
@@ -99,6 +130,8 @@ const DeveloperPortal = () => {
       </DashboardLayout>
     );
   }
+
+  const hasWebsite = !!developer?.websiteUrl;
 
   return (
     <DashboardLayout>
@@ -138,7 +171,7 @@ const DeveloperPortal = () => {
           </div>
         ) : (
           <>
-            <div className="grid sm:grid-cols-2 gap-4 mb-6">
+            <div className="grid sm:grid-cols-2 gap-4 mb-4">
               <div className="card-flat p-5">
                 <p className="text-ink/35 font-dm text-[11px] uppercase mb-1">Account Status</p>
                 <p className={`font-syne font-bold text-lg capitalize ${developer.status === "approved" ? "text-iris" : "text-ink"}`}>
@@ -146,7 +179,7 @@ const DeveloperPortal = () => {
                 </p>
                 {developer.status !== "approved" && (
                   <p className="text-ink/35 font-dm text-xs mt-1">
-                    Sandbox keys work now. Live keys need admin approval first.
+                    Sandbox keys work now. Live keys need a website on file and admin approval.
                   </p>
                 )}
               </div>
@@ -156,6 +189,28 @@ const DeveloperPortal = () => {
                 <p className="text-ink/30 font-dm text-[11px] mt-1">Same balance as your FanFi wallet — no separate top-up needed.</p>
               </div>
             </div>
+
+            <form onSubmit={handleSaveWebsite} className="card-flat p-5 mb-6">
+              <label className="text-ink/80 font-dm text-sm font-medium mb-2 flex items-center gap-2">
+                <FiGlobe size={14} className="text-ink/40" /> Website
+              </label>
+              <p className="text-ink/35 font-dm text-xs mb-3">
+                Required before you can request live API access — this is what we review before approving real spend.
+              </p>
+              <div className="flex flex-col xs:flex-row gap-2">
+                <input
+                  type="url"
+                  value={websiteUrl}
+                  onChange={(e) => setWebsiteUrl(e.target.value)}
+                  placeholder="https://yourapp.com"
+                  className="input-field-light text-sm flex-1"
+                  required
+                />
+                <button type="submit" disabled={savingWebsite} className="btn-outline-iris !w-auto px-5 disabled:opacity-60">
+                  {savingWebsite ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </form>
 
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-syne font-semibold text-ink text-base">API Keys</h2>
@@ -177,8 +232,10 @@ const DeveloperPortal = () => {
                     <button
                       key={env}
                       type="button"
+                      disabled={env === "live" && !hasWebsite}
                       onClick={() => setEnvironment(env)}
-                      className={`flex-1 py-2.5 rounded-xl font-dm text-sm font-semibold capitalize border transition-all ${
+                      title={env === "live" && !hasWebsite ? "Add your website above first" : undefined}
+                      className={`flex-1 py-2.5 rounded-xl font-dm text-sm font-semibold capitalize border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
                         environment === env ? "bg-iris/15 border-iris/40 text-iris" : "bg-surface border-line text-ink/60"
                       }`}
                     >
@@ -186,7 +243,10 @@ const DeveloperPortal = () => {
                     </button>
                   ))}
                 </div>
-                <button type="submit" disabled={creating} className="btn-iris disabled:opacity-60">
+                {environment === "live" && !hasWebsite && (
+                  <p className="text-yellow-500 font-dm text-xs">Add your website above before generating a live key.</p>
+                )}
+                <button type="submit" disabled={creating || (environment === "live" && !hasWebsite)} className="btn-iris disabled:opacity-60">
                   {creating ? "Generating..." : "Generate Key"}
                 </button>
               </form>
@@ -196,20 +256,25 @@ const DeveloperPortal = () => {
               <div className="card-flat p-8 text-center text-ink/35 font-dm text-sm">No API keys yet.</div>
             ) : (
               <div className="card-flat overflow-hidden">
-                {keys.map((k, i) => (
-                  <div key={k.id} className={`flex items-center justify-between gap-3 p-4 ${i < keys.length - 1 ? "border-b border-line" : ""} ${k.status === "revoked" ? "opacity-50" : ""}`}>
-                    <div className="min-w-0">
-                      <p className="text-ink font-dm text-sm font-medium truncate">{k.name || "Unnamed key"}</p>
-                      <p className="text-ink/35 font-mono text-xs">{k.keyPrefix}</p>
-                      <p className="text-ink/30 font-dm text-[11px] mt-0.5 capitalize">{k.environment} · {k.status}</p>
+                {keys.map((k, i) => {
+                  const awaitingApproval = k.environment === "live" && k.status === "active" && developer.status !== "approved";
+                  return (
+                    <div key={k.id} className={`flex items-center justify-between gap-3 p-4 ${i < keys.length - 1 ? "border-b border-line" : ""} ${k.status === "revoked" ? "opacity-50" : ""}`}>
+                      <div className="min-w-0">
+                        <p className="text-ink font-dm text-sm font-medium truncate">{k.name || "Unnamed key"}</p>
+                        <p className="text-ink/35 font-mono text-xs">{k.keyPrefix}</p>
+                        <p className={`font-dm text-[11px] mt-0.5 capitalize ${awaitingApproval ? "text-yellow-500" : "text-ink/30"}`}>
+                          {k.environment} · {awaitingApproval ? "active, awaiting approval" : k.status}
+                        </p>
+                      </div>
+                      {k.status === "active" && (
+                        <button onClick={() => setRevokeTarget(k.id)} className="text-ink/40 hover:text-red-400 shrink-0" title="Revoke">
+                          <FiTrash2 size={15} />
+                        </button>
+                      )}
                     </div>
-                    {k.status === "active" && (
-                      <button onClick={() => handleRevoke(k.id)} className="text-ink/40 hover:text-red-400 shrink-0" title="Revoke">
-                        <FiTrash2 size={15} />
-                      </button>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>
@@ -232,6 +297,17 @@ const DeveloperPortal = () => {
             </div>
           </div>
         )}
+
+        <ConfirmModal
+          open={!!revokeTarget}
+          title="Revoke this API key?"
+          message="Any app using this key will immediately stop being able to make purchases. This can't be undone."
+          confirmLabel="Revoke"
+          danger
+          submitting={revoking}
+          onConfirm={handleRevoke}
+          onCancel={() => setRevokeTarget(null)}
+        />
       </div>
     </DashboardLayout>
   );
