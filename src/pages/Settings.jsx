@@ -175,7 +175,7 @@ const Settings = () => {
           ) : (
             <>
               <p className="text-ink/50 font-dm text-sm mb-4">
-                Permanently delete your FanPay account and all associated data.
+                Permanently delete your FanFi account and all associated data.
               </p>
               <button
                 onClick={() => setConfirming(true)}

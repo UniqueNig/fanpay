@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { FiMail, FiLock, FiArrowRight, FiEye, FiEyeOff } from "react-icons/fi";
-import FanPayLogo from "../components/FanPayLogo";
+import FanFiLogo from "../components/FanFiLogo";
 import SEO from "../components/SEO";
 
 const GoogleIcon = () => (
@@ -80,13 +80,13 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-surface mesh-bg flex items-center justify-center px-4 py-12">
-      <SEO title="Login" description="Sign in to your FanPay account." path="/login" noindex />
+      <SEO title="Login" description="Sign in to your FanFi account." path="/login" noindex />
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-iris to-transparent" />
 
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center justify-center mb-6">
-            <FanPayLogo className="h-10 w-auto" />
+            <FanFiLogo className="h-10 w-auto" />
           </Link>
           <h1 className="font-syne font-bold text-2xl text-ink mb-2">Welcome back</h1>
           <p className="text-ink/50 font-dm text-sm">Sign in to your account</p>

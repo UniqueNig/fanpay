@@ -27,7 +27,7 @@ const SECTIONS = [
   },
   {
     title: "Questions",
-    body: "Reach us at fanpay@gmail.com with any question about how your data is handled.",
+    body: "Reach us at support@fanfi.ng with any question about how your data is handled.",
   },
 ];
 
@@ -35,7 +35,7 @@ const PrivacyPolicy = () => (
   <div className="bg-surface min-h-screen">
     <SEO
       title="Privacy Policy"
-      description="How FanPay collects, uses, and protects your information."
+      description="How FanFi collects, uses, and protects your information."
       path="/privacy"
     />
     <Navbar />

@@ -15,7 +15,7 @@ function generateAccountNumber() {
 
 // transaction.meta carries whatever a purchase/deposit route found useful to
 // record internally — that includes real wholesale cost data (buyingPrice/
-// sellingPrice reveal FanPay's exact margin per purchase) and raw
+// sellingPrice reveal FanFi's exact margin per purchase) and raw
 // provider-internal identifiers/debug text, none of which should ever reach
 // a customer's own browser. TransactionDetailModal.jsx already hides these
 // from the receipt UI, but that's cosmetic only — the previous version of

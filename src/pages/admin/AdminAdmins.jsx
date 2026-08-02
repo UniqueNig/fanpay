@@ -74,7 +74,7 @@ const AdminAdmins = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="teammate@fanpay.ng"
+              placeholder="teammate@fanfi.ng"
               className="input-field-light flex-1"
               required
             />

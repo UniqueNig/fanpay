@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { FiUser, FiMail, FiLock, FiPhone, FiArrowRight, FiEye, FiEyeOff } from "react-icons/fi";
-import FanPayLogo from "../components/FanPayLogo";
+import FanFiLogo from "../components/FanFiLogo";
 import PasswordChecklist, { isPasswordValid } from "../components/PasswordChecklist";
 import SEO from "../components/SEO";
 
@@ -43,7 +43,7 @@ const Signup = () => {
     setLoading(true);
     try {
       await signup(form.email, form.password, form.fullName, form.phone);
-      showToast("Account created successfully. Welcome to FanPay!", "success");
+      showToast("Account created successfully. Welcome to FanFi!", "success");
       navigate("/dashboard");
     } catch (err) {
       const msg = err.message || "Failed to create account. Try again.";
@@ -58,7 +58,7 @@ const Signup = () => {
     setGoogleLoading(true);
     try {
       await loginWithGoogle();
-      showToast("Account created successfully. Welcome to FanPay!", "success");
+      showToast("Account created successfully. Welcome to FanFi!", "success");
       navigate("/dashboard");
     } catch (err) {
       if (err.code !== "auth/popup-closed-by-user") {
@@ -83,7 +83,7 @@ const Signup = () => {
     <div className="min-h-screen bg-surface mesh-bg flex items-center justify-center px-4 py-12">
       <SEO
         title="Create Your Free Account"
-        description="Open a free FanPay account — fund your wallet, buy airtime and data, and pay bills in minutes."
+        description="Open a free FanFi account — fund your wallet, buy airtime and data, and pay bills in minutes."
         path="/signup"
       />
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-iris to-transparent" />
@@ -91,7 +91,7 @@ const Signup = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center justify-center mb-6">
-            <FanPayLogo className="h-10 w-auto" />
+            <FanFiLogo className="h-10 w-auto" />
           </Link>
           <h1 className="font-syne font-bold text-2xl text-ink mb-2">Create your account</h1>
           <p className="text-ink/50 font-dm text-sm">Free forever. No hidden charges.</p>

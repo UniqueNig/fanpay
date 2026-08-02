@@ -58,6 +58,9 @@ import pricingRouter from "./routes/pricing.js";
 import adminProductPricesRouter from "./routes/adminProductPrices.js";
 import adminNetworkServicesRouter from "./routes/adminNetworkServices.js";
 import networksRouter from "./routes/networks.js";
+import developerAccountsRouter from "./routes/publicApi/developerAccounts.js";
+import publicApiAirtimeRouter from "./routes/publicApi/airtime.js";
+import publicApiDataRouter from "./routes/publicApi/data.js";
 
 const app = express();
 
@@ -101,6 +104,19 @@ app.use("/api/pin-reset-requests", apiLimiter, pinResetRequestsRouter);
 app.use("/api/notifications", apiLimiter, notificationsRouter);
 app.use("/api/pricing", apiLimiter, pricingRouter);
 app.use("/api/networks", apiLimiter, networksRouter);
+app.use("/api/developer", apiLimiter, developerAccountsRouter);
+
+// Third-party developer API — authenticated by X-Api-Key (requireApiKey,
+// applied inside each router below), not a Firebase session. Namespaced
+// /api/v1 to signal API-versioning intent from day one, since external
+// developers will depend on this response shape. This limiter is only the
+// IP-based pre-auth floor (cheap defense against spam before a key is even
+// checked); the real per-developer limit is requireApiKey + perKeyLimiter
+// (middleware/requireApiKey.js), applied inside each route after the key
+// is resolved.
+const publicApiLimiter = rateLimit({ windowMs: 60_000, max: 60 });
+app.use("/api/v1", publicApiLimiter, publicApiAirtimeRouter);
+app.use("/api/v1", publicApiLimiter, publicApiDataRouter);
 
 // Tighter limiter than regular API traffic — this is exactly the endpoint a
 // brute-force PIN guesser would hammer, on top of the 5-attempt account lock.
@@ -142,4 +158,4 @@ app.use(errorHandler);
 await connectDb();
 startVtuReconciliation();
 startChatAiListener();
-app.listen(env.port, () => console.log(`FanPay API listening on port ${env.port}`));
+app.listen(env.port, () => console.log(`FanFi API listening on port ${env.port}`));

@@ -3,7 +3,7 @@ import { CouponRedemption } from "../models/CouponRedemption.js";
 import { ApiError } from "../middleware/errorHandler.js";
 
 // Looks up an active coupon and computes the discount, capped at feeAmount —
-// a coupon can only zero out Abopay's own margin on a transaction, never
+// a coupon can only zero out FanFi's own margin on a transaction, never
 // discount the underlying VTpass/Paystack cost, so it can't make the
 // business lose money regardless of what an admin configures it to.
 // Returns null if no code was submitted (coupon is optional everywhere).

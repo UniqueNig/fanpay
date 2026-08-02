@@ -103,7 +103,7 @@ const AdminSettings = () => {
             )}
             <div>
               <label className="text-ink/60 font-dm text-xs mb-1.5 block">Support Email</label>
-              <input className="input-field-light" defaultValue={general.supportEmail} onBlur={(e) => save({ general: { ...general, supportEmail: e.target.value } })} placeholder="support@fanpay.ng" />
+              <input className="input-field-light" defaultValue={general.supportEmail} onBlur={(e) => save({ general: { ...general, supportEmail: e.target.value } })} placeholder="support@fanfi.ng" />
             </div>
             <div>
               <label className="text-ink/60 font-dm text-xs mb-1.5 block">Support Phone</label>
@@ -158,7 +158,7 @@ const AdminSettings = () => {
             </div>
             <p className="text-ink/30 font-dm text-xs">
               Transfer Fee and Bill Payment Fee are charged ON TOP of the amount (customer pays more) —
-              coupon codes can discount these, capped so they never cost more than FanPay's own margin.
+              coupon codes can discount these, capped so they never cost more than FanFi's own margin.
             </p>
             <p className="text-ink/30 font-dm text-xs">
               Paystack Deposit Fee is also charged ON TOP (customer pays amount + fee, wallet gets exactly

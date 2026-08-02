@@ -22,7 +22,7 @@ router.get(
 
     try {
       const recipient = await User.findOne({ accountNumber: req.params.accountNumber });
-      if (!recipient) throw new ApiError(404, "No Abopay account found with that account number.");
+      if (!recipient) throw new ApiError(404, "No FanFi account found with that account number.");
       res.json({ fullName: recipient.fullName || recipient.accountNumber });
     } catch (err) {
       next(err);
@@ -56,7 +56,7 @@ router.post(
       await verifyTransactionPin(req.uid, pin);
 
       const recipient = await User.findOne({ accountNumber });
-      if (!recipient) throw new ApiError(404, "No Abopay account found with that account number.");
+      if (!recipient) throw new ApiError(404, "No FanFi account found with that account number.");
       if (recipient.uid === sender.uid) throw new ApiError(400, "You can't send money to yourself.");
       if (recipient.suspended) throw new ApiError(400, "This recipient account is suspended and can't receive transfers.");
 

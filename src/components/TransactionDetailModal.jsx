@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import { FiX, FiShare2, FiDownload, FiArrowUpRight, FiArrowDownLeft, FiFlag } from "react-icons/fi";
 import { formatNaira, formatDate, formatTime } from "../utils/helpers";
 import { api } from "../api";
-import FanPayLogo from "./FanPayLogo";
+import FanFiLogo from "./FanFiLogo";
 
 // Fields already shown elsewhere in the receipt, or internal-only — hidden
 // from the generic "extra details" list so it doesn't look redundant/noisy.
@@ -56,15 +56,15 @@ const TransactionDetailModal = ({ transaction, onClose }) => {
     setShareError("");
     try {
       const blob = await captureReceipt();
-      const file = new File([blob], `fanpay-receipt-${tx.reference}.png`, { type: "image/png" });
+      const file = new File([blob], `fanfi-receipt-${tx.reference}.png`, { type: "image/png" });
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: "FanPay Receipt", text: tx.title });
+        await navigator.share({ files: [file], title: "FanFi Receipt", text: tx.title });
       } else {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `fanpay-receipt-${tx.reference}.png`;
+        a.download = `fanfi-receipt-${tx.reference}.png`;
         a.click();
         URL.revokeObjectURL(url);
       }
@@ -107,7 +107,7 @@ const TransactionDetailModal = ({ transaction, onClose }) => {
         {/* Receipt content — captured as an image for sharing */}
         <div ref={receiptRef} className="bg-surface p-6">
           <div className="flex items-center justify-center mb-5">
-            <FanPayLogo className="h-7 w-auto" />
+            <FanFiLogo className="h-7 w-auto" />
           </div>
 
           <div className="flex flex-col items-center text-center mb-6">
@@ -140,7 +140,7 @@ const TransactionDetailModal = ({ transaction, onClose }) => {
             ))}
           </div>
 
-          <p className="text-ink/25 font-dm text-[10px] text-center mt-5">Powered by FanPay</p>
+          <p className="text-ink/25 font-dm text-[10px] text-center mt-5">Powered by FanFi</p>
         </div>
 
         <div className="p-5 pt-4">

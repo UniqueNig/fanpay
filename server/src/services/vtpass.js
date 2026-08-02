@@ -3,7 +3,7 @@ import { env } from "../config/env.js";
 import { ApiError } from "../middleware/errorHandler.js";
 import { ExtraVtuService } from "../models/ExtraVtuService.js";
 
-// Electricity keys match FanPay's existing frontend provider list exactly
+// Electricity keys match FanFi's existing frontend provider list exactly
 // (src/utils/helpers.js's BILL_TYPES) — full disco names, not acronyms —
 // so the frontend needs zero changes for provider selection. Values are
 // VTpass's real serviceID slugs, confirmed live (2026-08-02) against

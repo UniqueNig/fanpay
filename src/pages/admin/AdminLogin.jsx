@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { FiMail, FiLock, FiArrowRight, FiEye, FiEyeOff, FiShield } from "react-icons/fi";
-import FanPayLogo from "../../components/FanPayLogo";
+import FanFiLogo from "../../components/FanFiLogo";
 
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
@@ -62,13 +62,13 @@ const AdminLogin = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center justify-center mb-6">
-            <FanPayLogo className="h-10 w-auto" />
+            <FanFiLogo className="h-10 w-auto" />
           </Link>
           <div className="w-12 h-12 rounded-2xl bg-iris/15 border border-iris/25 flex items-center justify-center mx-auto mb-4">
             <FiShield size={20} className="text-iris" />
           </div>
           <h1 className="font-syne font-bold text-2xl text-ink mb-2">Admin Portal</h1>
-          <p className="text-ink/50 font-dm text-sm">Sign in to the FanPay admin dashboard</p>
+          <p className="text-ink/50 font-dm text-sm">Sign in to the FanFi admin dashboard</p>
         </div>
 
         <div className="card-flat p-8">
@@ -93,7 +93,7 @@ const AdminLogin = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="input-field-light pl-10"
-                  placeholder="admin@fanpay.ng"
+                  placeholder="admin@fanfi.ng"
                   autoComplete="username"
                   required
                 />

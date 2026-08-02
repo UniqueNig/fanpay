@@ -1,6 +1,6 @@
 {
-  "name": "abopay-functions",
-  "description": "Abopay Firebase Cloud Functions",
+  "name": "fanfi-functions",
+  "description": "FanFi Firebase Cloud Functions",
   "scripts": {
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",

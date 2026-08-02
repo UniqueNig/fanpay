@@ -4,8 +4,8 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: "#181229",        // deep violet-black (FanPay brand)
-        secondary: "#8b5cf6",      // vivid violet (FanPay brand)
+        primary: "#181229",        // deep violet-black (FanFi brand)
+        secondary: "#8b5cf6",      // vivid violet (FanFi brand)
         accent: "#7c3aed",         // darker violet accent
         naira: "#15803d",
         gold: "#f0a500",

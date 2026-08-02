@@ -35,7 +35,7 @@ const appSettingsSchema = new mongoose.Schema(
       aspfiyDepositFeePercent: { type: Number, default: 1.5 },
       // Added ON TOP of what a customer requests to deposit via Paystack
       // (routes/deposits.js, routes/webhooks.js) — the customer pays
-      // amount+fee, the wallet is credited exactly `amount`, so FanPay
+      // amount+fee, the wallet is credited exactly `amount`, so FanFi
       // doesn't absorb Paystack's own transaction fee.
       paystackDepositFeePercent: { type: Number, default: 1.5 },
     },

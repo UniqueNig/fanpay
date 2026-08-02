@@ -7,11 +7,11 @@ import SEO from "../components/SEO";
 const SECTIONS = [
   {
     title: "The service",
-    body: "FanPay lets you fund a wallet and use it to buy airtime, data, and pay electricity and cable TV bills. Deliveries are made by our third-party providers — we aim for instant delivery, but occasionally a purchase can take a few minutes to confirm.",
+    body: "FanFi lets you fund a wallet and use it to buy airtime, data, and pay electricity and cable TV bills. Deliveries are made by our third-party providers — we aim for instant delivery, but occasionally a purchase can take a few minutes to confirm.",
   },
   {
     title: "Your account",
-    body: "You're responsible for keeping your login and transaction PIN private. Never share your PIN with anyone, including someone claiming to be FanPay support — we will never ask for it. You're responsible for transactions authorized with your correct PIN.",
+    body: "You're responsible for keeping your login and transaction PIN private. Never share your PIN with anyone, including someone claiming to be FanFi support — we will never ask for it. You're responsible for transactions authorized with your correct PIN.",
   },
   {
     title: "Fees",
@@ -27,11 +27,11 @@ const SECTIONS = [
   },
   {
     title: "Changes",
-    body: "We may update these terms as the service changes. Continuing to use FanPay after an update means you accept the current terms.",
+    body: "We may update these terms as the service changes. Continuing to use FanFi after an update means you accept the current terms.",
   },
   {
     title: "Questions",
-    body: "Reach us at fanpay@gmail.com with any question about these terms.",
+    body: "Reach us at support@fanfi.ng with any question about these terms.",
   },
 ];
 
@@ -39,7 +39,7 @@ const TermsOfService = () => (
   <div className="bg-surface min-h-screen">
     <SEO
       title="Terms of Service"
-      description="The terms that govern using FanPay — your account, fees, refunds, and spending limits."
+      description="The terms that govern using FanFi — your account, fees, refunds, and spending limits."
       path="/terms"
     />
     <Navbar />

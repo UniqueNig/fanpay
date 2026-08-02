@@ -9,4 +9,4 @@ export const resend = env.resendApiKey ? new Resend(env.resendApiKey) : null;
 // resend.dev's shared sandbox sender only delivers to the Resend account's
 // own verified email — set RESEND_FROM_EMAIL to a verified domain address
 // for real delivery to users.
-export const emailFrom = env.resendFromEmail || "Abopay <onboarding@resend.dev>";
+export const emailFrom = env.resendFromEmail || "FanFi <onboarding@resend.dev>";

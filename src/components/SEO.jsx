@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
 const SITE_URL = (import.meta.env.VITE_SITE_URL || "https://fanpay-peach.vercel.app").replace(/\/+$/, "");
-const SITE_NAME = "FanPay";
+const SITE_NAME = "FanFi";
 const DEFAULT_DESCRIPTION = "Fund your wallet, buy airtime and data, and pay electricity and cable TV bills — all in one simple app.";
 const DEFAULT_IMAGE = `${SITE_URL}/og-image.svg`;
 

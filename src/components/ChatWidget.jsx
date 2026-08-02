@@ -87,7 +87,7 @@ const ChatWidget = () => {
               messages.map((m) => (
                 <div key={m.id} className={`flex flex-col ${m.sender === "user" ? "items-end" : "items-start"}`}>
                   {m.sender === "ai" && (
-                    <span className="text-ink/30 font-dm text-[10px] mb-0.5 px-1">FanPay Assistant</span>
+                    <span className="text-ink/30 font-dm text-[10px] mb-0.5 px-1">FanFi Assistant</span>
                   )}
                   <div
                     className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm ${

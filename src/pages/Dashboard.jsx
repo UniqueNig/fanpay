@@ -33,7 +33,7 @@ const Dashboard = () => {
   const balance = userData?.balance ?? 0;
 
   // Reserves (first visit only — cheap Mongo read on every visit after) and
-  // shows the Paga/Palmpay funding accounts here instead of FanPay's own
+  // shows the Paga/Palmpay funding accounts here instead of FanFi's own
   // internal account number, which only mattered for wallet-to-wallet
   // transfer — a feature not currently offered (see Sidebar.jsx).
   useEffect(() => {

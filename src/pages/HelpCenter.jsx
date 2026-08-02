@@ -11,7 +11,7 @@ const HelpCenter = () => (
   <div className="bg-surface min-h-screen">
     <SEO
       title="Help Center"
-      description="Answers to the most common FanPay questions — funding your wallet, buying airtime and data, paying bills, and more."
+      description="Answers to the most common FanFi questions — funding your wallet, buying airtime and data, paying bills, and more."
       path="/help"
     />
     <Navbar />

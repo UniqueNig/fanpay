@@ -6,7 +6,7 @@ import {
   FiKey, FiTerminal, FiMail, FiCpu, FiMessageCircle, FiWifi, FiPercent,
 } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
-import FanPayLogo from "./FanPayLogo";
+import FanFiLogo from "./FanFiLogo";
 
 const navItems = [
   { to: "/admin", icon: <FiGrid size={17} />, label: "Overview" },
@@ -43,7 +43,7 @@ const AdminSidebar = ({ mobileOpen, setMobileOpen }) => {
       {/* Logo */}
       <div className="flex items-center justify-between px-5 h-16 border-b border-line">
         <div className="flex items-center gap-2">
-          <FanPayLogo className="h-7 w-auto" />
+          <FanFiLogo className="h-7 w-auto" />
           <span className="bg-iris/15 border border-iris/25 text-iris text-[10px] font-syne font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
             Admin
           </span>

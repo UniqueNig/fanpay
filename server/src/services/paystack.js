@@ -65,7 +65,7 @@ export async function initiateTransfer({ recipientCode, amount, reference, narra
       source: "balance",
       amount: Math.round(amount * 100),
       recipient: recipientCode,
-      reason: narration || "Abopay Transfer",
+      reason: narration || "FanFi Transfer",
       reference,
     });
     return res.data.data;

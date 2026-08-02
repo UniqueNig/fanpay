@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { FiMapPin, FiPhone, FiMail } from "react-icons/fi";
-import FanPayLogo from "./FanPayLogo";
+import FanFiLogo from "./FanFiLogo";
 
 const COLUMNS = [
   {
@@ -30,7 +30,7 @@ const Footer = () => (
       <div className="grid md:grid-cols-3 gap-10 mb-12">
         <div className="md:col-span-1">
           <Link to="/" className="flex items-center mb-4">
-            <FanPayLogo className="h-9 w-auto" />
+            <FanFiLogo className="h-9 w-auto" />
           </Link>
           <p className="text-ink/40 font-dm text-sm leading-relaxed mb-5">
             Fund your wallet, buy airtime and data, and pay your bills — all in one simple app.
@@ -43,7 +43,7 @@ const Footer = () => (
               <FiPhone size={13} className="shrink-0" /> 08147261388
             </span>
             <span className="flex items-center gap-2">
-              <FiMail size={13} className="shrink-0" /> fanpay@gmail.com
+              <FiMail size={13} className="shrink-0" /> support@fanfi.ng
             </span>
           </div>
         </div>
@@ -66,7 +66,7 @@ const Footer = () => (
 
       <div className="pt-8 border-t border-line flex flex-col sm:flex-row items-center justify-between gap-4">
         <p className="text-ink/30 font-dm text-xs">
-          © 2026 FanPay. All rights reserved.
+          © 2026 FanFi. All rights reserved.
         </p>
         <a
           href="https://emmanuelfaniyi.vercel.app/"

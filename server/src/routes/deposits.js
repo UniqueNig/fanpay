@@ -29,7 +29,7 @@ router.get("/virtual-accounts", requireAuth, async (req, res, next) => {
     if (needsPaga || needsPalmpay) {
       if (!user.phone) throw new ApiError(400, "Add a phone number in Settings first — it's required to generate a funding account.");
 
-      const [firstName, ...rest] = (user.fullName || "FanPay User").trim().split(/\s+/);
+      const [firstName, ...rest] = (user.fullName || "FanFi User").trim().split(/\s+/);
       const lastName = rest.join(" ") || firstName;
       const webhookUrl = `${env.publicApiUrl}/api/webhooks/aspfiy`;
 

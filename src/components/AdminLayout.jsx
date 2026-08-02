@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { FiMenu, FiSun, FiMoon } from "react-icons/fi";
 import AdminSidebar from "./AdminSidebar";
-import FanPayLogo from "./FanPayLogo";
+import FanFiLogo from "./FanFiLogo";
 import { useTheme } from "../context/ThemeContext";
 
 const ThemeToggleButton = () => {
@@ -30,7 +30,7 @@ const AdminLayout = ({ children }) => {
             <button onClick={() => setMobileOpen(true)} className="text-ink/60 hover:text-ink">
               <FiMenu size={20} />
             </button>
-            <FanPayLogo className="h-7 w-auto" />
+            <FanFiLogo className="h-7 w-auto" />
             <span className="bg-iris/15 border border-iris/25 text-iris text-[10px] font-syne font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
               Admin
             </span>

@@ -7,7 +7,7 @@ import { FiMapPin, FiPhone, FiMail, FiMessageCircle } from "react-icons/fi";
 
 const CONTACTS = [
   { icon: FiPhone, label: "Phone", value: "08147261388" },
-  { icon: FiMail, label: "Email", value: "fanpay@gmail.com" },
+  { icon: FiMail, label: "Email", value: "support@fanfi.ng" },
   { icon: FiMapPin, label: "Address", value: "Abeokuta, Ogun State" },
 ];
 
@@ -15,7 +15,7 @@ const ContactUs = () => (
   <div className="bg-surface min-h-screen">
     <SEO
       title="Contact Us"
-      description="Get in touch with FanPay — phone, email, and address, or live chat right in the app."
+      description="Get in touch with FanFi — phone, email, and address, or live chat right in the app."
       path="/contact"
     />
     <Navbar />

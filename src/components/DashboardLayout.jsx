@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { FiMenu, FiSun, FiMoon } from "react-icons/fi";
 import Sidebar from "./Sidebar";
 import NotificationBell from "./NotificationBell";
-import FanPayLogo from "./FanPayLogo";
+import FanFiLogo from "./FanFiLogo";
 import { useTheme } from "../context/ThemeContext";
 
 const ThemeToggleButton = () => {
@@ -31,7 +31,7 @@ const DashboardLayout = ({ children }) => {
             <button onClick={() => setMobileOpen(true)} className="text-ink/60 hover:text-ink">
               <FiMenu size={20} />
             </button>
-            <FanPayLogo className="h-7 w-auto" />
+            <FanFiLogo className="h-7 w-auto" />
           </div>
           <div className="flex items-center gap-1">
             <ThemeToggleButton />

@@ -4,7 +4,7 @@ const ThemeContext = createContext();
 
 export const useTheme = () => useContext(ThemeContext);
 
-const STORAGE_KEY = "fanpay-theme";
+const STORAGE_KEY = "fanfi-theme";
 
 // The initial value is whatever the anti-flash inline script in index.html
 // already stamped onto <html data-theme="..."> before React mounted — read

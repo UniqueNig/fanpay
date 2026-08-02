@@ -58,7 +58,7 @@ const Features = () => (
           <span className="text-gradient">Everyday Bills</span>
         </h2>
         <p className="section-sub max-w-lg mx-auto">
-          FanPay brings airtime, data, and bill payments into one simple wallet.
+          FanFi brings airtime, data, and bill payments into one simple wallet.
         </p>
       </div>
 

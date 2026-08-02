@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { FiMenu, FiX, FiLogOut, FiUser, FiSun, FiMoon } from "react-icons/fi";
-import FanPayLogo from "./FanPayLogo";
+import FanFiLogo from "./FanFiLogo";
 
 const ThemeToggleButton = () => {
   const { theme, toggleTheme } = useTheme();
@@ -58,7 +58,7 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center">
-          <FanPayLogo className="h-8 w-auto" />
+          <FanFiLogo className="h-8 w-auto" />
         </Link>
 
         {/* Desktop Nav */}

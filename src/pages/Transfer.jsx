@@ -11,7 +11,7 @@ const Transfer = () => {
   const { user, userData, fetchUserData } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [mode, setMode] = useState("bank"); // "bank" | "fanpay"
+  const [mode, setMode] = useState("bank"); // "bank" | "fanfi"
   const [form, setForm] = useState({ bank: "", bankCode: "", accountNumber: "", accountName: "", amount: "", narration: "" });
   const [bankSearch, setBankSearch] = useState("");
   const [showBankDropdown, setShowBankDropdown] = useState(false);
@@ -79,7 +79,7 @@ const Transfer = () => {
     } catch (err) {
       setError(
         err.message ||
-          (isBank ? "Could not verify account. Check the account number and bank." : "No FanPay account found with that account number.")
+          (isBank ? "Could not verify account. Check the account number and bank." : "No FanFi account found with that account number.")
       );
     }
     setVerifying(false);
@@ -103,7 +103,7 @@ const Transfer = () => {
             accountNumber: form.accountNumber,
             bankCode: form.bankCode,
             amount: parseFloat(form.amount),
-            narration: form.narration || "FanPay Transfer",
+            narration: form.narration || "FanFi Transfer",
             couponCode: couponCode.trim() || undefined,
             pin,
           })
@@ -125,7 +125,7 @@ const Transfer = () => {
       setPinError(
         err.message?.includes("Insufficient")
           ? "Insufficient balance."
-          : err.message?.includes("recipient") || err.message?.includes("FanPay account")
+          : err.message?.includes("recipient") || err.message?.includes("FanFi account")
           ? err.message
           : err.message || "Transfer failed. Please try again or contact support."
       );
@@ -145,7 +145,7 @@ const Transfer = () => {
         <div className="mb-7">
           <h1 className="font-syne font-bold text-ink text-2xl">Send Money</h1>
           <p className="text-ink/40 font-dm text-sm mt-1">
-            {isBank ? "Transfer to any Nigerian bank account" : "Send instantly to another FanPay user"}
+            {isBank ? "Transfer to any Nigerian bank account" : "Send instantly to another FanFi user"}
           </p>
         </div>
 
@@ -160,7 +160,7 @@ const Transfer = () => {
                 <span className="text-iris font-bold">{formatNaira(parseFloat(form.amount))}</span> sent to {form.accountName}{isBank ? ` · ${form.bank}` : ""}
               </p>
               <p className="text-ink/35 font-dm text-xs mt-2">
-                {isBank ? "Bank transfers typically arrive within minutes." : "Delivered instantly to their FanPay wallet."}
+                {isBank ? "Bank transfers typically arrive within minutes." : "Delivered instantly to their FanFi wallet."}
               </p>
             </div>
             <div className="w-full bg-surface border border-line rounded-2xl px-5 py-4 flex justify-between">
@@ -173,11 +173,11 @@ const Transfer = () => {
           <div className="card-flat p-6">
             {step === 1 && (
               <div className="flex gap-2 mb-6">
-                <button type="button" onClick={() => handleModeChange("fanpay")}
+                <button type="button" onClick={() => handleModeChange("fanfi")}
                   className={`flex-1 py-3 rounded-xl font-dm text-sm font-semibold border transition-all duration-200 ${
-                    mode === "fanpay" ? "bg-iris/15 border-iris/40 text-iris" : "bg-surface border-line text-ink/60 hover:text-ink"
+                    mode === "fanfi" ? "bg-iris/15 border-iris/40 text-iris" : "bg-surface border-line text-ink/60 hover:text-ink"
                   }`}>
-                  FanPay Account
+                  FanFi Account
                 </button>
                 <button type="button" onClick={() => handleModeChange("bank")}
                   className={`flex-1 py-3 rounded-xl font-dm text-sm font-semibold border transition-all duration-200 ${
@@ -234,7 +234,7 @@ const Transfer = () => {
 
                 <div>
                   <label className="text-ink/80 font-dm text-sm font-medium mb-2 block">
-                    {isBank ? "Account Number" : "Recipient's FanPay Account Number"}
+                    {isBank ? "Account Number" : "Recipient's FanFi Account Number"}
                   </label>
                   <input type="text" value={form.accountNumber} onChange={handleChange("accountNumber")}
                     className="input-field-light text-base" placeholder={isBank ? "10-digit NUBAN" : "10-digit account number"} maxLength={10} required />
@@ -285,11 +285,11 @@ const Transfer = () => {
                   {[
                     { label: "Account Name", val: form.accountName, highlight: true },
                     ...(isBank ? [{ label: "Destination Bank", val: form.bank }] : []),
-                    { label: isBank ? "Account Number" : "FanPay Account Number", val: form.accountNumber },
+                    { label: isBank ? "Account Number" : "FanFi Account Number", val: form.accountNumber },
                     { label: "Amount", val: formatNaira(amt) },
                     { label: "Fee", val: isBank ? formatNaira(fee) : "Instant & Free" },
                     ...(isBank ? [{ label: "Total", val: formatNaira(total), highlight: true }] : []),
-                    { label: "Narration", val: form.narration || (isBank ? "FanPay Transfer" : "Wallet Transfer") },
+                    { label: "Narration", val: form.narration || (isBank ? "FanFi Transfer" : "Wallet Transfer") },
                   ].map((r, i) => (
                     <div key={i} className={`flex items-center justify-between px-5 py-3.5 ${i % 2 === 0 ? "bg-panel" : "bg-surface"}`}>
                       <span className="text-ink/50 font-dm text-sm">{r.label}</span>

@@ -44,10 +44,10 @@ const HowItWorks = () => (
 const ORG_SCHEMA = {
   "@context": "https://schema.org",
   "@type": "Organization",
-  name: "FanPay",
+  name: "FanFi",
   description: "Fund your wallet, buy airtime and data, and pay electricity and cable TV bills — all in one simple app.",
   url: "https://fanpay-peach.vercel.app/",
-  email: "fanpay@gmail.com",
+  email: "support@fanfi.ng",
   telephone: "+2348147261388",
   address: { "@type": "PostalAddress", addressLocality: "Abeokuta", addressRegion: "Ogun State", addressCountry: "NG" },
 };
@@ -55,7 +55,7 @@ const ORG_SCHEMA = {
 const Home = () => (
   <div className="bg-surface min-h-screen">
     <SEO
-      title="FanPay – Fund Your Wallet, Sort Every Bill"
+      title="FanFi – Fund Your Wallet, Sort Every Bill"
       description="Buy airtime and data, pay electricity and cable TV bills — all from one simple wallet."
       path="/"
     />

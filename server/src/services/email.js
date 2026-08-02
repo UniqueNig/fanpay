@@ -24,10 +24,10 @@ export function sendWelcomeEmail(to, fullName) {
   const name = escapeHtml(fullName) || "there";
   return send(
     to,
-    "Welcome to Abopay",
+    "Welcome to FanFi",
     `<p>Hi ${name},</p>
-     <p>Your Abopay account is ready. Fund your wallet, pay bills, and send money — all in one place.</p>
-     <p>— The Abopay Team</p>`
+     <p>Your FanFi account is ready. Fund your wallet, pay bills, and send money — all in one place.</p>
+     <p>— The FanFi Team</p>`
   );
 }
 
@@ -40,12 +40,12 @@ export function sendKycReviewedEmail(to, fullName, status, note) {
     verified
       ? `<p>Hi ${name},</p>
          <p>Your identity verification has been approved. You're all set.</p>
-         <p>— The Abopay Team</p>`
+         <p>— The FanFi Team</p>`
       : `<p>Hi ${name},</p>
          <p>Your identity verification could not be approved.</p>
          <p><strong>Reason:</strong> ${escapeHtml(note) || "Not specified."}</p>
-         <p>Please log in to Abopay and resubmit your documents.</p>
-         <p>— The Abopay Team</p>`
+         <p>Please log in to FanFi and resubmit your documents.</p>
+         <p>— The FanFi Team</p>`
   );
 }
 
@@ -79,6 +79,6 @@ export function sendPinResetApprovedEmail(to, fullName) {
     "Your PIN reset has been approved",
     `<p>Hi ${name},</p>
      <p>Your transaction PIN reset request has been approved. Log in and set a new PIN in Settings before making any transfers or purchases.</p>
-     <p>— The Abopay Team</p>`
+     <p>— The FanFi Team</p>`
   );
 }

@@ -3,7 +3,7 @@ import { FiBell } from "react-icons/fi";
 import { api } from "../api";
 import { formatDate } from "../utils/helpers";
 
-const LAST_SEEN_KEY = "fanpay_notifications_last_seen";
+const LAST_SEEN_KEY = "fanfi_notifications_last_seen";
 
 // Minimal broadcast-notification viewer — reads the same shared collection
 // admins write to from Admin → Marketing → Notifications. "Unread" is

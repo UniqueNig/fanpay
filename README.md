@@ -1,4 +1,4 @@
-# Abopay — Nigerian VTU & Payments Platform
+# FanFi — Nigerian VTU & Payments Platform
 
 React + Vite + Firebase + Paystack
 

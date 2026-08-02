@@ -10,7 +10,7 @@ const AboutUs = () => (
   <div className="bg-surface min-h-screen">
     <SEO
       title="About Us"
-      description="FanPay is a wallet app built for the payments Nigerians make every day — airtime, data, electricity, and cable TV bills."
+      description="FanFi is a wallet app built for the payments Nigerians make every day — airtime, data, electricity, and cable TV bills."
       path="/about"
     />
     <Navbar />
@@ -21,7 +21,7 @@ const AboutUs = () => (
       </h1>
       <div className="flex flex-col gap-5 text-ink/60 font-dm text-base leading-relaxed">
         <p>
-          FanPay is a wallet app built for one job: making the payments Nigerians make every day —
+          FanFi is a wallet app built for one job: making the payments Nigerians make every day —
           airtime, data, electricity, cable TV — fast, reliable, and simple to get right.
         </p>
         <p>

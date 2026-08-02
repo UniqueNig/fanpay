@@ -12,7 +12,7 @@
   <rect width="1200" height="630" fill="url(#bg)"/>
   <rect width="1200" height="630" fill="url(#glow)"/>
   <text x="100" y="330" font-family="Arial, sans-serif" font-weight="800" font-size="96" letter-spacing="-2">
-    <tspan fill="#ffffff">Fan</tspan><tspan fill="#8b5cf6">Pay</tspan>
+    <tspan fill="#ffffff">Fan</tspan><tspan fill="#8b5cf6">Fi</tspan>
   </text>
   <text x="102" y="390" font-family="Arial, sans-serif" font-weight="400" font-size="32" fill="#ffffffb3">
     Fund your wallet, sort every bill.

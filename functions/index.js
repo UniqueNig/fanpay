@@ -1,5 +1,5 @@
 /**
- * Abopay — Firebase Cloud Functions
+ * FanFi — Firebase Cloud Functions
  *
  * 1. verifyDeposit     — verify Paystack payment server-side, credit wallet
  * 2. paystackWebhook   — handle async Paystack events (bank transfer, USSD, refunds)
@@ -231,7 +231,7 @@ exports.initiateTransfer = onCall(
     try {
       const transferRes = await axios.post("https://api.paystack.co/transfer",
         { source: "balance", amount: Math.round(amount * 100), recipient: recipientCode,
-          reason: narration || "Abopay Transfer", reference: transferRef },
+          reason: narration || "FanFi Transfer", reference: transferRef },
         { headers, timeout: 10000 });
       transferData = transferRes.data.data;
     } catch (err) {

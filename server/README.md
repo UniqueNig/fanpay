@@ -1,4 +1,4 @@
-# Abopay API (Express + MongoDB)
+# FanFi API (Express + MongoDB)
 
 Replaces the Firebase Cloud Functions in [`../functions`](../functions) — same Paystack/VTpass
 logic, ported to run on any Node host with MongoDB instead of Firestore.
@@ -27,7 +27,7 @@ for atomicity — this requires a replica set, even a single-node one.
   # then, once, from a mongo shell:
   rs.initiate()
   ```
-  Set `MONGODB_URI=mongodb://localhost:27017/abopay?replicaSet=rs0`.
+  Set `MONGODB_URI=mongodb://localhost:27017/fanFi?replicaSet=rs0`.
 
 ### Firebase service account
 
@@ -59,8 +59,8 @@ VTpass dashboard before using them here.
 | POST | `/api/deposits/verify` | Bearer | verify a Paystack reference, credit wallet |
 | POST | `/api/webhooks/paystack` | Paystack signature | async charge/transfer events |
 | POST | `/api/transfers` | Bearer | bank transfer via Paystack Transfers API |
-| GET | `/api/wallet-transfers/lookup/:accountNumber` | Bearer | resolve an Abopay account number to a display name (confirm-before-send) |
-| POST | `/api/wallet-transfers` | Bearer | wallet-to-wallet transfer to another Abopay user, by account number — body: `{ accountNumber, amount, narration? }` |
+| GET | `/api/wallet-transfers/lookup/:accountNumber` | Bearer | resolve a FanFi account number to a display name (confirm-before-send) |
+| POST | `/api/wallet-transfers` | Bearer | wallet-to-wallet transfer to another FanFi user, by account number — body: `{ accountNumber, amount, narration? }` |
 | GET | `/api/vtu/data-plans/:network` | Bearer | real VTpass data bundle codes/prices for a network — call before showing plan options |
 | GET | `/api/vtu/cable-plans/:provider` | Bearer | real VTpass cable bouquet codes/prices for a provider |
 | POST | `/api/vtu/airtime` | Bearer | VTpass airtime |

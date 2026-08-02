@@ -106,7 +106,7 @@ const Deposit = () => {
       <div className="p-5 lg:p-8 max-w-lg">
         <div className="mb-7">
           <h1 className="font-syne font-bold text-ink text-2xl">Deposit Money</h1>
-          <p className="text-ink/40 font-dm text-sm mt-1">Add funds to your FanPay wallet</p>
+          <p className="text-ink/40 font-dm text-sm mt-1">Add funds to your FanFi wallet</p>
         </div>
 
         {success ? (

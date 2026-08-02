@@ -152,7 +152,7 @@ export async function maskawasubCablePlans(cableKey) {
 // right away. The original version of this function treated anything but
 // "successful" as an instant failure, which meant every cable purchase was
 // auto-refunded to the customer's wallet while Maskawasub had *already*
-// charged FanPay's real account balance for it (confirmed: balance_before/
+// charged FanFi's real account balance for it (confirmed: balance_before/
 // balance_after moved on a purchase this code was simultaneously reporting
 // as failed) — a real, live money-losing bug, not a hypothetical one.
 // "pending" purchases are left as-is here; the caller records

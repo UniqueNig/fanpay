@@ -43,8 +43,8 @@ router.post(
           const users = await User.find({ suspended: { $ne: true } }).select("email").lean();
           const { sent, failed } = await sendBroadcastEmail(
             users.map((u) => u.email),
-            subject || "Update from Abopay",
-            `<p>${message.replace(/\n/g, "<br/>")}</p><p>— The Abopay Team</p>`
+            subject || "Update from FanFi",
+            `<p>${message.replace(/\n/g, "<br/>")}</p><p>— The FanFi Team</p>`
           );
           campaign.status = sent > 0 ? "sent" : "failed";
           await campaign.save();

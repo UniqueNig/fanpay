@@ -84,7 +84,7 @@ const SetPin = () => {
         ) : (
           <div className="card-flat p-6">
             <div className="flex items-center gap-2 mb-5 text-ink/50 font-dm text-xs">
-              <FiLock size={14} /> Never share your PIN with anyone, including FanPay staff.
+              <FiLock size={14} /> Never share your PIN with anyone, including FanFi staff.
             </div>
 
             {error && (

@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import FanPayLogo from "../components/FanPayLogo";
+import FanFiLogo from "../components/FanFiLogo";
 import SEO from "../components/SEO";
 import { FiArrowRight, FiHome } from "react-icons/fi";
 
@@ -11,7 +11,7 @@ const NotFound = () => {
       <SEO title="Page Not Found" description="This page doesn't exist." path={location.pathname} noindex />
       <div className="w-full max-w-md text-center">
         <Link to="/" className="inline-flex items-center justify-center mb-10">
-          <FanPayLogo className="h-9 w-auto" />
+          <FanFiLogo className="h-9 w-auto" />
         </Link>
 
         <div className="relative mb-6">

@@ -1,4 +1,4 @@
-# FanPay — Deployment Guide
+# FanFi — Deployment Guide
 
 ## Architecture
 
