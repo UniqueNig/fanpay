@@ -175,10 +175,14 @@ const AdminFinance = () => {
               <p className="text-ink/35 font-dm text-sm">Checking provider balances...</p>
             ) : (
               <>
-                <div className="grid sm:grid-cols-2 gap-4 mb-4">
+                <div className="grid sm:grid-cols-3 gap-4 mb-4">
                   <div className="bg-surface border border-line rounded-xl p-4">
                     <p className="text-ink/35 font-dm text-[11px] uppercase mb-1">Maskawasub Balance</p>
                     <p className="text-ink font-syne font-bold text-lg">{wallet.maskawasub ? formatNaira(wallet.maskawasub.balance) : "—"}</p>
+                  </div>
+                  <div className="bg-surface border border-line rounded-xl p-4">
+                    <p className="text-ink/35 font-dm text-[11px] uppercase mb-1">VTpass Balance</p>
+                    <p className="text-ink font-syne font-bold text-lg">{wallet.vtpass ? formatNaira(wallet.vtpass.balance) : "—"}</p>
                   </div>
                   <div className="bg-surface border border-line rounded-xl p-4">
                     <p className="text-ink/35 font-dm text-[11px] uppercase mb-1">Paystack Balance</p>
