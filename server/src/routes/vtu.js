@@ -3,17 +3,15 @@ import { body, validationResult } from "express-validator";
 import { requireAuth } from "../middleware/auth.js";
 import { ApiError } from "../middleware/errorHandler.js";
 import {
-  maskawasubBuyAirtime, maskawasubBuyData, maskawasubBuyElectricity, maskawasubBuyCable, maskawasubBuyExamPin,
-  maskawasubValidateMeter, maskawasubValidateIUC, resolveProviderId,
+  maskawasubBuyAirtime, maskawasubBuyData, resolveProviderId,
 } from "../services/maskawasub.js";
+import { vtpassPay, vtpassMerchantVerify, resolveVtpassProviderId } from "../services/vtpass.js";
+import { resolvePlanPrice, listCatalog } from "../services/productPricing.js";
 import { debitWallet, creditWallet } from "../services/wallet.js";
 import { verifyTransactionPin } from "../services/pin.js";
 import { getSettings, assertNotMaintenance, assertServiceEnabled } from "../services/settings.js";
 import { previewCoupon, recordRedemption } from "../services/coupons.js";
-import {
-  getAirtimeRate, resolveDataPlanPrice, resolveCablePlanPrice, listDataCatalog, listCableCatalog,
-  resolveExamPrice, listExamCatalog,
-} from "../services/maskawasubPricing.js";
+import { getAirtimeRate, resolveDataPlanPrice, listDataCatalog } from "../services/maskawasubPricing.js";
 import { User } from "../models/User.js";
 import { Transaction } from "../models/Transaction.js";
 import { KycSubmission } from "../models/KycSubmission.js";
@@ -22,18 +20,6 @@ const router = Router();
 
 const PIN_RULE = body("pin").isString().matches(/^\d{4}$/).withMessage("A valid 4-digit PIN is required.");
 const COUPON_RULE = body("couponCode").optional().isString().trim();
-
-// meterType comes from the frontend as "prepaid"/"postpaid" (unchanged UX).
-// Maskawasub's own docs claim /billpayment/ wants MeterType as 1/2, but a
-// live purchase attempt (2026-08-01) proved that wrong — the API rejected
-// "1" with "not a valid choice". Probed the actual accepted values directly
-// against their endpoint (safe: no disco_name/meter_number, so nothing could
-// complete) and confirmed it's the capitalized words "Prepaid"/"Postpaid".
-// /validatemeter's separate `mtype` param is untouched — tested Prepaid,
-// Postpaid, 1, and 2 there too; all return a clean {invalid:true}, so its
-// unreliability is a real data-lookup issue on Maskawasub's side, not a
-// value-format bug like this one was.
-const METER_TYPE = { prepaid: "Prepaid", postpaid: "Postpaid" };
 
 // Unverified accounts can hold and receive money freely — the fraud/AML
 // risk is in moving it back out as something resellable (airtime especially),
@@ -151,9 +137,9 @@ router.get("/data-plans/:network", requireAuth, async (req, res, next) => {
 
 router.get("/cable-plans/:provider", requireAuth, async (req, res, next) => {
   try {
-    const cableKey = req.params.provider;
-    if (!(await resolveProviderId("cable", cableKey))) throw new ApiError(400, `Unknown cable provider: ${req.params.provider}`);
-    const rows = await listCableCatalog(cableKey);
+    const serviceID = await resolveVtpassProviderId("cable", req.params.provider);
+    if (!serviceID) throw new ApiError(400, `Unknown cable provider: ${req.params.provider}`);
+    const rows = await listCatalog("cable", serviceID);
     res.json({
       content: {
         varations: rows.filter((r) => r.active).map((r) => ({
@@ -166,9 +152,14 @@ router.get("/cable-plans/:provider", requireAuth, async (req, res, next) => {
   }
 });
 
+// WAEC only — NECO isn't offered by VTpass at all (confirmed against
+// GET /services?identifier=education, 2026-08-02: waec, waec-registration,
+// jamb, no neco). One fixed plan ("waecdirect"), so this is just
+// listCatalog's generic path with a hardcoded serviceID, same shape the
+// frontend already expects from a provider-style plan list.
 router.get("/exam-plans", requireAuth, async (req, res, next) => {
   try {
-    const rows = await listExamCatalog();
+    const rows = await listCatalog("exam", "waec");
     res.json({
       content: {
         varations: rows.filter((r) => r.active).map((r) => ({
@@ -186,24 +177,19 @@ router.get("/exam-plans", requireAuth, async (req, res, next) => {
 // user confirms.
 router.get("/verify-cable/:provider/:smartCardNumber", requireAuth, async (req, res, next) => {
   try {
-    const cableId = await resolveProviderId("cable", req.params.provider);
-    if (!cableId) throw new ApiError(400, `Unknown cable provider: ${req.params.provider}`);
-    const content = await maskawasubValidateIUC({ smart_card_number: req.params.smartCardNumber, cablename: cableId });
-    // Confirmed live (2026-08-01) via the sibling validatemeter endpoint:
-    // Maskawasub returns { invalid: true/false, name, address } — no
-    // "customer_name"/"Customer_Name" field exists at all, and an invalid
-    // number doesn't error, it comes back 200 with invalid:true and a
-    // literal "INVALID METER NUMBER" string in `name` — must be checked
-    // explicitly or that string would show as if it were a real name.
-    // validateiuc itself wasn't confirmed (test smartcard triggered a
-    // Maskawasub-side 500, not a usable response) — assumed to follow the
-    // same shape as validatemeter since they're clearly the same underlying
-    // pattern, but worth a real re-check against an actual smartcard.
-    if (content?.invalid) return res.json({ customerName: null, status: null, dueDate: null });
+    const serviceID = await resolveVtpassProviderId("cable", req.params.provider);
+    if (!serviceID) throw new ApiError(400, `Unknown cable provider: ${req.params.provider}`);
+    const content = await vtpassMerchantVerify({ billersCode: req.params.smartCardNumber, serviceID });
+    // Confirmed live (2026-08-02, real sandbox request): a bad smartcard
+    // returns HTTP 200, code:"000" — the failure only shows up as
+    // content.error ("The Smartcard/Decoder Number you entered may be
+    // invalid..."), not a thrown exception or an `invalid` flag. Success
+    // returns Customer_Name/Status/Due_Date/Customer_Number directly.
+    if (content?.error) return res.json({ customerName: null, status: null, dueDate: null });
     res.json({
-      customerName: content?.name || content?.customer_name || content?.Customer_Name || null,
-      status: content?.status || content?.Status || null,
-      dueDate: content?.due_date || content?.Due_Date || null,
+      customerName: content?.Customer_Name || null,
+      status: content?.Status || null,
+      dueDate: content?.Due_Date || null,
     });
   } catch (err) {
     next(err);
@@ -214,20 +200,19 @@ router.get("/verify-cable/:provider/:smartCardNumber", requireAuth, async (req, 
 // (prepaid/postpaid) that cable doesn't.
 router.get("/verify-electricity/:provider/:meterNumber", requireAuth, async (req, res, next) => {
   try {
-    const discoId = await resolveProviderId("electricity", req.params.provider);
-    if (!discoId) throw new ApiError(400, `Unknown electricity provider: ${req.params.provider}`);
+    const serviceID = await resolveVtpassProviderId("electricity", req.params.provider);
+    if (!serviceID) throw new ApiError(400, `Unknown electricity provider: ${req.params.provider}`);
     const type = req.query.type === "postpaid" ? "postpaid" : "prepaid";
-    const content = await maskawasubValidateMeter({
-      meternumber: req.params.meterNumber, disconame: discoId, mtype: METER_TYPE[type],
+    const content = await vtpassMerchantVerify({
+      billersCode: req.params.meterNumber, serviceID, extra: { type },
     });
-    // Confirmed live (2026-08-01, real request against Ibadan Electric):
-    // { invalid: true, name: "INVALID METER NUMBER", address: "INVALID METER NUMBER" }
-    // for a bad meter — 200 OK, not an error, so `invalid` must be checked
-    // explicitly or that placeholder string renders as if it were real.
-    if (content?.invalid) return res.json({ customerName: null, address: null });
+    // Confirmed live (2026-08-02): a bad meter returns HTTP 200, code:"000",
+    // with content.error set and WrongBillersCode:true — same "200 but
+    // wrapped error" shape as cable, must check content.error explicitly.
+    if (content?.error || content?.WrongBillersCode) return res.json({ customerName: null, address: null });
     res.json({
-      customerName: content?.name || content?.customer_name || content?.Customer_Name || null,
-      address: content?.address || content?.Address || null,
+      customerName: content?.Customer_Name || null,
+      address: content?.Address || null,
     });
   } catch (err) {
     next(err);
@@ -375,7 +360,7 @@ router.post(
     // Required for electricity (customer types any amount); ignored for
     // cable, which resolves its authoritative price server-side below.
     body("amount").optional().isFloat({ gt: 0 }),
-    // Maskawasub requires a phone number for bill payments — don't fall back
+    // VTpass requires a phone number for bill payments — don't fall back
     // to the user's profile phone, which may be blank (e.g. Google sign-in
     // never collects one) and isn't necessarily tied to this meter/card.
     body("phone").isString().trim().isLength({ min: 10, max: 11 }).withMessage("A valid phone number is required."),
@@ -403,12 +388,19 @@ router.post(
       let chargeAmount, faceValue, couponResult = null, discount = 0, fee = 0, buyingPrice = null, sellingPrice = null;
       let purchaseCall;
 
+      // Generated up front (not after pricing, like before) — VTpass's /pay
+      // requires a unique request_id in the payload itself, unlike
+      // Maskawasub which never needed one. Reused as-is for the internal
+      // transaction reference so there's one id to look up on both sides.
+      const requestId = Date.now().toString();
+      const ref = "BILL-" + requestId;
+
       if (billType === "electricity") {
-        const discoId = await resolveProviderId("electricity", provider);
-        if (!discoId) throw new ApiError(400, `Unknown electricity provider: ${provider}`);
+        const serviceID = await resolveVtpassProviderId("electricity", provider);
+        if (!serviceID) throw new ApiError(400, `Unknown electricity provider: ${provider}`);
 
         // Electricity keeps the flat additive fee — arbitrary user-typed
-        // amount, no fixed Maskawasub "plan" to catalog-price like data/cable.
+        // amount, no fixed VTpass "plan" to catalog-price like data/cable.
         if (!(amount > 0)) throw new ApiError(400, "A valid amount is required.");
         faceValue = amount;
         fee = settings.pricing.billFeeFlat;
@@ -416,40 +408,41 @@ router.post(
         discount = couponResult?.discount || 0;
         chargeAmount = faceValue + fee - discount;
 
+        // VTpass's variation_code for electricity is just "prepaid"/
+        // "postpaid" directly — no MeterType-style value-mapping needed
+        // like Maskawasub required.
         const type = meterType === "postpaid" ? "postpaid" : "prepaid";
         purchaseCall = () =>
-          maskawasubBuyElectricity({
-            disco_name: discoId, amount: faceValue, meter_number: meterNumber, MeterType: METER_TYPE[type],
-            Customer_Phone: phone,
+          vtpassPay({
+            request_id: ref, serviceID, billersCode: meterNumber, variation_code: type,
+            amount: faceValue, phone,
           });
       } else {
-        const cableId = await resolveProviderId("cable", provider);
-        if (!cableId) throw new ApiError(400, `Unknown cable provider: ${provider}`);
+        const serviceID = await resolveVtpassProviderId("cable", provider);
+        if (!serviceID) throw new ApiError(400, `Unknown cable provider: ${provider}`);
         if (!variationCode) throw new ApiError(400, "A bouquet must be selected.");
-        const planId = Number(variationCode);
-        if (!Number.isInteger(planId)) throw new ApiError(400, "Invalid bouquet selected.");
 
         // Same catalog-based, tamper-proof pricing as data purchases — never
         // trusts a client-supplied amount. No coupon support, same reasoning
-        // as data: no safe cap without knowing Maskawasub's real rate.
-        // Priced by the string provider key (matches how the catalog stores
-        // it), not the numeric cableId — that numeric id is only what the
-        // actual Maskawasub purchase call below needs.
-        const priced = await resolveCablePlanPrice(provider, planId);
+        // as data: no safe cap without knowing VTpass's real rate.
+        // variationCode is a VTpass slug ("dstv-padi"), not a numeric plan
+        // id like Maskawasub used — no Number()/isInteger check needed.
+        const priced = await resolvePlanPrice("cable", serviceID, variationCode);
         faceValue = priced.buyingPrice;
         chargeAmount = priced.sellingPrice;
         buyingPrice = priced.buyingPrice;
         sellingPrice = priced.sellingPrice;
 
         purchaseCall = () =>
-          maskawasubBuyCable({ cablename: cableId, cableplan: planId, smart_card_number: smartCardNumber || meterNumber });
+          vtpassPay({
+            request_id: ref, serviceID, billersCode: smartCardNumber || meterNumber,
+            variation_code: variationCode, amount: faceValue, phone, subscription_type: "change",
+          });
       }
 
       await requireBalanceAndPin(req.uid, chargeAmount, pin, settings);
 
-      const requestId = Date.now().toString();
       const category = billType === "electricity" ? "⚡" : "📺";
-      const ref = "BILL-" + requestId;
 
       const meta = billType === "electricity"
         ? {
@@ -458,38 +451,31 @@ router.post(
           }
         : { provider, billType, smartCardNumber, accountName: accountName || null, buyingPrice, sellingPrice };
 
-      const maskawasubRes = await debitThenPurchase(
+      const purchaseRes = await debitThenPurchase(
         req.uid, chargeAmount, ref, `${provider} ${billType}`, category, meta, purchaseCall
       );
 
-      // Not confirmed which field (if any) carries the electricity token —
-      // never live-tested against a real electricity purchase. Checked
-      // across a few plausible names; if none match, meta.apiResponse (the
-      // human-readable confirmation text) is stored regardless and is the
-      // fallback place to actually find it, same as data's usage
-      // instructions came through in api_response during the live data test.
-      const electricityToken =
-        maskawasubRes?.token || maskawasubRes?.Token || maskawasubRes?.electricity_token || null;
+      const transactionDetails = purchaseRes?.content?.transactions;
+      // Confirmed live (2026-08-02, real sandbox purchase): the electricity
+      // token comes back as top-level `Token`, not nested under content.
+      const electricityToken = purchaseRes?.Token || null;
 
-      // Pre-purchase verify (/validatemeter, /validateiuc) is unreliable
-      // (see the amber warning in Bills.jsx), so accountName in `meta` above
-      // is just whatever the customer typed or a lucky verify returned — not
-      // trustworthy. The purchase response itself is the authoritative
-      // source: confirmed live for cable (`customer_name`, see
-      // maskawasub.js). Electricity's field name is unconfirmed (no real
-      // purchase has gone through this account yet), so checked defensively
-      // across the same plausible names as electricityToken above.
-      const confirmedName =
-        maskawasubRes?.customer_name || maskawasubRes?.Customer_Name ||
-        maskawasubRes?.CustomerName || maskawasubRes?.meter_name || maskawasubRes?.name || null;
+      // Unlike Maskawasub, VTpass's own verify step is reliable (see
+      // /verify-cable and /verify-electricity above), so `accountName` here
+      // is a name the customer actually confirmed before paying — trusted as
+      // the primary source. The purchase response's own name field
+      // (`CustomerName` for electricity, `content.transactions.name` for
+      // cable — both frequently null in sandbox test data) is only a
+      // fallback for the rare case verify was skipped or came back empty.
+      const confirmedName = accountName || purchaseRes?.CustomerName || transactionDetails?.name || null;
 
       await Transaction.updateOne(
         { reference: ref },
         {
           $set: {
-            "meta.maskawasubId": maskawasubRes?.id,
-            "meta.deliveryStatus": maskawasubRes?.Status,
-            "meta.apiResponse": maskawasubRes?.api_response,
+            "meta.vtpassTransactionId": transactionDetails?.transactionId,
+            "meta.deliveryStatus": transactionDetails?.status,
+            "meta.apiResponse": purchaseRes?.response_description,
             "meta.electricityToken": electricityToken,
             ...(confirmedName ? { "meta.accountName": confirmedName, "meta.confirmedName": true } : {}),
           },
@@ -499,7 +485,7 @@ router.post(
       if (couponResult) await recordRedemption(couponResult.coupon._id, req.uid, ref);
 
       res.json({
-        success: true, status: maskawasubRes?.Status, requestId, reference: ref,
+        success: true, status: transactionDetails?.status, requestId, reference: ref,
         electricityToken, confirmedName, amountCharged: chargeAmount,
       });
     } catch (err) {
@@ -508,17 +494,24 @@ router.post(
   }
 );
 
+// Only "waec" exists under VTpass's education catalog today (confirmed live
+// via GET /services?identifier=education, 2026-08-02: waec,
+// waec-registration, jamb — no neco), but this takes variationCode from the
+// /exam-plans list rather than hardcoding "waecdirect", same pattern cable
+// purchases already use — if VTpass adds another exam type later, this
+// route doesn't need touching, only the servceID would need to become a
+// param too.
 router.post(
   "/exam",
   requireAuth,
   [
-    body("examName").isIn(["WAEC", "NECO"]).withMessage("Unknown exam type."),
+    body("variationCode").isString().trim().notEmpty().withMessage("Select an exam type."),
     PIN_RULE,
   ],
   async (req, res, next) => {
     if (!checkValidation(req, res)) return;
     try {
-      const { examName, pin } = req.body;
+      const { variationCode, pin } = req.body;
 
       const settings = await getSettings();
       assertNotMaintenance(settings);
@@ -526,41 +519,44 @@ router.post(
 
       // Same catalog-based, tamper-proof pricing as data/cable — never
       // trusts a client-supplied amount.
-      const priced = await resolveExamPrice(examName);
+      const priced = await resolvePlanPrice("exam", "waec", variationCode);
       const chargeAmount = priced.sellingPrice;
 
-      await requireBalanceAndPin(req.uid, chargeAmount, pin, settings);
+      const user = await requireBalanceAndPin(req.uid, chargeAmount, pin, settings);
 
       const requestId = Date.now().toString();
       const ref = "EXAM-" + requestId;
-      const title = `${examName} Result Checker PIN`;
+      const title = priced.label;
 
-      const maskawasubRes = await debitThenPurchase(
+      const purchaseRes = await debitThenPurchase(
         req.uid,
         chargeAmount,
         ref,
         title,
         "🎓",
-        { examName, buyingPrice: priced.buyingPrice, sellingPrice: priced.sellingPrice },
-        () => maskawasubBuyExamPin({ exam_name: examName })
+        { examName: priced.label, buyingPrice: priced.buyingPrice, sellingPrice: priced.sellingPrice },
+        // VTpass requires a phone in the payload even though a result-checker
+        // PIN isn't sent anywhere — it's not collected on this form, so the
+        // account's own profile phone is used. quantity is always 1; the
+        // frontend only ever offers a single-PIN purchase.
+        () => vtpassPay({ request_id: ref, serviceID: "waec", variation_code: variationCode, phone: user.phone, quantity: 1 })
       );
 
-      // Field name for the actual PIN/serial is unconfirmed (see
-      // maskawasubBuyExamPin's comment — never live-tested against a real
-      // purchase). Checked across the plausible names other Maskawasub
-      // responses have used; meta.apiResponse (the human-readable
-      // confirmation text) is stored regardless as the fallback, same
-      // pattern as the electricity token.
-      const pinCode = maskawasubRes?.pin || maskawasubRes?.Pin || maskawasubRes?.epin || maskawasubRes?.serial || null;
-      const serialNumber = maskawasubRes?.serial_number || maskawasubRes?.serialNumber || null;
+      // Confirmed live (2026-08-02): purchased_code is a pipe-separated
+      // string ("Serial No:X, pin: Y||...") and `cards` is the same data
+      // structured as [{Serial, Pin}]. Sandbox returned 3 cards for a
+      // quantity:1 request (likely sandbox-only behaviour) — cards[0] is
+      // used as the actual purchased PIN regardless.
+      const pinCode = purchaseRes?.cards?.[0]?.Pin || null;
+      const serialNumber = purchaseRes?.cards?.[0]?.Serial || null;
 
       await Transaction.updateOne(
         { reference: ref },
         {
           $set: {
-            "meta.maskawasubId": maskawasubRes?.id,
-            "meta.deliveryStatus": maskawasubRes?.Status,
-            "meta.apiResponse": maskawasubRes?.api_response,
+            "meta.vtpassTransactionId": purchaseRes?.content?.transactions?.transactionId,
+            "meta.deliveryStatus": purchaseRes?.content?.transactions?.status,
+            "meta.apiResponse": purchaseRes?.purchased_code,
             "meta.pin": pinCode,
             "meta.serialNumber": serialNumber,
           },
@@ -568,8 +564,8 @@ router.post(
       );
 
       res.json({
-        success: true, status: maskawasubRes?.Status, requestId, reference: ref,
-        pin: pinCode, serialNumber, apiResponse: maskawasubRes?.api_response, amountCharged: chargeAmount,
+        success: true, status: purchaseRes?.content?.transactions?.status, requestId, reference: ref,
+        pin: pinCode, serialNumber, apiResponse: purchaseRes?.purchased_code, amountCharged: chargeAmount,
       });
     } catch (err) {
       next(err);

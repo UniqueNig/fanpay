@@ -45,14 +45,12 @@ export const env = {
   // for accounts that haven't set this up yet.
   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
   anthropicModel: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
-  // VTpass is decommissioned — vtu.js no longer calls it. Left optional
-  // (not in `required` above) purely so reconcileVtu.js's cron job can
-  // still settle any VTpass-era transactions still marked pending in the
-  // DB from before the cutover, without the server refusing to boot for
-  // accounts that have since removed these credentials. Safe to delete
-  // entirely, along with services/vtpass.js, services/productPricing.js,
-  // and reconcileVtu.js's VTpass branch, once the DB has no pending
-  // AIR-/DATA-/BILL- transactions older than the cutover date.
+  // VTpass is back in active use (2026-08-02) — electricity, cable, and WAEC
+  // result-checker purchases now go through it (routes/vtu.js); Maskawasub
+  // is scoped to airtime/data only. Not yet in `required` above because
+  // production (Render) is still only configured with sandbox keys — move
+  // it there once live VTPASS_* keys are set and VTPASS_BASE_URL points at
+  // vtpass.com instead of sandbox.vtpass.com.
   vtpassApiKey: process.env.VTPASS_API_KEY,
   vtpassPublicKey: process.env.VTPASS_PUBLIC_KEY,
   vtpassSecretKey: process.env.VTPASS_SECRET_KEY,

@@ -92,11 +92,10 @@ const Bills = () => {
   // fires one request per keystroke and whichever happens to resolve last
   // (not necessarily the one for the final, complete number) wins, which
   // could leave the UI stuck on "Verifying..." or showing a mismatched result.
-  // A meter/smartcard that fails to verify (invalid, or Maskawasub's
-  // validate endpoint erroring — the latter has proven unreliable in
-  // practice) no longer blocks payment; cableVerify/elecVerify just stay
-  // null and the form shows a caution notice instead of the confirmed
-  // name, same purchase button either way.
+  // Payment is blocked until this resolves to a real name — VTpass's verify
+  // endpoint is reliable (unlike the previous Maskawasub-backed version,
+  // which had to fall back to a non-blocking warning because its verify
+  // endpoints were frequently broken).
   useEffect(() => {
     if (!isCable || !form.provider || form.meterNumber.length < 10) {
       setCableVerify(null);
@@ -148,6 +147,10 @@ const Bills = () => {
     const amt = isCable ? parseFloat(selectedPlan?.variation_amount || 0) : parseFloat(form.amount);
     if (!amt) return;
     if (!form.phone || form.phone.length < 10) { setError("Enter a valid phone number."); return; }
+    if ((isCable || isElectricity) && !verifiedAccountName) {
+      setError(`Could not verify this ${isCable ? "smartcard" : "meter"} number. Check it and try again.`);
+      return;
+    }
     if (amt + fee > balance) { setError("Insufficient balance. Please deposit more funds."); return; }
 
     if (!userData?.hasPin) {
@@ -345,10 +348,9 @@ const Bills = () => {
                           <p className="text-iris font-syne font-semibold text-sm">{cableVerify.customerName}</p>
                         </div>
                       ) : (
-                        <div className="bg-yellow-500/10 border border-yellow-500/25 rounded-xl px-4 py-2.5 mt-2">
-                          <p className="text-yellow-500 font-dm text-xs">
-                            Couldn't confirm the name on this smartcard — you can still pay, but double-check the
-                            number is correct first. A payment to the wrong number can't be automatically refunded.
+                        <div className="bg-red-500/10 border border-red-500/25 rounded-xl px-4 py-2.5 mt-2">
+                          <p className="text-red-400 font-dm text-xs">
+                            Could not verify this smartcard number. Check it and try again.
                           </p>
                         </div>
                       )
@@ -363,10 +365,9 @@ const Bills = () => {
                           {elecVerify.address && <p className="text-ink/40 font-dm text-xs mt-0.5">{elecVerify.address}</p>}
                         </div>
                       ) : (
-                        <div className="bg-yellow-500/10 border border-yellow-500/25 rounded-xl px-4 py-2.5 mt-2">
-                          <p className="text-yellow-500 font-dm text-xs">
-                            Couldn't confirm the name on this meter — you can still pay, but double-check the
-                            number is correct first. A payment to the wrong number can't be automatically refunded.
+                        <div className="bg-red-500/10 border border-red-500/25 rounded-xl px-4 py-2.5 mt-2">
+                          <p className="text-red-400 font-dm text-xs">
+                            Could not verify this meter number. Check it and try again.
                           </p>
                         </div>
                       )
@@ -433,7 +434,7 @@ const Bills = () => {
                     <p className="text-ink/40 font-dm text-xs -mt-1">Fee: {formatNaira(fee)} · Total: {formatNaira(totalAmount)}</p>
                   )}
 
-                  <button type="submit" disabled={loading || !form.provider || !form.phone || (isCable && !selectedPlan)}
+                  <button type="submit" disabled={loading || !form.provider || !form.phone || (isCable && !selectedPlan) || ((isCable || isElectricity) && !verifiedAccountName)}
                     className="btn-iris mt-2 flex items-center justify-center gap-2 py-4 text-base disabled:opacity-60">
                     {loading ? "Processing..." : `Pay ${displayAmount ? formatNaira(totalAmount) : "Bill"} from Wallet`}
                   </button>
@@ -458,7 +459,6 @@ const Bills = () => {
               isCable ? { label: "Bouquet", value: selectedPlan?.name } : { label: "Meter Type", value: form.meterType },
               { label: "Account Name", value: verifiedAccountName },
             ].filter((row) => row.value)}
-            warning={!verifiedAccountName ? "We couldn't confirm the name on this number. Double-check it's correct — a payment to the wrong meter or smartcard can't be automatically refunded." : undefined}
             onConfirm={handlePinConfirm}
             onClose={() => { setShowPinModal(false); setPinError(""); }}
             submitting={loading}

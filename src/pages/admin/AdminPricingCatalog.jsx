@@ -20,14 +20,16 @@ const PlanTable = ({ rows, loading, onSave, onToggle }) => {
             <p className="text-ink/30 font-dm text-[11px]">
               {row.liveMaskawasubPrice != null
                 ? `Maskawasub price right now: ₦${row.liveMaskawasubPrice.toLocaleString()}`
-                : "Manually added — not in Maskawasub's live catalog"}
+                : row.liveVtpassPrice != null
+                ? `VTpass price right now: ₦${row.liveVtpassPrice.toLocaleString()}`
+                : "Manually added — not in the live provider catalog"}
             </p>
           </div>
           <div className="flex gap-3 shrink-0 items-end">
             <div>
               <label className="text-ink/40 font-dm text-[11px] mb-1 block">Plan ID</label>
               <input defaultValue={row.variationCode} className="input-field-light !py-2 text-sm w-24"
-                onBlur={(e) => onSave(row, "variationCode", e.target.value)} title="Maskawasub's plan id — used at purchase time. Only change this if the id is genuinely wrong." />
+                onBlur={(e) => onSave(row, "variationCode", e.target.value)} title="The provider's plan id — used at purchase time. Only change this if the id is genuinely wrong." />
             </div>
             <div>
               <label className="text-ink/40 font-dm text-[11px] mb-1 block">Buying (₦)</label>
@@ -146,11 +148,13 @@ const AddPlanForm = ({ category, serviceID, onAdded }) => {
   return (
     <form onSubmit={submit} className="card-flat p-4 mb-4 flex flex-col gap-2">
       <p className="text-ink/40 font-dm text-[11px] mb-1">
-        For a plan Maskawasub's catalog doesn't list yet under <span className="uppercase">{serviceID}</span> — you'll need the plan's Maskawasub id (dataplan_id / cableplan_id).
+        {category === "data"
+          ? <>For a plan Maskawasub's catalog doesn't list yet under <span className="uppercase">{serviceID}</span> — you'll need the plan's Maskawasub dataplan_id.</>
+          : <>For a plan VTpass's catalog doesn't list yet under <span className="uppercase">{serviceID}</span> — you'll need the plan's VTpass variation_code.</>}
       </p>
       {error && <p className="text-red-400 font-dm text-xs">{error}</p>}
       <div className="grid grid-cols-2 gap-2">
-        <input value={planId} onChange={(e) => setPlanId(e.target.value)} placeholder="Maskawasub plan id" className="input-field-light !py-2 text-sm" />
+        <input value={planId} onChange={(e) => setPlanId(e.target.value)} placeholder={category === "data" ? "Maskawasub plan id" : "VTpass variation_code"} className="input-field-light !py-2 text-sm" />
         <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Display name" className="input-field-light !py-2 text-sm" />
         <input type="number" value={buying} onChange={(e) => setBuying(e.target.value)} placeholder="Buying (₦)" className="input-field-light !py-2 text-sm" />
         <input type="number" value={selling} onChange={(e) => setSelling(e.target.value)} placeholder="Selling (₦)" className="input-field-light !py-2 text-sm" />
@@ -197,7 +201,12 @@ const ProviderManager = ({ category, onChanged }) => {
     setError("");
     try {
       await api.post("/admin/network-services", {
-        category, networkKey: networkKey.trim(), serviceID: Number(serviceID), label: label.trim(),
+        // "network" (airtime/data) is Maskawasub — numeric id. "cable"/
+        // "electricity" are VTpass — a string slug like "ibadan-electric",
+        // so it's sent as-is, not Number()-cast.
+        category, networkKey: networkKey.trim(),
+        serviceID: category === "network" ? Number(serviceID) : serviceID.trim(),
+        label: label.trim(),
         color: category === "network" ? color : "",
       });
       setNetworkKey(""); setServiceID(""); setLabel("");
@@ -221,7 +230,9 @@ const ProviderManager = ({ category, onChanged }) => {
         {category === "network" ? "Networks" : category === "cable" ? "Cable providers" : "Electricity discos"} beyond the built-in list
       </p>
       <p className="text-ink/30 font-dm text-xs mb-3">
-        For when Maskawasub adds one that isn't mapped yet — you'll need its numeric id from Maskawasub's own docs/dashboard.
+        {category === "network"
+          ? "For when Maskawasub adds a network that isn't mapped yet — you'll need its numeric id from Maskawasub's own docs/dashboard."
+          : "For when VTpass adds a provider that isn't mapped yet — you'll need its serviceID slug from VTpass's own docs/dashboard (e.g. \"showmax\")."}
       </p>
       {error && (
         <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/25 rounded-xl px-3 py-2 mb-3">
@@ -249,7 +260,13 @@ const ProviderManager = ({ category, onChanged }) => {
         <form onSubmit={add} className="flex flex-col gap-2">
           <div className="grid grid-cols-2 gap-2">
             <input value={networkKey} onChange={(e) => setNetworkKey(e.target.value)} placeholder="Internal key, e.g. smile" className="input-field-light !py-2 text-sm" />
-            <input type="number" value={serviceID} onChange={(e) => setServiceID(e.target.value)} placeholder="Maskawasub numeric id" className="input-field-light !py-2 text-sm" />
+            <input
+              type={category === "network" ? "number" : "text"}
+              value={serviceID}
+              onChange={(e) => setServiceID(e.target.value)}
+              placeholder={category === "network" ? "Maskawasub numeric id" : "VTpass serviceID, e.g. showmax"}
+              className="input-field-light !py-2 text-sm"
+            />
             <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Display name" className="input-field-light !py-2 text-sm" />
             {category === "network" && (
               <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="w-full h-11 rounded-lg bg-transparent border border-line" />
@@ -281,6 +298,7 @@ const AdminPricingCatalog = () => {
   const [extraCableProviders, setExtraCableProviders] = useState([]);
   const [cableProvider, setCableProvider] = useState(CABLE_PROVIDERS[0]);
   const [cableRows, setCableRows] = useState([]);
+  const [cableServiceID, setCableServiceID] = useState("");
   const [cableLoading, setCableLoading] = useState(false);
 
   const [examRows, setExamRows] = useState([]);
@@ -318,6 +336,7 @@ const AdminPricingCatalog = () => {
     try {
       const data = await api.get(`/admin/product-prices/cable/${provider}`);
       setCableRows(data.rows || []);
+      setCableServiceID(data.serviceID || "");
     } catch (err) { setError(err.message); }
     setCableLoading(false);
   };
@@ -484,7 +503,7 @@ const AdminPricingCatalog = () => {
                 </button>
               ))}
             </div>
-            <AddPlanForm category="cable" serviceID={cableProvider} onAdded={() => loadCable(cableProvider)} />
+            <AddPlanForm category="cable" serviceID={cableServiceID || cableProvider} onAdded={() => loadCable(cableProvider)} />
             <PlanTable rows={cableRows} loading={cableLoading} onSave={savePlanRow("cable", setCableRows)} onToggle={toggleRow(setCableRows)} />
           </>
         )}
@@ -502,11 +521,10 @@ const AdminPricingCatalog = () => {
         {tab === 4 && (
           <>
             <p className="text-ink/30 font-dm text-xs mb-4">
-              WAEC/NECO result checker PINs. Priced from Maskawasub's own live rates — same buying/selling
-              margin pattern as everything else. The Plan ID here is the exact exam name the purchase flow
-              sends (WAEC/NECO) — don't rename it, that would break purchases for that exam. NABTEB isn't
-              included — Maskawasub's own site marks it "Coming Soon" and its purchase endpoint currently
-              errors; add it back here once Maskawasub actually turns it on.
+              WAEC result checker PINs, via VTpass. Priced from VTpass's own live rates — same buying/selling
+              margin pattern as everything else. The Plan ID here is VTpass's real variation_code
+              ("waecdirect") — don't rename it, that would break purchases. NECO isn't offered by VTpass at
+              all (confirmed against their live services list, 2026-08-02) — only WAEC exists here.
             </p>
             <PlanTable rows={examRows} loading={examLoading} onSave={savePlanRow("exam", setExamRows)} onToggle={toggleRow(setExamRows)} />
           </>

@@ -30,7 +30,11 @@ router.post(
   [
     body("category").isIn(["network", "cable", "electricity"]),
     body("networkKey").isString().trim().notEmpty(),
-    body("serviceID").isInt({ gt: 0 }).withMessage("Maskawasub's numeric id for this provider is required."),
+    // "network" (airtime/data) is still Maskawasub, which uses a numeric id.
+    // "cable"/"electricity" are now VTpass, which uses a string slug
+    // ("ibadan-electric") — validated per-category below instead of a single
+    // blanket isInt rule, which would reject every real VTpass serviceID.
+    body("serviceID").isString().trim().notEmpty().withMessage("A provider id is required."),
     body("label").isString().trim().notEmpty().withMessage("A display name is required."),
     body("color").optional().isString().trim(),
   ],
@@ -40,6 +44,10 @@ router.post(
 
     try {
       const { category, networkKey, serviceID, label, color } = req.body;
+
+      if (category === "network" && !/^\d+$/.test(String(serviceID))) {
+        throw new ApiError(400, "Maskawasub's numeric id for this network is required.");
+      }
 
       const existing = await ExtraVtuService.findOne({ category, networkKey });
       if (existing) throw new ApiError(400, "A provider with this key already exists in this category.");

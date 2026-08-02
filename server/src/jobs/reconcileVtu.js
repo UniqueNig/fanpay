@@ -3,29 +3,65 @@ import { Transaction } from "../models/Transaction.js";
 import { User } from "../models/User.js";
 import { creditWallet } from "../services/wallet.js";
 import { maskawasubRequery } from "../services/maskawasub.js";
+import { vtpassRequery } from "../services/vtpass.js";
 import { SystemLog } from "../models/SystemLog.js";
 
 const PENDING_STATUSES = ["pending", "initiated", "processing"];
+// VTpass uses "delivered" for a completed purchase (confirmed live,
+// 2026-08-02), not Maskawasub's "successful" — both are treated as success
+// here since AIR-/DATA- transactions (still Maskawasub) can report either.
+const SUCCESS_STATUSES = ["successful", "delivered"];
 
-// Which Maskawasub endpoint a transaction's status lives at — airtime/data
-// are keyed by reference prefix alone; a "BILL-" reference is either cable
-// or electricity, disambiguated by meta.billType (set at purchase time,
-// see routes/vtu.js).
+// Refunds the wallet and records the final status — shared by both provider
+// branches below so a genuine delivery failure (as opposed to "still
+// pending") is handled identically regardless of which API reported it.
+// creditWallet is idempotent on reference, so calling this twice for the
+// same transaction (e.g. cron + manual requery both catching it) is safe.
+async function applyFinalStatus(txn, status) {
+  if (!SUCCESS_STATUSES.includes(status)) {
+    const user = await User.findById(txn.userId);
+    if (user) {
+      await creditWallet(user.uid, txn.amount, txn.reference + "_refund", `Refund: ${txn.title}`, "↩️", {
+        reason: "vtu_delivery_failed",
+        originalReference: txn.reference,
+      });
+    }
+  }
+  txn.meta = { ...txn.meta, deliveryStatus: status };
+  await txn.save();
+}
+
+// Which Maskawasub endpoint a transaction's status lives at — kept for
+// AIR-/DATA- transactions only now; BILL-/EXAM- moved to VTpass (see
+// reconcileOneVtuTransaction below), which has one generic /requery
+// endpoint regardless of electricity/cable/exam, so no per-kind path
+// lookup is needed for those anymore.
 function requeryKindFor(txn) {
   if (txn.reference.startsWith("AIR-")) return "airtime";
   if (txn.reference.startsWith("DATA-")) return "data";
-  if (txn.reference.startsWith("EXAM-")) return "exam";
-  if (txn.reference.startsWith("BILL-")) return txn.meta?.billType === "cable" ? "cable" : "electricity";
   return null;
 }
 
-// Re-queries a single VTU transaction against Maskawasub and reconciles it:
-// marks delivered, or refunds the wallet if Maskawasub ultimately reports
-// failure. Shared by the automatic cron below and the admin "Requery" button
-// (routes/adminVtuTransactions.js) — same logic either way, just a different
-// trigger. Returns the fresh status, or null if the reference isn't a VTU
-// transaction, has no recorded Maskawasub id yet, or is still pending.
+// Re-queries a single VTU transaction against whichever provider handled it
+// and reconciles it: marks delivered, or refunds the wallet if the provider
+// ultimately reports failure. Shared by the automatic cron below and the
+// admin "Requery" button (routes/adminVtuTransactions.js) — same logic
+// either way, just a different trigger. Returns the fresh status, or null if
+// the reference isn't a VTU transaction, has no recorded provider id yet, or
+// is still pending.
 export async function reconcileOneVtuTransaction(txn) {
+  // BILL- (electricity/cable) and EXAM- (WAEC) purchases are VTpass now.
+  // Requery there uses the same request_id sent to /pay — which is just
+  // the transaction's own reference (see routes/vtu.js's `ref` variable),
+  // not a separately stored id like Maskawasub needed.
+  if (txn.reference.startsWith("BILL-") || txn.reference.startsWith("EXAM-")) {
+    const result = await vtpassRequery(txn.reference);
+    const status = result?.content?.transactions?.status;
+    if (!status || PENDING_STATUSES.includes(status)) return null; // still pending
+    await applyFinalStatus(txn, status);
+    return status;
+  }
+
   const kind = requeryKindFor(txn);
   if (!kind) return null;
 
@@ -41,25 +77,7 @@ export async function reconcileOneVtuTransaction(txn) {
   const status = result?.Status;
   if (!status || PENDING_STATUSES.includes(status)) return null; // still pending
 
-  if (status === "successful") {
-    txn.meta = { ...txn.meta, deliveryStatus: status };
-    await txn.save();
-  } else {
-    // Maskawasub ultimately failed the delivery — refund the wallet.
-    // creditWallet is idempotent on reference, so calling this twice for
-    // the same transaction (e.g. cron + manual requery both catching it)
-    // is safe.
-    const user = await User.findById(txn.userId);
-    if (user) {
-      await creditWallet(user.uid, txn.amount, txn.reference + "_refund", `Refund: ${txn.title}`, "↩️", {
-        reason: "vtu_delivery_failed",
-        originalReference: txn.reference,
-      });
-    }
-    txn.meta = { ...txn.meta, deliveryStatus: status };
-    await txn.save();
-  }
-
+  await applyFinalStatus(txn, status);
   return status;
 }
 

@@ -3,8 +3,10 @@ import { body, validationResult } from "express-validator";
 import { requireAdmin } from "../middleware/requireAdmin.js";
 import { ApiError } from "../middleware/errorHandler.js";
 import { ProductPrice } from "../models/ProductPrice.js";
-import { resolveProviderId, listExtraProviders, MASKAWASUB_NETWORK, MASKAWASUB_CABLE } from "../services/maskawasub.js";
-import { listDataCatalog, listCableCatalog, listExamCatalog, getAirtimeRate } from "../services/maskawasubPricing.js";
+import { resolveProviderId, listExtraProviders, MASKAWASUB_NETWORK } from "../services/maskawasub.js";
+import { listDataCatalog, getAirtimeRate } from "../services/maskawasubPricing.js";
+import { resolveVtpassProviderId } from "../services/vtpass.js";
+import { listCatalog } from "../services/productPricing.js";
 
 const router = Router();
 
@@ -37,9 +39,14 @@ router.get("/data/:network", requireAdmin, async (req, res, next) => {
 
 router.get("/cable/:provider", requireAdmin, async (req, res, next) => {
   try {
-    if (!(await resolveProviderId("cable", req.params.provider))) throw new ApiError(400, `Unknown cable provider: ${req.params.provider}`);
-    const rows = await listCableCatalog(req.params.provider);
-    res.json({ rows });
+    const serviceID = await resolveVtpassProviderId("cable", req.params.provider);
+    if (!serviceID) throw new ApiError(400, `Unknown cable provider: ${req.params.provider}`);
+    const rows = await listCatalog("cable", serviceID);
+    // ProductPrice rows are keyed by VTpass's resolved serviceID ("dstv"),
+    // not the display name in the URL ("DSTV") — returned so the frontend's
+    // manual "add a plan" form submits the id that actually matches what
+    // resolvePlanPrice looks up at purchase time, not the display label.
+    res.json({ rows, serviceID });
   } catch (err) {
     next(err);
   }
@@ -47,7 +54,7 @@ router.get("/cable/:provider", requireAdmin, async (req, res, next) => {
 
 router.get("/exam", requireAdmin, async (req, res, next) => {
   try {
-    const rows = await listExamCatalog();
+    const rows = await listCatalog("exam", "waec");
     res.json({ rows });
   } catch (err) {
     next(err);
@@ -74,11 +81,12 @@ router.post(
       const { id, category, serviceID, key, label, buyingPrice, sellingPrice } = req.body;
 
       // Editing an existing row (including changing its `key` — the actual
-      // Maskawasub plan id used at purchase time, see
-      // maskawasubPricing.js's resolveDataPlanPrice/resolveCablePlanPrice) —
-      // `key` can't be part of the lookup filter here the way the upsert
-      // path below uses it, or "changing the id" would just create a second
-      // row instead of renaming the existing one.
+      // provider plan id used at purchase time: Maskawasub's for data, see
+      // maskawasubPricing.js's resolveDataPlanPrice; VTpass's for cable/exam,
+      // see productPricing.js's resolvePlanPrice) — `key` can't be part of
+      // the lookup filter here the way the upsert path below uses it, or
+      // "changing the id" would just create a second row instead of
+      // renaming the existing one.
       if (id) {
         const row = await ProductPrice.findByIdAndUpdate(
           id,

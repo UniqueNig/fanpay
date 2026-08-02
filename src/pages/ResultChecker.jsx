@@ -50,7 +50,7 @@ const ResultChecker = () => {
     setLoading(true);
     setPinError("");
     try {
-      const result = await api.post("/vtu/exam", { examName: selected.variation_code, pin });
+      const result = await api.post("/vtu/exam", { variationCode: selected.variation_code, pin });
       await fetchUserData(user.uid);
       setSuccessData(result);
       setShowPinModal(false);
@@ -85,7 +85,7 @@ const ResultChecker = () => {
       <div className="p-5 lg:p-8 max-w-2xl">
         <div className="mb-7">
           <h1 className="font-syne font-bold text-ink text-2xl">Result Checker PINs</h1>
-          <p className="text-ink/40 font-dm text-sm mt-1">WAEC, NECO, and NABTEB — charged from your wallet</p>
+          <p className="text-ink/40 font-dm text-sm mt-1">WAEC result checker PINs — charged from your wallet</p>
         </div>
 
         {success ? (
