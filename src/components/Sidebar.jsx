@@ -2,10 +2,10 @@ import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   FiGrid, FiFileText, FiSmartphone, FiPhoneCall, FiTag,
-  FiLogOut, FiX, FiPlusCircle, FiList, FiShield, FiSettings, FiUserCheck, FiBookOpen,
+  FiLogOut, FiX, FiPlusCircle, FiList, FiShield, FiSettings, FiUserCheck, FiBookOpen, FiCode,
 } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
-import FanPayLogo from "./FanPayLogo";
+import FanFiLogo from "./FanFiLogo";
 import Skeleton from "./Skeleton";
 
 // Transfer and Savings are deliberately not linked here for now (not
@@ -38,7 +38,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="flex items-center justify-between px-5 h-16 border-b border-line">
-        <FanPayLogo className="h-8 w-auto" />
+        <FanFiLogo className="h-8 w-auto" />
         {mobileOpen !== undefined && (
           <button onClick={() => setMobileOpen(false)} className="lg:hidden text-ink/50 hover:text-ink">
             <FiX size={18} />
@@ -108,6 +108,19 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
           </NavLink>
         ))}
       </nav>
+
+      {/* Developer API entry point — always visible; DeveloperPortal itself
+          handles the "not registered yet" state with a register CTA. */}
+      <div className="px-3 pt-2">
+        <NavLink
+          to="/developer"
+          onClick={() => setMobileOpen && setMobileOpen(false)}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-dm text-sm text-iris/80 hover:text-iris hover:bg-iris/8 border border-dashed border-iris/20 hover:border-iris/40 transition-all duration-200"
+        >
+          <FiCode size={17} />
+          Developer API
+        </NavLink>
+      </div>
 
       {/* Admin panel link — only rendered for accounts with the admin claim */}
       {isAdmin && (
