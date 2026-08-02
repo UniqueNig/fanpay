@@ -41,7 +41,7 @@ const DeveloperRow = ({ dev, onStatusChange }) => {
           <div className="min-w-0">
             <p className="text-ink font-dm text-sm font-medium truncate">{dev.email}</p>
             <p className="text-ink/35 font-dm text-xs">
-              {dev.companyName || "No company name"} · API balance {formatNaira(dev.apiBalance || 0)} · {dev.keyCount} key{dev.keyCount === 1 ? "" : "s"}
+              {dev.companyName || "No company name"} · Wallet {formatNaira(dev.walletBalance || 0)} · {dev.keyCount} key{dev.keyCount === 1 ? "" : "s"}
             </p>
           </div>
         </button>

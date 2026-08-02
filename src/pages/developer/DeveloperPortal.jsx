@@ -1,15 +1,19 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
+import { useAuth } from "../../context/AuthContext";
 import { api } from "../../api";
 import { formatNaira } from "../../utils/helpers";
-import { FiCode, FiCopy, FiCheck, FiPlusCircle, FiTrash2, FiAlertCircle } from "react-icons/fi";
+import { FiCode, FiCopy, FiCheck, FiPlusCircle, FiTrash2, FiAlertCircle, FiBook } from "react-icons/fi";
 
-// Phase B1 — the walking-skeleton version of the Developer Platform: register,
-// generate/revoke sandbox and live API keys, see your own apiBalance. No
-// webhooks or usage analytics yet (later phases — see the plan doc). Sandbox
-// keys work immediately; live keys exist but stay gated behind manual admin
-// approval (DeveloperAccount.status) until an admin approval UI is built.
+// Register, generate/revoke sandbox and live API keys, see your own wallet
+// balance. Sandbox keys work immediately; live keys exist but stay gated
+// behind admin approval (DeveloperAccount.status, see the admin Developer
+// Platform page). Live purchases debit this same wallet balance directly —
+// no separate API balance — so what's shown here is exactly what a live
+// /api/v1/airtime or /api/v1/data call can spend.
 const DeveloperPortal = () => {
+  const { userData } = useAuth();
   const [loading, setLoading] = useState(true);
   const [developer, setDeveloper] = useState(null);
   const [keys, setKeys] = useState([]);
@@ -99,9 +103,14 @@ const DeveloperPortal = () => {
   return (
     <DashboardLayout>
       <div className="p-5 lg:p-8 max-w-3xl">
-        <div className="mb-7">
-          <h1 className="font-syne font-bold text-ink text-2xl">Developer API</h1>
-          <p className="text-ink/40 font-dm text-sm mt-1">Sandbox and live API keys for the FanFi purchase API</p>
+        <div className="mb-7 flex items-start justify-between gap-3">
+          <div>
+            <h1 className="font-syne font-bold text-ink text-2xl">Developer API</h1>
+            <p className="text-ink/40 font-dm text-sm mt-1">Sandbox and live API keys for the FanFi purchase API</p>
+          </div>
+          <Link to="/developer/docs" className="btn-outline-iris !w-auto px-4 py-2 text-xs flex items-center gap-2 shrink-0">
+            <FiBook size={13} /> Docs
+          </Link>
         </div>
 
         {error && (
@@ -142,8 +151,9 @@ const DeveloperPortal = () => {
                 )}
               </div>
               <div className="card-flat p-5">
-                <p className="text-ink/35 font-dm text-[11px] uppercase mb-1">API Balance (live purchases)</p>
-                <p className="font-syne font-bold text-lg text-ink">{formatNaira(developer.apiBalance || 0)}</p>
+                <p className="text-ink/35 font-dm text-[11px] uppercase mb-1">Wallet Balance (live purchases)</p>
+                <p className="font-syne font-bold text-lg text-ink">{formatNaira(userData?.balance || 0)}</p>
+                <p className="text-ink/30 font-dm text-[11px] mt-1">Same balance as your FanFi wallet — no separate top-up needed.</p>
               </div>
             </div>
 
@@ -190,7 +200,7 @@ const DeveloperPortal = () => {
                   <div key={k.id} className={`flex items-center justify-between gap-3 p-4 ${i < keys.length - 1 ? "border-b border-line" : ""} ${k.status === "revoked" ? "opacity-50" : ""}`}>
                     <div className="min-w-0">
                       <p className="text-ink font-dm text-sm font-medium truncate">{k.name || "Unnamed key"}</p>
-                      <p className="text-ink/35 font-dm text-xs font-mono">{k.keyPrefix}</p>
+                      <p className="text-ink/35 font-mono text-xs">{k.keyPrefix}</p>
                       <p className="text-ink/30 font-dm text-[11px] mt-0.5 capitalize">{k.environment} · {k.status}</p>
                     </div>
                     {k.status === "active" && (

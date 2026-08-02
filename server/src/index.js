@@ -61,6 +61,7 @@ import networksRouter from "./routes/networks.js";
 import developerAccountsRouter from "./routes/publicApi/developerAccounts.js";
 import publicApiAirtimeRouter from "./routes/publicApi/airtime.js";
 import publicApiDataRouter from "./routes/publicApi/data.js";
+import publicApiPlansRouter from "./routes/publicApi/plans.js";
 import adminDeveloperPlatformRouter from "./routes/adminDeveloperPlatform.js";
 
 const app = express();
@@ -118,6 +119,7 @@ app.use("/api/developer", apiLimiter, developerAccountsRouter);
 const publicApiLimiter = rateLimit({ windowMs: 60_000, max: 60 });
 app.use("/api/v1", publicApiLimiter, publicApiAirtimeRouter);
 app.use("/api/v1", publicApiLimiter, publicApiDataRouter);
+app.use("/api/v1", publicApiLimiter, publicApiPlansRouter);
 
 // Tighter limiter than regular API traffic — this is exactly the endpoint a
 // brute-force PIN guesser would hammer, on top of the 5-attempt account lock.

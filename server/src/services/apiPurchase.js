@@ -1,20 +1,24 @@
-import mongoose from "mongoose";
 import { User } from "../models/User.js";
-import { DeveloperAccount } from "../models/DeveloperAccount.js";
 import { Transaction } from "../models/Transaction.js";
 import { ApiError } from "../middleware/errorHandler.js";
+import { debitWallet, creditWallet } from "./wallet.js";
 
 // Parallel to routes/vtu.js's requireBalanceAndPin/debitThenPurchase, but
-// for the developer-API pathway: API-key possession replaces the PIN
-// (a third-party server-to-server caller can't be prompted for the
-// account's transaction PIN), and live-mode purchases debit
-// DeveloperAccount.apiBalance — a separate, developer-funded balance —
-// never the developer's own personal User.balance. This keeps a leaked
-// live key's blast radius capped at whatever's been pre-funded for API use.
+// for the developer-API pathway: API-key possession replaces the PIN (a
+// third-party server-to-server caller can't be prompted for the account's
+// transaction PIN). Live-mode purchases debit the developer's own
+// User.balance — the same wallet the consumer app uses — via the existing
+// debitWallet/creditWallet (services/wallet.js), not a separate balance.
+// This was a deliberate simplification over an earlier separate-balance
+// design: reusing the already-battle-tested wallet functions (atomic
+// session transaction, idempotent-by-reference) beats maintaining a
+// parallel debit/credit pair, at the cost of a leaked live key being able
+// to spend the developer's whole wallet rather than a pre-funded cap —
+// an accepted tradeoff, made explicitly, not an oversight.
 //
-// Sandbox-mode purchases never reach any of the balance-moving code below —
-// see debitThenPurchaseApi's sandbox branch, which only ever calls into
-// services/sandboxProvider.js.
+// Sandbox-mode purchases never reach any balance-moving code below — see
+// debitThenPurchaseApi's sandbox branch, which only ever calls into
+// services/sandboxProvider.js and never touches a real balance.
 
 function isDuplicateKeyError(err) {
   return err && err.code === 11000;
@@ -37,56 +41,15 @@ async function recordSandboxTransaction(developer, amount, reference, title, cat
   }
 }
 
-async function debitApiBalance(developer, amount, reference, title, category, meta) {
-  const session = await mongoose.startSession();
-  try {
-    await session.withTransaction(async () => {
-      const dev = await DeveloperAccount.findById(developer._id).session(session);
-      if (dev.apiBalance < amount) throw new ApiError(400, "Insufficient API balance.");
-      const user = await User.findOne({ uid: dev.uid }).session(session);
-      if (!user) throw new ApiError(404, "Linked account not found.");
-
-      await Transaction.create([{ userId: user._id, type: "debit", title, amount, category, reference, meta }], { session });
-
-      dev.apiBalance -= amount;
-      await dev.save({ session });
-    });
-  } catch (err) {
-    if (isDuplicateKeyError(err)) return;
-    throw err;
-  } finally {
-    session.endSession();
-  }
-}
-
-async function creditApiBalance(developer, amount, reference, title, category, meta) {
-  const session = await mongoose.startSession();
-  try {
-    await session.withTransaction(async () => {
-      const dev = await DeveloperAccount.findById(developer._id).session(session);
-      const user = await User.findOne({ uid: dev.uid }).session(session);
-      if (!user) throw new ApiError(404, "Linked account not found.");
-
-      await Transaction.create([{ userId: user._id, type: "credit", title, amount, category, reference, meta }], { session });
-
-      dev.apiBalance += amount;
-      await dev.save({ session });
-    });
-  } catch (err) {
-    if (isDuplicateKeyError(err)) return; // already refunded
-    throw err;
-  } finally {
-    session.endSession();
-  }
-}
-
 // Fast-fail check before attempting a live-mode purchase — sandbox requests
 // skip the balance check entirely (nothing real is being spent).
 export async function requireApiKeyAndBalance(apiKey, developer, amount) {
   if (developer.status === "suspended") throw new ApiError(403, "This developer account is suspended.");
-  if (apiKey.environment === "live" && developer.apiBalance < amount) {
-    throw new ApiError(400, "Insufficient API balance. Fund your developer wallet before making live purchases.");
-  }
+  if (apiKey.environment !== "live") return;
+
+  const user = await findLinkedUser(developer);
+  if (user.suspended) throw new ApiError(403, "This account has been suspended.");
+  if (user.balance < amount) throw new ApiError(400, "Insufficient wallet balance.");
 }
 
 // `purchase` is the function that actually calls the provider — either a
@@ -101,11 +64,11 @@ export async function debitThenPurchaseApi({ apiKey, developer, amount, referenc
     return purchase();
   }
 
-  await debitApiBalance(developer, amount, reference, title, category, { ...meta, sandbox: false });
+  await debitWallet(developer.uid, amount, reference, title, category, { ...meta, sandbox: false });
   try {
     return await purchase();
   } catch (err) {
-    await creditApiBalance(developer, amount, reference + "_refund", `Refund: ${title}`, "↩️", {
+    await creditWallet(developer.uid, amount, reference + "_refund", `Refund: ${title}`, "↩️", {
       reason: "api_purchase_failed",
     });
     throw err;

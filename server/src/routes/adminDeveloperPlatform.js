@@ -4,6 +4,7 @@ import { ApiError } from "../middleware/errorHandler.js";
 import { DeveloperAccount } from "../models/DeveloperAccount.js";
 import { ApiKey } from "../models/ApiKey.js";
 import { ApiRequestLog } from "../models/ApiRequestLog.js";
+import { User } from "../models/User.js";
 
 const router = Router();
 
@@ -17,6 +18,12 @@ router.get("/developer-accounts", requireAdmin, async (req, res, next) => {
     const keys = await ApiKey.find({ developerAccountId: { $in: developers.map((d) => d._id) } })
       .select("developerAccountId environment status")
       .lean();
+    // Live purchases debit the developer's own wallet directly (no separate
+    // API balance, see services/apiPurchase.js) — shown here so an admin
+    // can see at a glance whether a developer actually has funds available
+    // before approving them for live access.
+    const users = await User.find({ uid: { $in: developers.map((d) => d.uid) } }).select("uid balance").lean();
+    const balanceByUid = new Map(users.map((u) => [u.uid, u.balance]));
 
     const keysByDeveloper = new Map();
     for (const k of keys) {
@@ -32,6 +39,7 @@ router.get("/developer-accounts", requireAdmin, async (req, res, next) => {
           ...d,
           keyCount: devKeys.length,
           liveKeyCount: devKeys.filter((k) => k.environment === "live" && k.status === "active").length,
+          walletBalance: balanceByUid.get(d.uid) ?? 0,
         };
       }),
     });
