@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { body, validationResult } from "express-validator";
-import { requireApiKey, perKeyLimiter } from "../../middleware/requireApiKey.js";
+import { requireApiKey, perKeyLimiter, logApiRequest } from "../../middleware/requireApiKey.js";
 import { ApiError } from "../../middleware/errorHandler.js";
 import { resolveProviderId, maskawasubBuyData } from "../../services/maskawasub.js";
 import { resolveDataPlanPrice } from "../../services/maskawasubPricing.js";
@@ -24,6 +24,7 @@ router.post(
   "/data",
   requireApiKey,
   perKeyLimiter,
+  logApiRequest,
   [
     body("network").isString().trim().notEmpty(),
     body("phone").isString().trim().isLength({ min: 10, max: 11 }),

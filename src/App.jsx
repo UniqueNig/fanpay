@@ -40,6 +40,7 @@ import AdminKyc from "./pages/admin/AdminKyc";
 import AdminPinRequests from "./pages/admin/AdminPinRequests";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminFinance from "./pages/admin/AdminFinance";
+import AdminDeveloperPlatform from "./pages/admin/AdminDeveloperPlatform";
 import AdminMarketing from "./pages/admin/AdminMarketing";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminComms from "./pages/admin/AdminComms";
@@ -93,6 +94,7 @@ function App() {
           <Route path="/admin/pin-requests" element={<AdminRoute><AdminPinRequests /></AdminRoute>} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/finance" element={<AdminRoute><AdminFinance /></AdminRoute>} />
+          <Route path="/admin/developer-platform" element={<AdminRoute><AdminDeveloperPlatform /></AdminRoute>} />
           <Route path="/admin/marketing" element={<AdminRoute><AdminMarketing /></AdminRoute>} />
           <Route path="/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
           <Route path="/admin/comms" element={<AdminRoute><AdminComms /></AdminRoute>} />

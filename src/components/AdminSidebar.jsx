@@ -3,7 +3,7 @@ import { NavLink, useNavigate, Link } from "react-router-dom";
 import {
   FiGrid, FiUsers, FiList, FiLogOut, FiX, FiShield, FiArrowLeft, FiLogIn,
   FiUserCheck, FiUserX, FiAlertTriangle, FiDollarSign, FiSettings, FiTag,
-  FiKey, FiTerminal, FiMail, FiCpu, FiMessageCircle, FiWifi, FiPercent,
+  FiKey, FiTerminal, FiMail, FiCpu, FiMessageCircle, FiWifi, FiPercent, FiCode,
 } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 import FanFiLogo from "./FanFiLogo";
@@ -22,6 +22,7 @@ const navItems = [
   { to: "/admin/finance", icon: <FiDollarSign size={17} />, label: "Finance" },
   { to: "/admin/marketing", icon: <FiTag size={17} />, label: "Marketing" },
   { to: "/admin/pricing-catalog", icon: <FiPercent size={17} />, label: "Pricing Catalog" },
+  { to: "/admin/developer-platform", icon: <FiCode size={17} />, label: "Developer Platform" },
   { to: "/admin/settings", icon: <FiSettings size={17} />, label: "Settings" },
   { to: "/admin/comms", icon: <FiMail size={17} />, label: "Email & SMS" },
   { to: "/admin/live-chat", icon: <FiMessageCircle size={17} />, label: "Live Chat" },

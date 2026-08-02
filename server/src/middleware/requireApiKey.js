@@ -2,6 +2,7 @@ import crypto from "crypto";
 import rateLimit from "express-rate-limit";
 import { ApiKey } from "../models/ApiKey.js";
 import { DeveloperAccount } from "../models/DeveloperAccount.js";
+import { ApiRequestLog } from "../models/ApiRequestLog.js";
 
 // Authenticates a third-party developer request via the X-Api-Key header —
 // deliberately separate from requireAuth (auth.js): this sets req.apiKey/
@@ -48,3 +49,22 @@ export const perKeyLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+// Fire-and-forget request logging for AdminDeveloperPlatform.jsx's usage
+// tab — must also run after requireApiKey. Logs on res "finish" so the
+// final status code (including one set by a later error handler) is
+// captured, not the code at the moment this middleware runs.
+export function logApiRequest(req, res, next) {
+  res.on("finish", () => {
+    ApiRequestLog.create({
+      apiKeyId: req.apiKey?._id,
+      developerAccountId: req.developer?._id,
+      environment: req.apiKey?.environment,
+      method: req.method,
+      path: req.baseUrl + req.path,
+      statusCode: res.statusCode,
+      ip: req.ip,
+    }).catch(() => {});
+  });
+  next();
+}

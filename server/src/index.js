@@ -61,6 +61,7 @@ import networksRouter from "./routes/networks.js";
 import developerAccountsRouter from "./routes/publicApi/developerAccounts.js";
 import publicApiAirtimeRouter from "./routes/publicApi/airtime.js";
 import publicApiDataRouter from "./routes/publicApi/data.js";
+import adminDeveloperPlatformRouter from "./routes/adminDeveloperPlatform.js";
 
 const app = express();
 
@@ -150,6 +151,7 @@ app.use("/api/admin/comms", adminLimiter, adminCommsRouter);
 app.use("/api/admin/system-logs", adminLimiter, adminSystemLogsRouter);
 app.use("/api/admin/product-prices", adminLimiter, adminProductPricesRouter);
 app.use("/api/admin/network-services", adminLimiter, adminNetworkServicesRouter);
+app.use("/api/admin", adminLimiter, adminDeveloperPlatformRouter);
 
 app.get("/health", (req, res) => res.json({ ok: true }));
 
