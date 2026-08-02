@@ -521,10 +521,11 @@ const AdminPricingCatalog = () => {
         {tab === 4 && (
           <>
             <p className="text-ink/30 font-dm text-xs mb-4">
-              WAEC result checker PINs, via VTpass. Priced from VTpass's own live rates — same buying/selling
-              margin pattern as everything else. The Plan ID here is VTpass's real variation_code
-              ("waecdirect") — don't rename it, that would break purchases. NECO isn't offered by VTpass at
-              all (confirmed against their live services list, 2026-08-02) — only WAEC exists here.
+              WAEC result checker and JAMB UTME PINs, via VTpass. Priced from VTpass's own live rates — same
+              buying/selling margin pattern as everything else. The Plan ID here is VTpass's real
+              variation_code ("waecdirect", "utme-mock", "utme-no-mock") — don't rename it, that would break
+              purchases. NECO isn't offered by VTpass at all (confirmed against their live services list,
+              2026-08-02) — only WAEC and JAMB exist here.
             </p>
             <PlanTable rows={examRows} loading={examLoading} onSave={savePlanRow("exam", setExamRows)} onToggle={toggleRow(setExamRows)} />
           </>

@@ -13,6 +13,13 @@ const ResultChecker = () => {
   const [plans, setPlans] = useState([]);
   const [plansLoading, setPlansLoading] = useState(true);
   const [selected, setSelected] = useState(null);
+  // JAMB only — the candidate's own JAMB Profile ID, confirmed via
+  // /verify-jamb before payment, same trust pattern as electricity/cable's
+  // meter/smartcard verify. WAEC has no equivalent step; a picked WAEC plan
+  // goes straight to the PIN modal.
+  const [profileId, setProfileId] = useState("");
+  const [jambVerify, setJambVerify] = useState(null);
+  const [verifyLoading, setVerifyLoading] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [pinError, setPinError] = useState("");
@@ -21,6 +28,7 @@ const ResultChecker = () => {
   const [successData, setSuccessData] = useState(null);
   const [copied, setCopied] = useState(false);
   const balance = userData?.balance ?? 0;
+  const isJamb = selected?.serviceID === "jamb";
 
   useEffect(() => {
     api
@@ -29,6 +37,27 @@ const ResultChecker = () => {
       .catch((err) => setError(err.message || "Could not load result checker pin prices."))
       .finally(() => setPlansLoading(false));
   }, []);
+
+  // Debounced (waits for typing to pause) and guards against stale
+  // responses — same pattern as Bills.jsx's meter/smartcard verify.
+  useEffect(() => {
+    if (!isJamb || profileId.length < 8) {
+      setJambVerify(null);
+      setVerifyLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setVerifyLoading(true);
+    setJambVerify(null);
+    const t = setTimeout(() => {
+      api
+        .get(`/vtu/verify-jamb/${profileId}?type=${selected.variation_code}`)
+        .then((res) => { if (!cancelled && res.customerName) setJambVerify(res); })
+        .catch(() => {})
+        .finally(() => { if (!cancelled) setVerifyLoading(false); });
+    }, 500);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [isJamb, profileId, selected]);
 
   const handlePick = (plan) => {
     setError("");
@@ -42,6 +71,20 @@ const ResultChecker = () => {
       return;
     }
     setSelected(plan);
+    setProfileId("");
+    setJambVerify(null);
+    setPinError("");
+    // JAMB needs the Profile ID entered and verified first — shown inline
+    // below the plan list rather than jumping straight to the PIN modal.
+    if (plan.serviceID !== "jamb") setShowPinModal(true);
+  };
+
+  const handleJambContinue = () => {
+    if (!jambVerify?.customerName) {
+      setError("Could not verify this JAMB Profile ID. Check it and try again.");
+      return;
+    }
+    setError("");
     setPinError("");
     setShowPinModal(true);
   };
@@ -50,7 +93,13 @@ const ResultChecker = () => {
     setLoading(true);
     setPinError("");
     try {
-      const result = await api.post("/vtu/exam", { variationCode: selected.variation_code, pin });
+      const result = await api.post("/vtu/exam", {
+        serviceID: selected.serviceID,
+        variationCode: selected.variation_code,
+        profileId: isJamb ? profileId : undefined,
+        accountName: isJamb ? jambVerify?.customerName : undefined,
+        pin,
+      });
       await fetchUserData(user.uid);
       setSuccessData(result);
       setShowPinModal(false);
@@ -75,6 +124,8 @@ const ResultChecker = () => {
     setSuccess(false);
     setSuccessData(null);
     setSelected(null);
+    setProfileId("");
+    setJambVerify(null);
     setError("");
   };
 
@@ -84,8 +135,8 @@ const ResultChecker = () => {
     <DashboardLayout>
       <div className="p-5 lg:p-8 max-w-2xl">
         <div className="mb-7">
-          <h1 className="font-syne font-bold text-ink text-2xl">Result Checker PINs</h1>
-          <p className="text-ink/40 font-dm text-sm mt-1">WAEC result checker PINs — charged from your wallet</p>
+          <h1 className="font-syne font-bold text-ink text-2xl">Result Checker & JAMB PINs</h1>
+          <p className="text-ink/40 font-dm text-sm mt-1">WAEC result checker and JAMB UTME PINs — charged from your wallet</p>
         </div>
 
         {success ? (
@@ -166,18 +217,57 @@ const ResultChecker = () => {
                   <button
                     key={p.variation_code}
                     onClick={() => handlePick(p)}
-                    className="card-flat p-5 flex items-center gap-4 text-left hover:border-iris/40 transition-colors"
+                    className={`card-flat p-5 flex items-center gap-4 text-left hover:border-iris/40 transition-colors ${
+                      selected?.variation_code === p.variation_code ? "border-iris/40" : ""
+                    }`}
                   >
                     <div className="w-11 h-11 rounded-xl bg-iris/10 flex items-center justify-center shrink-0">
                       <FiBookOpen size={18} className="text-iris" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-ink font-dm text-sm font-semibold">{p.name}</p>
-                      <p className="text-ink/35 font-dm text-xs">Delivered to your account</p>
+                      <p className="text-ink/35 font-dm text-xs">
+                        {p.serviceID === "jamb" ? "Requires your JAMB Profile ID" : "Delivered to your account"}
+                      </p>
                     </div>
                     <p className="text-iris font-syne font-bold shrink-0">{formatNaira(parseFloat(p.variation_amount))}</p>
                   </button>
                 ))}
+              </div>
+            )}
+
+            {isJamb && (
+              <div className="card-flat p-5 mt-3">
+                <label className="text-ink/80 font-dm text-sm font-medium mb-2 block">JAMB Profile ID</label>
+                <input
+                  type="text"
+                  value={profileId}
+                  onChange={(e) => setProfileId(e.target.value)}
+                  className="input-field-light text-base"
+                  placeholder="Enter your JAMB e-facility Profile ID"
+                />
+                {profileId.length >= 8 && (
+                  verifyLoading ? (
+                    <p className="text-ink/40 font-dm text-xs mt-2">Verifying Profile ID...</p>
+                  ) : jambVerify?.customerName ? (
+                    <div className="bg-iris/10 border border-iris/20 rounded-xl px-4 py-2.5 mt-2">
+                      <p className="text-ink/50 font-dm text-[11px] mb-0.5">Verified Candidate</p>
+                      <p className="text-iris font-syne font-semibold text-sm">{jambVerify.customerName}</p>
+                    </div>
+                  ) : (
+                    <div className="bg-red-500/10 border border-red-500/25 rounded-xl px-4 py-2.5 mt-2">
+                      <p className="text-red-400 font-dm text-xs">Could not verify this JAMB Profile ID. Check it and try again.</p>
+                    </div>
+                  )
+                )}
+                <button
+                  type="button"
+                  onClick={handleJambContinue}
+                  disabled={!jambVerify?.customerName}
+                  className="btn-iris w-full mt-4 disabled:opacity-60"
+                >
+                  Continue to Pay
+                </button>
               </div>
             )}
           </>
@@ -188,7 +278,11 @@ const ResultChecker = () => {
             title="Confirm Purchase"
             amount={parseFloat(selected?.variation_amount || 0)}
             balance={balance}
-            summary={[{ label: "Exam", value: selected?.name }]}
+            summary={[
+              { label: "Exam", value: selected?.name },
+              isJamb ? { label: "Profile ID", value: profileId } : null,
+              isJamb ? { label: "Candidate", value: jambVerify?.customerName } : null,
+            ].filter(Boolean)}
             onConfirm={handlePinConfirm}
             onClose={() => { setShowPinModal(false); setPinError(""); }}
             submitting={loading}

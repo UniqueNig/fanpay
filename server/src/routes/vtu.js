@@ -152,18 +152,21 @@ router.get("/cable-plans/:provider", requireAuth, async (req, res, next) => {
   }
 });
 
-// WAEC only — NECO isn't offered by VTpass at all (confirmed against
-// GET /services?identifier=education, 2026-08-02: waec, waec-registration,
-// jamb, no neco). One fixed plan ("waecdirect"), so this is just
-// listCatalog's generic path with a hardcoded serviceID, same shape the
-// frontend already expects from a provider-style plan list.
+// WAEC and JAMB, both via VTpass — NECO isn't offered at all (confirmed
+// against GET /services?identifier=education, 2026-08-02: waec,
+// waec-registration, jamb, no neco). Each row carries its own serviceID
+// since the two need different purchase flows (JAMB needs a Profile ID +
+// verify step first, see /verify-jamb and POST /exam below) — the frontend
+// uses it to decide which flow to run.
 router.get("/exam-plans", requireAuth, async (req, res, next) => {
   try {
-    const rows = await listCatalog("exam", "waec");
+    const [waecRows, jambRows] = await Promise.all([listCatalog("exam", "waec"), listCatalog("exam", "jamb")]);
+    const rows = [...waecRows, ...jambRows];
     res.json({
       content: {
         varations: rows.filter((r) => r.active).map((r) => ({
           variation_code: r.variationCode, name: r.label, variation_amount: String(r.sellingPrice),
+          serviceID: r.serviceID,
         })),
       },
     });
@@ -213,6 +216,28 @@ router.get("/verify-electricity/:provider/:meterNumber", requireAuth, async (req
     res.json({
       customerName: content?.Customer_Name || null,
       address: content?.Address || null,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// JAMB PIN vending needs the candidate's own JAMB Profile ID (their
+// e-facility registration id, not a phone/meter/smartcard) confirmed before
+// payment — same trust pattern as electricity/cable. `type` is the chosen
+// variation_code (utme-mock/utme-no-mock); confirmed live (2026-08-02) that
+// VTpass's response for this one includes Customer_Account_Type alongside
+// the usual Customer_Name.
+router.get("/verify-jamb/:profileId", requireAuth, async (req, res, next) => {
+  try {
+    const type = req.query.type === "utme-mock" ? "utme-mock" : "utme-no-mock";
+    const content = await vtpassMerchantVerify({
+      billersCode: req.params.profileId, serviceID: "jamb", extra: { type },
+    });
+    if (content?.error) return res.json({ customerName: null, accountType: null });
+    res.json({
+      customerName: content?.Customer_Name || null,
+      accountType: content?.Customer_Account_Type || null,
     });
   } catch (err) {
     next(err);
@@ -494,24 +519,28 @@ router.post(
   }
 );
 
-// Only "waec" exists under VTpass's education catalog today (confirmed live
-// via GET /services?identifier=education, 2026-08-02: waec,
-// waec-registration, jamb — no neco), but this takes variationCode from the
-// /exam-plans list rather than hardcoding "waecdirect", same pattern cable
-// purchases already use — if VTpass adds another exam type later, this
-// route doesn't need touching, only the servceID would need to become a
-// param too.
+// WAEC and JAMB — takes both variationCode and serviceID from the
+// /exam-plans list rather than hardcoding either, same pattern cable
+// purchases already use. The two need different payloads: JAMB requires a
+// verified Profile ID (billersCode) the candidate is paying against; WAEC
+// doesn't take one at all. Confirmed live (2026-08-02) that the two also
+// return the purchased PIN in completely different shapes (see the
+// pinCode/serialNumber extraction below).
 router.post(
   "/exam",
   requireAuth,
   [
+    body("serviceID").isIn(["waec", "jamb"]).withMessage("Unknown exam type."),
     body("variationCode").isString().trim().notEmpty().withMessage("Select an exam type."),
+    body("profileId").optional().isString().trim(),
+    body("accountName").optional().isString().trim(),
     PIN_RULE,
   ],
   async (req, res, next) => {
     if (!checkValidation(req, res)) return;
     try {
-      const { variationCode, pin } = req.body;
+      const { serviceID, variationCode, profileId, accountName, pin } = req.body;
+      if (serviceID === "jamb" && !profileId) throw new ApiError(400, "A JAMB Profile ID is required.");
 
       const settings = await getSettings();
       assertNotMaintenance(settings);
@@ -519,7 +548,7 @@ router.post(
 
       // Same catalog-based, tamper-proof pricing as data/cable — never
       // trusts a client-supplied amount.
-      const priced = await resolvePlanPrice("exam", "waec", variationCode);
+      const priced = await resolvePlanPrice("exam", serviceID, variationCode);
       const chargeAmount = priced.sellingPrice;
 
       const user = await requireBalanceAndPin(req.uid, chargeAmount, pin, settings);
@@ -534,21 +563,27 @@ router.post(
         ref,
         title,
         "🎓",
-        { examName: priced.label, buyingPrice: priced.buyingPrice, sellingPrice: priced.sellingPrice },
-        // VTpass requires a phone in the payload even though a result-checker
-        // PIN isn't sent anywhere — it's not collected on this form, so the
-        // account's own profile phone is used. quantity is always 1; the
-        // frontend only ever offers a single-PIN purchase.
-        () => vtpassPay({ request_id: ref, serviceID: "waec", variation_code: variationCode, phone: user.phone, quantity: 1 })
+        { examName: priced.label, serviceID, profileId: profileId || null, accountName: accountName || null, buyingPrice: priced.buyingPrice, sellingPrice: priced.sellingPrice },
+        // VTpass requires a phone in the payload for both even though it's
+        // not otherwise used — not collected on this form, so the account's
+        // own profile phone is used. quantity is WAEC-only (JAMB has no
+        // multi-pin concept); billersCode is JAMB-only.
+        () =>
+          vtpassPay({
+            request_id: ref, serviceID, variation_code: variationCode, phone: user.phone,
+            ...(serviceID === "jamb" ? { billersCode: profileId, amount: priced.buyingPrice } : { quantity: 1 }),
+          })
       );
 
-      // Confirmed live (2026-08-02): purchased_code is a pipe-separated
-      // string ("Serial No:X, pin: Y||...") and `cards` is the same data
-      // structured as [{Serial, Pin}]. Sandbox returned 3 cards for a
-      // quantity:1 request (likely sandbox-only behaviour) — cards[0] is
-      // used as the actual purchased PIN regardless.
-      const pinCode = purchaseRes?.cards?.[0]?.Pin || null;
-      const serialNumber = purchaseRes?.cards?.[0]?.Serial || null;
+      // WAEC: purchased_code is a pipe-separated string ("Serial No:X, pin:
+      // Y||..."), `cards` is the same data structured as [{Serial, Pin}].
+      // JAMB: no `cards` array at all — the PIN comes back as a top-level
+      // `Pin` string literally prefixed "Pin : ", no serial concept.
+      const pinCode =
+        serviceID === "jamb"
+          ? purchaseRes?.Pin?.replace(/^Pin\s*:\s*/i, "").trim() || null
+          : purchaseRes?.cards?.[0]?.Pin || null;
+      const serialNumber = serviceID === "jamb" ? null : purchaseRes?.cards?.[0]?.Serial || null;
 
       await Transaction.updateOne(
         { reference: ref },

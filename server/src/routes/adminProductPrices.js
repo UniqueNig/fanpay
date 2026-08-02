@@ -54,8 +54,8 @@ router.get("/cable/:provider", requireAdmin, async (req, res, next) => {
 
 router.get("/exam", requireAdmin, async (req, res, next) => {
   try {
-    const rows = await listCatalog("exam", "waec");
-    res.json({ rows });
+    const [waecRows, jambRows] = await Promise.all([listCatalog("exam", "waec"), listCatalog("exam", "jamb")]);
+    res.json({ rows: [...waecRows, ...jambRows] });
   } catch (err) {
     next(err);
   }
