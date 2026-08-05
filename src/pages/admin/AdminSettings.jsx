@@ -216,7 +216,16 @@ const AdminSettings = () => {
                 <label className="text-ink/60 font-dm text-xs mb-1.5 block">Minimum Funding to Qualify (₦)</label>
                 <input type="number" className="input-field-light" defaultValue={welcomeBonus.minFunding} onBlur={(e) => save({ welcomeBonus: { ...welcomeBonus, minFunding: Number(e.target.value) } })} />
               </div>
+              <div>
+                <label className="text-ink/60 font-dm text-xs mb-1.5 block">Hold Period After Qualifying (days)</label>
+                <input type="number" min="0" className="input-field-light" defaultValue={welcomeBonus.holdDays} onBlur={(e) => save({ welcomeBonus: { ...welcomeBonus, holdDays: Number(e.target.value) } })} />
+              </div>
             </div>
+            <p className="text-ink/30 font-dm text-xs -mt-2">
+              Once a user meets all 3 conditions, the bonus waits this many days before actually paying
+              out — a buffer against a deposit being reversed right after qualifying. Set to 0 to pay
+              out instantly.
+            </p>
 
             <div className="flex items-center justify-between pt-2 border-t border-line">
               <div>

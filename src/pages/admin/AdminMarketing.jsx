@@ -290,19 +290,22 @@ const AdminMarketing = () => {
               <div className="card-flat overflow-hidden">
                 {bonuses.length === 0 ? (
                   <div className="p-8 text-center text-ink/35 font-dm text-sm">No welcome bonuses granted yet.</div>
-                ) : bonuses.map((b, i) => (
-                  <div key={b.id} className={`flex items-center justify-between p-4 gap-3 ${i < bonuses.length - 1 ? "border-b border-line" : ""}`}>
-                    <div className="min-w-0">
-                      <p className="text-ink font-dm text-sm truncate">{b.user.fullName || b.user.email}</p>
-                      <p className="text-ink/35 font-dm text-xs">
-                        {[b.kycVerified && "KYC", b.fundingMet && "Funded", b.purchaseMade && "Purchased"].filter(Boolean).join(" · ") || "No progress yet"}
-                      </p>
+                ) : bonuses.map((b, i) => {
+                  const isMaturing = b.status !== "unlocked" && !!b.conditionsMetAt;
+                  return (
+                    <div key={b.id} className={`flex items-center justify-between p-4 gap-3 ${i < bonuses.length - 1 ? "border-b border-line" : ""}`}>
+                      <div className="min-w-0">
+                        <p className="text-ink font-dm text-sm truncate">{b.user.fullName || b.user.email}</p>
+                        <p className="text-ink/35 font-dm text-xs">
+                          {[b.kycVerified && "KYC", b.fundingMet && "Funded", b.purchaseMade && "Purchased"].filter(Boolean).join(" · ") || "No progress yet"}
+                        </p>
+                      </div>
+                      <span className={`text-[10px] font-dm px-2 py-0.5 rounded-full border shrink-0 ${b.status === "unlocked" ? "bg-iris/15 text-iris border-iris/25" : isMaturing ? "bg-gold/10 text-gold border-gold/25" : "bg-surface text-ink/40 border-line"}`}>
+                        {b.status === "unlocked" ? `Unlocked ${formatNaira(b.amount)}` : isMaturing ? "Maturing" : "Locked"}
+                      </span>
                     </div>
-                    <span className={`text-[10px] font-dm px-2 py-0.5 rounded-full border shrink-0 ${b.status === "unlocked" ? "bg-iris/15 text-iris border-iris/25" : "bg-surface text-ink/40 border-line"}`}>
-                      {b.status === "unlocked" ? `Unlocked ${formatNaira(b.amount)}` : "Locked"}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           )

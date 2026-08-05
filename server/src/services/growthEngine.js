@@ -102,9 +102,24 @@ export async function checkAndUnlockWelcomeBonus(uid) {
     userId: user._id, type: "debit", reference: { $regex: /^(AIR|DATA|BILL|EXAM)-/ },
   }));
 
+  if (!(bonus.kycVerified && bonus.fundingMet && bonus.purchaseMade)) {
+    await bonus.save();
+    return;
+  }
+
+  // All 3 conditions are true. Start (or check) the hold period — a fraud/
+  // reversal buffer before real money moves, admin-configurable in days.
+  // Setting conditionsMetAt and immediately falling through to the maturity
+  // check below means holdDays: 0 still unlocks instantly (no special case
+  // needed), while holdDays > 0 saves the timestamp and returns until a
+  // later call — either another hook firing, or jobs/maturedBonuses.js's
+  // sweep once nothing else happens to naturally re-trigger this — finds
+  // enough time has actually elapsed.
+  if (!bonus.conditionsMetAt) bonus.conditionsMetAt = new Date();
   await bonus.save();
 
-  if (!(bonus.kycVerified && bonus.fundingMet && bonus.purchaseMade)) return;
+  const holdMs = (settings.welcomeBonus?.holdDays || 0) * 24 * 60 * 60 * 1000;
+  if (Date.now() - bonus.conditionsMetAt.getTime() < holdMs) return;
 
   // Deterministic, unique-per-user reference — if two hook calls race and
   // both reach this point before either writes bonus.status, both call

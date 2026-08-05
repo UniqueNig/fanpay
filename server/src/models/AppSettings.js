@@ -71,6 +71,10 @@ const appSettingsSchema = new mongoose.Schema(
       enabled: { type: Boolean, default: false },
       amount: { type: Number, default: 500 },
       minFunding: { type: Number, default: 1000 },
+      // Days a bonus sits after all 3 conditions are met before it actually
+      // pays out (services/growthEngine.js, jobs/maturedBonuses.js) — a
+      // fraud/reversal buffer, since the payout is real cash. 0 = instant.
+      holdDays: { type: Number, default: 3 },
     },
     // Paid to a referrer once the person they referred unlocks their own
     // welcomeBonus (never at signup) — see services/growthEngine.js.

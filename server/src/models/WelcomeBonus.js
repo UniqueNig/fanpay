@@ -21,6 +21,12 @@ const welcomeBonusSchema = new mongoose.Schema(
     kycVerified: { type: Boolean, default: false },
     fundingMet: { type: Boolean, default: false },
     purchaseMade: { type: Boolean, default: false },
+    // Set the first moment all three conditions are true — starts the
+    // admin-configurable hold period (settings.welcomeBonus.holdDays) before
+    // the bonus actually pays out, so a user can't meet the criteria and
+    // immediately walk away with cash the moment before reversing a deposit.
+    // Never cleared once set, even if this snapshot briefly looks stale.
+    conditionsMetAt: { type: Date, default: null },
     unlockedAt: { type: Date, default: null },
   },
   { timestamps: true }

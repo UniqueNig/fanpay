@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import { useToast } from "../context/ToastContext";
 import { api } from "../api";
-import { formatNaira } from "../utils/helpers";
+import { formatNaira, formatDate } from "../utils/helpers";
 import { FiCheck, FiCopy, FiGift, FiUsers, FiUserCheck, FiCreditCard, FiShoppingBag } from "react-icons/fi";
 
 const ChecklistItem = ({ done, label, sublabel }) => (
@@ -74,11 +74,15 @@ const Rewards = () => {
                     </div>
                     <p className="text-ink font-syne font-bold text-base">Welcome Bonus</p>
                   </div>
-                  {data.welcomeBonus.bonus && (
-                    <span className={`text-xs font-dm px-2.5 py-1 rounded-full border ${data.welcomeBonus.bonus.status === "unlocked" ? "bg-iris/15 text-iris border-iris/25" : "bg-surface text-ink/40 border-line"}`}>
-                      {data.welcomeBonus.bonus.status === "unlocked" ? "Unlocked" : "Locked"}
-                    </span>
-                  )}
+                  {data.welcomeBonus.bonus && (() => {
+                    const isMaturing = data.welcomeBonus.bonus.status !== "unlocked" && !!data.welcomeBonus.bonus.conditionsMetAt;
+                    const label = data.welcomeBonus.bonus.status === "unlocked" ? "Unlocked" : isMaturing ? "Maturing" : "Locked";
+                    return (
+                      <span className={`text-xs font-dm px-2.5 py-1 rounded-full border ${data.welcomeBonus.bonus.status === "unlocked" ? "bg-iris/15 text-iris border-iris/25" : isMaturing ? "bg-gold/10 text-gold border-gold/25" : "bg-surface text-ink/40 border-line"}`}>
+                        {label}
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 {!data.welcomeBonus.bonus ? (
@@ -88,6 +92,8 @@ const Rewards = () => {
                     <p className="text-ink/50 font-dm text-sm mt-2">
                       {data.welcomeBonus.bonus.status === "unlocked"
                         ? `₦${data.welcomeBonus.bonus.amount.toLocaleString()} has been added to your wallet.`
+                        : data.welcomeBonus.bonus.conditionsMetAt
+                        ? `You've qualified! ${formatNaira(data.welcomeBonus.bonus.amount)} pays out on ${formatDate(data.welcomeBonus.bonus.unlocksAt)}.`
                         : `Complete all 3 steps below to unlock ${formatNaira(data.welcomeBonus.bonus.amount)}.`}
                     </p>
                     <div className="divide-y divide-line mt-3">

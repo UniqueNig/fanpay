@@ -44,6 +44,12 @@ router.get("/", requireAuth, async (req, res, next) => {
               kycVerified: bonus.kycVerified,
               fundingMet: bonus.fundingMet,
               purchaseMade: bonus.purchaseMade,
+              conditionsMetAt: bonus.conditionsMetAt,
+              // Client-side display only — the real gate is
+              // growthEngine.js's own elapsed-time check at unlock time.
+              unlocksAt: bonus.conditionsMetAt
+                ? new Date(bonus.conditionsMetAt.getTime() + (settings.welcomeBonus?.holdDays || 0) * 86400000)
+                : null,
               unlockedAt: bonus.unlockedAt,
             }
           : null,

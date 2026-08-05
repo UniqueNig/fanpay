@@ -6,6 +6,7 @@ import { env } from "./config/env.js";
 import { connectDb } from "./config/db.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { startVtuReconciliation } from "./jobs/reconcileVtu.js";
+import { startBonusMaturationSweep } from "./jobs/maturedBonuses.js";
 import { startChatAiListener } from "./services/chatListener.js";
 
 // Safety net, not the primary error-handling path — every request-cycle
@@ -163,5 +164,6 @@ app.use(errorHandler);
 
 await connectDb();
 startVtuReconciliation();
+startBonusMaturationSweep();
 startChatAiListener();
 app.listen(env.port, () => console.log(`FanFi API listening on port ${env.port}`));

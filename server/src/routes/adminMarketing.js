@@ -148,6 +148,7 @@ router.get("/welcome-bonuses", requireAdmin, async (req, res, next) => {
       kycVerified: b.kycVerified,
       fundingMet: b.fundingMet,
       purchaseMade: b.purchaseMade,
+      conditionsMetAt: b.conditionsMetAt,
       unlockedAt: b.unlockedAt,
       createdAt: b.createdAt,
     }));
