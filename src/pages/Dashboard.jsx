@@ -9,7 +9,7 @@ import { useAuth } from "../context/AuthContext";
 import { api } from "../api";
 import { formatNaira, formatDate, formatTime } from "../utils/helpers";
 import {
-  FiFileText, FiSmartphone, FiPhoneCall,
+  FiFileText, FiSmartphone, FiPhoneCall, FiUsers,
   FiArrowUpRight, FiArrowDownLeft, FiEye, FiEyeOff, FiPlusCircle, FiCopy, FiCheck,
 } from "react-icons/fi";
 
@@ -61,8 +61,10 @@ const Dashboard = () => {
   const [vaError, setVaError] = useState("");
   const [copiedBank, setCopiedBank] = useState(null);
   const [welcomeBonus, setWelcomeBonus] = useState(null);
+  const [referral, setReferral] = useState(null);
   const [announcement, setAnnouncement] = useState(null);
   const [activeModal, setActiveModal] = useState(null); // "announcement" | "bonus" | null
+  const [copiedReferral, setCopiedReferral] = useState(false);
 
   const balance = userData?.balance ?? 0;
 
@@ -78,7 +80,7 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    api.get("/rewards").then((res) => setWelcomeBonus(res.welcomeBonus)).catch(() => {});
+    api.get("/rewards").then((res) => { setWelcomeBonus(res.welcomeBonus); setReferral(res.referral); }).catch(() => {});
     api.get("/announcement").then(setAnnouncement).catch(() => {});
   }, []);
 
@@ -112,6 +114,13 @@ const Dashboard = () => {
     navigator.clipboard.writeText(accountNumber);
     setCopiedBank(bank);
     setTimeout(() => setCopiedBank(null), 1500);
+  };
+
+  const referralLink = referral?.referralCode ? `${window.location.origin}/signup?ref=${referral.referralCode}` : "";
+  const copyReferralLink = () => {
+    navigator.clipboard.writeText(referralLink);
+    setCopiedReferral(true);
+    setTimeout(() => setCopiedReferral(false), 1500);
   };
   const transactions = userData?.transactions
     ? [...userData.transactions].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10)
@@ -184,6 +193,22 @@ const Dashboard = () => {
           </div>
           <p className="text-ink/30 font-dm text-[11px] mt-3">Transfer to either account above to fund your wallet — instant, any time.</p>
         </div>
+
+        {/* Referral link */}
+        {referralLink && (
+          <div className="card-flat p-5 mb-7">
+            <div className="flex items-center gap-2 mb-3">
+              <FiUsers size={15} className="text-iris" />
+              <p className="text-ink font-syne font-semibold text-sm">Your Referral Link</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <input readOnly value={referralLink} className="input-field-light !py-2.5 text-sm flex-1 truncate" onFocus={(e) => e.target.select()} />
+              <button onClick={copyReferralLink} className="btn-outline-iris !w-auto px-4 py-2.5 text-sm flex items-center gap-2 shrink-0">
+                {copiedReferral ? <FiCheck size={14} /> : <FiCopy size={14} />} {copiedReferral ? "Copied" : "Copy"}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Quick actions */}
         <div className="mb-8">
