@@ -4,6 +4,9 @@ import { requireAdmin } from "../middleware/requireAdmin.js";
 import { ApiError } from "../middleware/errorHandler.js";
 import { Coupon } from "../models/Coupon.js";
 import { Notification } from "../models/Notification.js";
+import { Referral } from "../models/Referral.js";
+import { WelcomeBonus } from "../models/WelcomeBonus.js";
+import { User } from "../models/User.js";
 
 // Mounted at the same /api/admin base as routes/admin.js — matches exactly
 // what AdminMarketing.jsx calls: /admin/coupons, /admin/coupons/:id,
@@ -98,5 +101,69 @@ router.post(
     }
   }
 );
+
+router.get("/referrals", requireAdmin, async (req, res, next) => {
+  try {
+    const docs = await Referral.find().sort({ createdAt: -1 }).limit(200).lean();
+    const uids = [...new Set(docs.flatMap((r) => [r.referrerUid, r.refereeUid]))];
+    const users = await User.find({ uid: { $in: uids } }).select("uid email fullName").lean();
+    const userByUid = Object.fromEntries(users.map((u) => [u.uid, u]));
+
+    const referrals = docs.map((r) => ({
+      id: r._id,
+      referrer: userByUid[r.referrerUid] ? { email: userByUid[r.referrerUid].email, fullName: userByUid[r.referrerUid].fullName } : { email: r.referrerUid },
+      referee: userByUid[r.refereeUid] ? { email: userByUid[r.refereeUid].email, fullName: userByUid[r.refereeUid].fullName } : { email: r.refereeUid },
+      rewardAmount: r.rewardAmount,
+      rewardStatus: r.rewardStatus,
+      rewardedAt: r.rewardedAt,
+      createdAt: r.createdAt,
+    }));
+
+    res.json({
+      referrals,
+      summary: {
+        total: docs.length,
+        paidCount: docs.filter((r) => r.rewardStatus === "paid").length,
+        pendingCount: docs.filter((r) => r.rewardStatus === "pending").length,
+        totalPaidOut: docs.filter((r) => r.rewardStatus === "paid").reduce((sum, r) => sum + r.rewardAmount, 0),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/welcome-bonuses", requireAdmin, async (req, res, next) => {
+  try {
+    const docs = await WelcomeBonus.find().sort({ createdAt: -1 }).limit(200).lean();
+    const uids = docs.map((b) => b.uid);
+    const users = await User.find({ uid: { $in: uids } }).select("uid email fullName").lean();
+    const userByUid = Object.fromEntries(users.map((u) => [u.uid, u]));
+
+    const bonuses = docs.map((b) => ({
+      id: b._id,
+      user: userByUid[b.uid] ? { email: userByUid[b.uid].email, fullName: userByUid[b.uid].fullName } : { email: b.uid },
+      amount: b.amount,
+      status: b.status,
+      kycVerified: b.kycVerified,
+      fundingMet: b.fundingMet,
+      purchaseMade: b.purchaseMade,
+      unlockedAt: b.unlockedAt,
+      createdAt: b.createdAt,
+    }));
+
+    res.json({
+      bonuses,
+      summary: {
+        total: docs.length,
+        unlockedCount: docs.filter((b) => b.status === "unlocked").length,
+        pendingCount: docs.filter((b) => b.status === "pending").length,
+        totalPaidOut: docs.filter((b) => b.status === "unlocked").reduce((sum, b) => sum + b.amount, 0),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 export default router;

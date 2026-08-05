@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
-import { FiUser, FiMail, FiLock, FiPhone, FiArrowRight, FiEye, FiEyeOff } from "react-icons/fi";
+import { FiUser, FiMail, FiLock, FiPhone, FiGift, FiArrowRight, FiEye, FiEyeOff } from "react-icons/fi";
 import FanFiLogo from "../components/FanFiLogo";
 import PasswordChecklist, { isPasswordValid } from "../components/PasswordChecklist";
 import SEO from "../components/SEO";
@@ -17,7 +17,8 @@ const GoogleIcon = () => (
 );
 
 const Signup = () => {
-  const [form, setForm] = useState({ fullName: "", email: "", phone: "", password: "", confirm: "" });
+  const [searchParams] = useSearchParams();
+  const [form, setForm] = useState({ fullName: "", email: "", phone: "", password: "", confirm: "", referralCode: searchParams.get("ref") || "" });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -42,7 +43,7 @@ const Signup = () => {
     }
     setLoading(true);
     try {
-      await signup(form.email, form.password, form.fullName, form.phone);
+      await signup(form.email, form.password, form.fullName, form.phone, form.referralCode.trim());
       showToast("Account created successfully. Welcome to FanFi!", "success");
       navigate("/dashboard");
     } catch (err) {
@@ -57,7 +58,7 @@ const Signup = () => {
     setError("");
     setGoogleLoading(true);
     try {
-      await loginWithGoogle();
+      await loginWithGoogle(form.referralCode.trim());
       showToast("Account created successfully. Welcome to FanFi!", "success");
       navigate("/dashboard");
     } catch (err) {
@@ -176,6 +177,20 @@ const Signup = () => {
                   {form.confirm === form.password ? "Passwords match" : "Passwords do not match"}
                 </p>
               )}
+            </div>
+
+            <div>
+              <label className="text-ink/60 font-dm text-xs mb-1.5 block">Referral Code (optional)</label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/30"><FiGift size={15} /></span>
+                <input
+                  type="text"
+                  value={form.referralCode}
+                  onChange={handleChange("referralCode")}
+                  className="input-field-light pl-10 uppercase"
+                  placeholder="Got a code from a friend?"
+                />
+              </div>
             </div>
 
             <p className="text-ink/30 font-dm text-xs">

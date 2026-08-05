@@ -63,6 +63,21 @@ const appSettingsSchema = new mongoose.Schema(
     chat: {
       aiEnabled: { type: Boolean, default: false },
     },
+    // Locked bonus granted at signup, unlocked only once a user has verified
+    // KYC + funded past minFunding + made a real purchase — see
+    // services/growthEngine.js. Off by default; an admin opts in once
+    // amounts are set deliberately, not accidentally live at zero.
+    welcomeBonus: {
+      enabled: { type: Boolean, default: false },
+      amount: { type: Number, default: 500 },
+      minFunding: { type: Number, default: 1000 },
+    },
+    // Paid to a referrer once the person they referred unlocks their own
+    // welcomeBonus (never at signup) — see services/growthEngine.js.
+    referral: {
+      enabled: { type: Boolean, default: false },
+      rewardAmount: { type: Number, default: 200 },
+    },
   },
   { timestamps: true }
 );

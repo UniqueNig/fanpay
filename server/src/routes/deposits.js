@@ -5,6 +5,7 @@ import { ApiError } from "../middleware/errorHandler.js";
 import { verifyTransaction } from "../services/paystack.js";
 import { aspfiyReserveAccount, buildReference } from "../services/aspfiy.js";
 import { creditWallet } from "../services/wallet.js";
+import { safeCheckAndUnlock } from "../services/growthEngine.js";
 import { getSettings, assertNotMaintenance, assertServiceEnabled } from "../services/settings.js";
 import { env } from "../config/env.js";
 import { User } from "../models/User.js";
@@ -105,6 +106,7 @@ router.post(
         grossAmount: grossNaira,
         feePercent,
       });
+      await safeCheckAndUnlock(user.uid);
 
       res.json({ success: true, amount: netNaira });
     } catch (err) {

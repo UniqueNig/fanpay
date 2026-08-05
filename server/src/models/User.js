@@ -9,6 +9,12 @@ const userSchema = new mongoose.Schema(
     balance: { type: Number, default: 0, min: 0 },
     savingsBalance: { type: Number, default: 0, min: 0 },
     accountNumber: { type: String, required: true, unique: true },
+    // This user's own shareable code (generated at signup, see
+    // services/growthEngine.js's generateReferralCode) and who referred them
+    // in, if anyone — set once at signup, never changed. See models/Referral.js
+    // for the reward-lifecycle record; this is just denormalized for fast reads.
+    referralCode: { type: String, unique: true, sparse: true, index: true },
+    referredBy: { type: String, default: null, index: true },
     suspended: { type: Boolean, default: false },
     transactionPinHash: { type: String, default: null },
     pinAttempts: { type: Number, default: 0 },

@@ -6,6 +6,7 @@ import { KycSubmission } from "../models/KycSubmission.js";
 import { User } from "../models/User.js";
 import { ApiError } from "../middleware/errorHandler.js";
 import { sendKycReviewedEmail } from "../services/email.js";
+import { safeCheckAndUnlock } from "../services/growthEngine.js";
 
 const router = Router();
 
@@ -82,6 +83,8 @@ router.post(
       submission.reviewedBy = req.uid;
       submission.note = req.body.note || null;
       await submission.save();
+
+      if (submission.status === "verified") await safeCheckAndUnlock(submission.uid);
 
       const user = await User.findOne({ uid: submission.uid }).select("email fullName").lean();
       if (user) sendKycReviewedEmail(user.email, user.fullName, submission.status, submission.note);

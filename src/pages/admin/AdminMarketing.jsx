@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import ConfirmModal from "../../components/ConfirmModal";
 import { api } from "../../api";
-import { formatDate } from "../../utils/helpers";
-import { FiAlertCircle, FiPlusCircle, FiTag, FiX, FiSend, FiGift } from "react-icons/fi";
+import { formatDate, formatNaira } from "../../utils/helpers";
+import { FiAlertCircle, FiPlusCircle, FiTag, FiX, FiSend, FiGift, FiUsers } from "react-icons/fi";
 
 const TABS = ["Coupons & Discounts", "Notifications", "Referral & Rewards"];
 
@@ -28,6 +28,14 @@ const AdminMarketing = () => {
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
 
+  // Referrals & Welcome Bonuses
+  const [referrals, setReferrals] = useState([]);
+  const [referralSummary, setReferralSummary] = useState(null);
+  const [bonuses, setBonuses] = useState([]);
+  const [bonusSummary, setBonusSummary] = useState(null);
+  const [growthLoading, setGrowthLoading] = useState(true);
+  const [growthLoaded, setGrowthLoaded] = useState(false);
+
   const loadCoupons = async () => {
     setCouponsLoading(true);
     try {
@@ -46,7 +54,24 @@ const AdminMarketing = () => {
     setNotifLoading(false);
   };
 
+  const loadGrowth = async () => {
+    setGrowthLoading(true);
+    try {
+      const [referralsData, bonusesData] = await Promise.all([
+        api.get("/admin/referrals"),
+        api.get("/admin/welcome-bonuses"),
+      ]);
+      setReferrals(referralsData.referrals || []);
+      setReferralSummary(referralsData.summary || null);
+      setBonuses(bonusesData.bonuses || []);
+      setBonusSummary(bonusesData.summary || null);
+    } catch (err) { setError(err.message); }
+    setGrowthLoading(false);
+    setGrowthLoaded(true);
+  };
+
   useEffect(() => { loadCoupons(); loadNotifications(); }, []);
+  useEffect(() => { if (tab === 2 && !growthLoaded) loadGrowth(); }, [tab, growthLoaded]);
 
   const createCoupon = async (e) => {
     e.preventDefault();
@@ -193,16 +218,94 @@ const AdminMarketing = () => {
         )}
 
         {tab === 2 && (
-          <div className="card-flat p-8 text-center">
-            <FiGift className="text-ink/20 mx-auto mb-3" size={28} />
-            <p className="text-ink/50 font-dm text-sm mb-2">No referral system exists yet</p>
-            <p className="text-ink/30 font-dm text-xs max-w-sm mx-auto">
-              Signup doesn't capture a referral code today, so there's nothing to manage here yet. This
-              needs: a referral code per user, a "referredBy" field captured at signup, and a rewards
-              rule (e.g. credit both accounts after the referred user's first deposit) — happy to build
-              that when you're ready.
-            </p>
-          </div>
+          growthLoading ? (
+            <div className="card-flat p-8 text-center text-ink/35 font-dm text-sm">Loading...</div>
+          ) : (
+            <>
+              <p className="text-ink/30 font-dm text-xs mb-4">
+                Amounts and toggles for both programs live in Settings → Rewards & Referrals.
+              </p>
+
+              <div className="grid sm:grid-cols-2 gap-4 mb-6">
+                <div className="card-flat p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <FiGift size={15} className="text-iris" />
+                    <p className="text-ink font-syne font-semibold text-sm">Welcome Bonuses</p>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div>
+                      <p className="text-ink font-syne font-bold text-lg">{bonusSummary?.total || 0}</p>
+                      <p className="text-ink/35 font-dm text-[11px]">Granted</p>
+                    </div>
+                    <div>
+                      <p className="text-iris font-syne font-bold text-lg">{bonusSummary?.unlockedCount || 0}</p>
+                      <p className="text-ink/35 font-dm text-[11px]">Unlocked</p>
+                    </div>
+                    <div>
+                      <p className="text-ink font-syne font-bold text-lg">{formatNaira(bonusSummary?.totalPaidOut || 0)}</p>
+                      <p className="text-ink/35 font-dm text-[11px]">Paid Out</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="card-flat p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <FiUsers size={15} className="text-iris" />
+                    <p className="text-ink font-syne font-semibold text-sm">Referrals</p>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div>
+                      <p className="text-ink font-syne font-bold text-lg">{referralSummary?.total || 0}</p>
+                      <p className="text-ink/35 font-dm text-[11px]">Total</p>
+                    </div>
+                    <div>
+                      <p className="text-iris font-syne font-bold text-lg">{referralSummary?.paidCount || 0}</p>
+                      <p className="text-ink/35 font-dm text-[11px]">Rewarded</p>
+                    </div>
+                    <div>
+                      <p className="text-ink font-syne font-bold text-lg">{formatNaira(referralSummary?.totalPaidOut || 0)}</p>
+                      <p className="text-ink/35 font-dm text-[11px]">Paid Out</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-ink font-syne font-semibold text-sm mb-3">Referrals</p>
+              <div className="card-flat overflow-hidden mb-6">
+                {referrals.length === 0 ? (
+                  <div className="p-8 text-center text-ink/35 font-dm text-sm">No referrals yet.</div>
+                ) : referrals.map((r, i) => (
+                  <div key={r.id} className={`flex items-center justify-between p-4 gap-3 ${i < referrals.length - 1 ? "border-b border-line" : ""}`}>
+                    <div className="min-w-0">
+                      <p className="text-ink font-dm text-sm truncate">{r.referrer.fullName || r.referrer.email} → {r.referee.fullName || r.referee.email}</p>
+                      <p className="text-ink/35 font-dm text-xs">{formatDate(r.createdAt)}</p>
+                    </div>
+                    <span className={`text-[10px] font-dm px-2 py-0.5 rounded-full border shrink-0 ${r.rewardStatus === "paid" ? "bg-iris/15 text-iris border-iris/25" : "bg-surface text-ink/40 border-line"}`}>
+                      {r.rewardStatus === "paid" ? `Paid ${formatNaira(r.rewardAmount)}` : "Pending"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-ink font-syne font-semibold text-sm mb-3">Welcome Bonuses</p>
+              <div className="card-flat overflow-hidden">
+                {bonuses.length === 0 ? (
+                  <div className="p-8 text-center text-ink/35 font-dm text-sm">No welcome bonuses granted yet.</div>
+                ) : bonuses.map((b, i) => (
+                  <div key={b.id} className={`flex items-center justify-between p-4 gap-3 ${i < bonuses.length - 1 ? "border-b border-line" : ""}`}>
+                    <div className="min-w-0">
+                      <p className="text-ink font-dm text-sm truncate">{b.user.fullName || b.user.email}</p>
+                      <p className="text-ink/35 font-dm text-xs">
+                        {[b.kycVerified && "KYC", b.fundingMet && "Funded", b.purchaseMade && "Purchased"].filter(Boolean).join(" · ") || "No progress yet"}
+                      </p>
+                    </div>
+                    <span className={`text-[10px] font-dm px-2 py-0.5 rounded-full border shrink-0 ${b.status === "unlocked" ? "bg-iris/15 text-iris border-iris/25" : "bg-surface text-ink/40 border-line"}`}>
+                      {b.status === "unlocked" ? `Unlocked ${formatNaira(b.amount)}` : "Locked"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )
         )}
       </div>
 

@@ -13,6 +13,7 @@ import { getSettings, assertNotMaintenance, assertServiceEnabled } from "../serv
 import { previewCoupon, recordRedemption } from "../services/coupons.js";
 import { getAirtimeRate, resolveDataPlanPrice, listDataCatalog } from "../services/maskawasubPricing.js";
 import { resolveEffectivePrice, isApprovedApiDeveloper } from "../services/developerPricing.js";
+import { safeCheckAndUnlock } from "../services/growthEngine.js";
 import { User } from "../models/User.js";
 import { Transaction } from "../models/Transaction.js";
 import { KycSubmission } from "../models/KycSubmission.js";
@@ -93,7 +94,9 @@ async function requireBalanceAndPin(uid, chargeAmount, pin, settings) {
 async function debitThenPurchase(uid, amount, ref, title, category, meta, purchase) {
   await debitWallet(uid, amount, ref, title, category, meta);
   try {
-    return await purchase();
+    const result = await purchase();
+    await safeCheckAndUnlock(uid);
+    return result;
   } catch (err) {
     await creditWallet(uid, amount, ref + "_refund", `Refund: failed ${title}`, "↩️", {
       reason: "vtu_purchase_failed",

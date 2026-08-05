@@ -3,7 +3,7 @@ import AdminLayout from "../../components/AdminLayout";
 import { api } from "../../api";
 import { FiAlertCircle, FiCheck, FiAlertTriangle } from "react-icons/fi";
 
-const TABS = ["System Settings", "Services Control", "Pricing", "KYC Limits"];
+const TABS = ["System Settings", "Services Control", "Pricing", "KYC Limits", "Rewards & Referrals"];
 
 const Toggle = ({ on, onClick }) => (
   <button
@@ -55,6 +55,8 @@ const AdminSettings = () => {
   const pricing = settings?.pricing || {};
   const general = settings?.general || {};
   const kyc = settings?.kyc || {};
+  const welcomeBonus = settings?.welcomeBonus || {};
+  const referral = settings?.referral || {};
 
   return (
     <AdminLayout>
@@ -176,7 +178,7 @@ const AdminSettings = () => {
               below face value rather than charging a flat percentage.
             </p>
           </div>
-        ) : (
+        ) : tab === 3 ? (
           <div className="card-flat p-6 flex flex-col gap-5">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -194,6 +196,43 @@ const AdminSettings = () => {
               caps entirely. This is the actual laundering-risk lever: unverified accounts can receive
               money freely, but turning it back into something resellable (airtime especially) is capped
               until identity is verified.
+            </p>
+          </div>
+        ) : (
+          <div className="card-flat p-6 flex flex-col gap-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-ink font-dm text-sm font-medium">Welcome Bonus</p>
+                <p className="text-ink/35 font-dm text-xs">Locked until a new user verifies KYC, funds their wallet, and makes a purchase</p>
+              </div>
+              <Toggle on={welcomeBonus.enabled} onClick={() => save({ welcomeBonus: { ...welcomeBonus, enabled: !welcomeBonus.enabled } })} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-ink/60 font-dm text-xs mb-1.5 block">Bonus Amount (₦)</label>
+                <input type="number" className="input-field-light" defaultValue={welcomeBonus.amount} onBlur={(e) => save({ welcomeBonus: { ...welcomeBonus, amount: Number(e.target.value) } })} />
+              </div>
+              <div>
+                <label className="text-ink/60 font-dm text-xs mb-1.5 block">Minimum Funding to Qualify (₦)</label>
+                <input type="number" className="input-field-light" defaultValue={welcomeBonus.minFunding} onBlur={(e) => save({ welcomeBonus: { ...welcomeBonus, minFunding: Number(e.target.value) } })} />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-line">
+              <div>
+                <p className="text-ink font-dm text-sm font-medium">Referral Program</p>
+                <p className="text-ink/35 font-dm text-xs">Referrer is paid once the person they referred unlocks their own welcome bonus</p>
+              </div>
+              <Toggle on={referral.enabled} onClick={() => save({ referral: { ...referral, enabled: !referral.enabled } })} />
+            </div>
+            <div>
+              <label className="text-ink/60 font-dm text-xs mb-1.5 block">Referral Reward (₦)</label>
+              <input type="number" className="input-field-light" defaultValue={referral.rewardAmount} onBlur={(e) => save({ referral: { ...referral, rewardAmount: Number(e.target.value) } })} />
+            </div>
+
+            <p className="text-ink/30 font-dm text-xs">
+              Toggling either program off only stops new grants at signup — a bonus or referral already
+              in progress keeps working toward unlocking, it isn't revoked.
             </p>
           </div>
         )}

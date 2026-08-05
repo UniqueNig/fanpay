@@ -5,6 +5,7 @@ import { Transaction } from "../models/Transaction.js";
 import { requireAuth } from "../middleware/auth.js";
 import { ApiError } from "../middleware/errorHandler.js";
 import { sendWelcomeEmail } from "../services/email.js";
+import { generateReferralCode, grantWelcomeBonusIfEnabled, linkReferral } from "../services/growthEngine.js";
 
 const router = Router();
 
@@ -80,6 +81,7 @@ router.post(
   [
     body("fullName").optional().isString().trim().isLength({ max: 120 }),
     body("phone").optional().isString().trim().isLength({ max: 20 }),
+    body("referralCode").optional().isString().trim().isLength({ max: 20 }),
   ],
   async (req, res, next) => {
     const errors = validationResult(req);
@@ -95,7 +97,13 @@ router.post(
         fullName: req.body.fullName || "",
         phone: req.body.phone || "",
         accountNumber: generateAccountNumber(),
+        referralCode: await generateReferralCode(),
       });
+      // Awaited (unlike sendWelcomeEmail below) — these are cheap local
+      // writes, and awaiting them means the frontend's first GET /rewards
+      // call can never race ahead of the WelcomeBonus/Referral docs existing.
+      await grantWelcomeBonusIfEnabled(user.uid);
+      if (req.body.referralCode) await linkReferral(user.uid, req.body.referralCode);
       sendWelcomeEmail(user.email, user.fullName);
       res.status(201).json({ user });
     } catch (err) {

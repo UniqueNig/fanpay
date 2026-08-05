@@ -2,7 +2,7 @@ import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   FiGrid, FiFileText, FiSmartphone, FiPhoneCall, FiTag,
-  FiLogOut, FiX, FiPlusCircle, FiList, FiShield, FiSettings, FiUserCheck, FiBookOpen, FiCode,
+  FiLogOut, FiX, FiPlusCircle, FiList, FiShield, FiSettings, FiUserCheck, FiBookOpen, FiCode, FiGift,
 } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 import FanFiLogo from "./FanFiLogo";
@@ -20,6 +20,7 @@ const navItems = [
   { to: "/recharge?type=data", icon: <FiSmartphone size={17} />, label: "Buy Data" },
   { to: "/bills", icon: <FiFileText size={17} />, label: "Pay Bills" },
   { to: "/result-checker", icon: <FiBookOpen size={17} />, label: "Result Checker" },
+  { to: "/rewards", icon: <FiGift size={17} />, label: "Rewards" },
   { to: "/pricing", icon: <FiTag size={17} />, label: "Pricing" },
   { to: "/kyc", icon: <FiUserCheck size={17} />, label: "Verify Identity" },
   { to: "/settings", icon: <FiSettings size={17} />, label: "Settings" },

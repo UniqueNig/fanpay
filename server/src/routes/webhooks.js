@@ -5,6 +5,7 @@ import { env } from "../config/env.js";
 import { creditWallet } from "../services/wallet.js";
 import { verifyAspfiyWebhookSignature, parseReference } from "../services/aspfiy.js";
 import { getSettings } from "../services/settings.js";
+import { safeCheckAndUnlock } from "../services/growthEngine.js";
 import { User } from "../models/User.js";
 import { PendingTransfer } from "../models/PendingTransfer.js";
 import { SystemLog } from "../models/SystemLog.js";
@@ -68,6 +69,7 @@ router.post("/paystack", express.raw({ type: "application/json" }), async (req, 
               grossAmount: grossNaira,
               feePercent,
             });
+            await safeCheckAndUnlock(user.uid);
           }
         }
       }
@@ -152,6 +154,7 @@ router.post("/aspfiy", express.raw({ type: "application/json" }), async (req, re
           payerName: data.payer?.account_name || null,
           aspfiyRef: data.wiaxy_ref || data.transaction_ref,
         });
+        await safeCheckAndUnlock(user.uid);
       } else {
         SystemLog.create({
           level: "warn", source: "aspfiyWebhook",

@@ -29,15 +29,17 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Creates the backend profile if it doesn't exist yet; idempotent, so it's
-  // safe to call on every login, not just the first one.
-  const ensureUserProfile = async (fullName, phone) => {
-    await api.post("/users", { fullName, phone });
+  // safe to call on every login, not just the first one. referralCode is
+  // only ever consumed server-side on true first-creation (see users.js) —
+  // harmless to pass on a returning-user call too, it's just ignored.
+  const ensureUserProfile = async (fullName, phone, referralCode) => {
+    await api.post("/users", { fullName, phone, referralCode });
   };
 
-  const signup = async (email, password, fullName, phone) => {
+  const signup = async (email, password, fullName, phone, referralCode) => {
     const result = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(result.user, { displayName: fullName });
-    await ensureUserProfile(fullName, phone);
+    await ensureUserProfile(fullName, phone, referralCode);
     return result;
   };
 
@@ -53,11 +55,11 @@ export const AuthProvider = ({ children }) => {
     return result;
   };
 
-  const loginWithGoogle = async () => {
+  const loginWithGoogle = async (referralCode) => {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: "select_account" });
     const result = await signInWithPopup(auth, provider);
-    await ensureUserProfile(result.user.displayName || "", result.user.phoneNumber || "");
+    await ensureUserProfile(result.user.displayName || "", result.user.phoneNumber || "", referralCode);
     recordLogin();
     return result;
   };

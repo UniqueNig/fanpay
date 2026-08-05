@@ -17,6 +17,7 @@ import Recharge from "./pages/Recharge";
 import ResultChecker from "./pages/ResultChecker";
 import DeveloperPortal from "./pages/developer/DeveloperPortal";
 import DeveloperDocs from "./pages/developer/DeveloperDocs";
+import Rewards from "./pages/Rewards";
 import Pricing from "./pages/Pricing";
 import Savings from "./pages/Savings";
 import Settings from "./pages/Settings";
@@ -71,6 +72,7 @@ function App() {
           <Route path="/result-checker" element={<ProtectedRoute><ResultChecker /></ProtectedRoute>} />
           <Route path="/developer" element={<ProtectedRoute><DeveloperPortal /></ProtectedRoute>} />
           <Route path="/developer/docs" element={<DeveloperDocs />} />
+          <Route path="/rewards" element={<ProtectedRoute><Rewards /></ProtectedRoute>} />
           <Route path="/pricing" element={<ProtectedRoute><Pricing /></ProtectedRoute>} />
           <Route path="/savings" element={<ProtectedRoute><Savings /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
