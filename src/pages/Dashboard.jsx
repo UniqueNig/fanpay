@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../components/DashboardLayout";
 import TransactionDetailModal from "../components/TransactionDetailModal";
+import BonusModal from "../components/BonusModal";
+import AnnouncementModal from "../components/AnnouncementModal";
 import Skeleton from "../components/Skeleton";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../api";
@@ -21,6 +23,35 @@ const quickActions = [
   { to: "/bills", icon: <FiFileText size={22} />, label: "Pay Bills", color: "text-orange-400", bg: "bg-orange-400/10 border-orange-400/25", hoverBg: "hover:bg-orange-400/20" },
 ];
 
+// Tiny non-cryptographic hash so the announcement's dismissal key in
+// localStorage stays short and stable regardless of message length — an
+// admin editing the text produces a new hash, so a previously-dismissed
+// announcement naturally reappears without any extra "version" field to manage.
+function hashText(text) {
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) hash = (hash * 31 + text.charCodeAt(i)) | 0;
+  return hash.toString(36);
+}
+
+// Which bonus modal (if any) applies right now, and whether the user has
+// already dismissed it this browser session — reappears next session as an
+// ongoing nudge, not a one-time-ever dismiss, since the point is repeated
+// encouragement toward finishing/spending the bonus.
+function getBonusModalVariant(welcomeBonus) {
+  if (!welcomeBonus?.enabled || !welcomeBonus.bonus) return null;
+  const { bonus } = welcomeBonus;
+
+  if (bonus.status === "pending") {
+    return sessionStorage.getItem("fanfi_bonus_modal_seen_pending") ? null : "pending";
+  }
+  if (bonus.status === "unlocked" && bonus.unlockedAt) {
+    const daysSince = (Date.now() - new Date(bonus.unlockedAt).getTime()) / 86400000;
+    const withinWindow = daysSince < (welcomeBonus.consumeWithinDays || 0);
+    if (withinWindow) return sessionStorage.getItem("fanfi_bonus_modal_seen_unlocked") ? null : "unlocked";
+  }
+  return null;
+}
+
 const Dashboard = () => {
   const { userData, user } = useAuth();
   const [hideBalance, setHideBalance] = useState(false);
@@ -29,6 +60,9 @@ const Dashboard = () => {
   const [vaLoading, setVaLoading] = useState(true);
   const [vaError, setVaError] = useState("");
   const [copiedBank, setCopiedBank] = useState(null);
+  const [welcomeBonus, setWelcomeBonus] = useState(null);
+  const [announcement, setAnnouncement] = useState(null);
+  const [activeModal, setActiveModal] = useState(null); // "announcement" | "bonus" | null
 
   const balance = userData?.balance ?? 0;
 
@@ -42,6 +76,37 @@ const Dashboard = () => {
       .catch((err) => setVaError(err.message || "Could not load funding accounts."))
       .finally(() => setVaLoading(false));
   }, []);
+
+  useEffect(() => {
+    api.get("/rewards").then((res) => setWelcomeBonus(res.welcomeBonus)).catch(() => {});
+    api.get("/announcement").then(setAnnouncement).catch(() => {});
+  }, []);
+
+  // At most one modal shown at a time — the admin announcement takes
+  // priority (it may be time-sensitive), the bonus nudge follows once the
+  // announcement is closed or wasn't applicable.
+  useEffect(() => {
+    if (activeModal) return;
+    if (announcement?.enabled) {
+      const dismissedKey = localStorage.getItem("fanfi_announcement_dismissed");
+      if (dismissedKey !== hashText(announcement.title + "::" + announcement.body)) {
+        setActiveModal("announcement");
+        return;
+      }
+    }
+    if (getBonusModalVariant(welcomeBonus)) setActiveModal("bonus");
+  }, [announcement, welcomeBonus, activeModal]);
+
+  const dismissAnnouncement = () => {
+    localStorage.setItem("fanfi_announcement_dismissed", hashText(announcement.title + "::" + announcement.body));
+    setActiveModal(getBonusModalVariant(welcomeBonus) ? "bonus" : null);
+  };
+
+  const dismissBonusModal = () => {
+    const variant = getBonusModalVariant(welcomeBonus);
+    if (variant) sessionStorage.setItem(`fanfi_bonus_modal_seen_${variant}`, "1");
+    setActiveModal(null);
+  };
 
   const handleCopy = (accountNumber, bank) => {
     navigator.clipboard.writeText(accountNumber);
@@ -204,6 +269,12 @@ const Dashboard = () => {
       </div>
 
       {selected && <TransactionDetailModal transaction={selected} onClose={() => setSelected(null)} />}
+      {activeModal === "announcement" && (
+        <AnnouncementModal title={announcement.title} body={announcement.body} onDismiss={dismissAnnouncement} />
+      )}
+      {activeModal === "bonus" && (
+        <BonusModal variant={getBonusModalVariant(welcomeBonus)} welcomeBonus={welcomeBonus} onDismiss={dismissBonusModal} />
+      )}
     </DashboardLayout>
   );
 };

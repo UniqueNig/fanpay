@@ -37,6 +37,9 @@ router.get("/", requireAuth, async (req, res, next) => {
         enabled: !!settings.welcomeBonus?.enabled,
         minFunding: settings.welcomeBonus?.minFunding || 0,
         fundedTotal,
+        onboardingMessage: settings.welcomeBonus?.onboardingMessage || "",
+        consumeMessage: settings.welcomeBonus?.consumeMessage || "",
+        consumeWithinDays: settings.welcomeBonus?.consumeWithinDays || 0,
         bonus: bonus
           ? {
               amount: bonus.amount,

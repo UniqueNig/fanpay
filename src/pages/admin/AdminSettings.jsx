@@ -57,6 +57,7 @@ const AdminSettings = () => {
   const kyc = settings?.kyc || {};
   const welcomeBonus = settings?.welcomeBonus || {};
   const referral = settings?.referral || {};
+  const announcement = settings?.announcement || {};
 
   return (
     <AdminLayout>
@@ -121,6 +122,26 @@ const AdminSettings = () => {
                 <input type="number" className="input-field-light" defaultValue={general.maxTransfer} onBlur={(e) => save({ general: { ...general, maxTransfer: Number(e.target.value) } })} />
               </div>
             </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-line">
+              <div>
+                <p className="text-ink font-dm text-sm font-medium">Dashboard Announcement</p>
+                <p className="text-ink/35 font-dm text-xs">Shown as a modal to every user on their dashboard until dismissed</p>
+              </div>
+              <Toggle on={announcement.enabled} onClick={() => save({ announcement: { ...announcement, enabled: !announcement.enabled } })} />
+            </div>
+            <div>
+              <label className="text-ink/60 font-dm text-xs mb-1.5 block">Title</label>
+              <input className="input-field-light" defaultValue={announcement.title} onBlur={(e) => save({ announcement: { ...announcement, title: e.target.value } })} placeholder="e.g. Scheduled Maintenance" />
+            </div>
+            <div>
+              <label className="text-ink/60 font-dm text-xs mb-1.5 block">Message</label>
+              <textarea className="input-field-light min-h-[90px] resize-none" defaultValue={announcement.body} onBlur={(e) => save({ announcement: { ...announcement, body: e.target.value } })} placeholder="What do you want users to see?" />
+            </div>
+            <p className="text-ink/30 font-dm text-xs -mt-2">
+              A user who dismisses it won't see it again unless you edit the title or message — editing
+              makes it reappear for everyone, even if they already closed the old version.
+            </p>
           </div>
         ) : tab === 1 ? (
           <div className="card-flat p-6 flex flex-col gap-4">
@@ -226,6 +247,20 @@ const AdminSettings = () => {
               out — a buffer against a deposit being reversed right after qualifying. Set to 0 to pay
               out instantly.
             </p>
+            <div>
+              <label className="text-ink/60 font-dm text-xs mb-1.5 block">Bonus Onboarding Message</label>
+              <textarea className="input-field-light min-h-[70px] resize-none" defaultValue={welcomeBonus.onboardingMessage} onBlur={(e) => save({ welcomeBonus: { ...welcomeBonus, onboardingMessage: e.target.value } })} />
+              <p className="text-ink/30 font-dm text-xs mt-1">Shown in the dashboard modal while the bonus is still locked — the checklist and amount render separately below it.</p>
+            </div>
+            <div>
+              <label className="text-ink/60 font-dm text-xs mb-1.5 block">Bonus Consumption Reminder</label>
+              <textarea className="input-field-light min-h-[70px] resize-none" defaultValue={welcomeBonus.consumeMessage} onBlur={(e) => save({ welcomeBonus: { ...welcomeBonus, consumeMessage: e.target.value } })} />
+              <p className="text-ink/30 font-dm text-xs mt-1">Shown once the bonus unlocks, alongside a countdown — a nudge only, nothing is ever reclaimed.</p>
+            </div>
+            <div>
+              <label className="text-ink/60 font-dm text-xs mb-1.5 block">Days to Consume After Unlock</label>
+              <input type="number" min="0" className="input-field-light" defaultValue={welcomeBonus.consumeWithinDays} onBlur={(e) => save({ welcomeBonus: { ...welcomeBonus, consumeWithinDays: Number(e.target.value) } })} />
+            </div>
 
             <div className="flex items-center justify-between pt-2 border-t border-line">
               <div>

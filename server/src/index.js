@@ -65,6 +65,7 @@ import publicApiDataRouter from "./routes/publicApi/data.js";
 import publicApiPlansRouter from "./routes/publicApi/plans.js";
 import adminDeveloperPlatformRouter from "./routes/adminDeveloperPlatform.js";
 import rewardsRouter from "./routes/rewards.js";
+import announcementRouter from "./routes/announcement.js";
 
 const app = express();
 
@@ -98,6 +99,7 @@ app.use(express.json());
 const apiLimiter = rateLimit({ windowMs: 60_000, max: 30 });
 app.use("/api/users", apiLimiter, usersRouter);
 app.use("/api/rewards", apiLimiter, rewardsRouter);
+app.use("/api/announcement", apiLimiter, announcementRouter);
 app.use("/api/deposits", apiLimiter, depositsRouter);
 app.use("/api/transfers", apiLimiter, transfersRouter);
 app.use("/api/wallet-transfers", apiLimiter, walletTransfersRouter);

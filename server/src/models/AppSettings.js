@@ -75,6 +75,24 @@ const appSettingsSchema = new mongoose.Schema(
       // pays out (services/growthEngine.js, jobs/maturedBonuses.js) — a
       // fraud/reversal buffer, since the payout is real cash. 0 = instant.
       holdDays: { type: Number, default: 3 },
+      // Editable copy shown by the two dashboard bonus modals
+      // (components/BonusModal.jsx) — freeform intro text only, never
+      // interpolated with amounts/dates, so it can't go stale if the numbers
+      // above change later (those render dynamically alongside it).
+      onboardingMessage: {
+        type: String,
+        default: "Welcome to FanFi! 🎉 You've got a welcome bonus waiting for you. Complete the steps below to unlock it — it'll be added straight to your wallet.",
+      },
+      consumeMessage: {
+        type: String,
+        default: "Your bonus has been added to your wallet! 🎁 Don't let it sit unused — spend it on airtime, data, or bills.",
+      },
+      // Purely a UI countdown/reminder deadline shown after unlock — never
+      // enforced or reclaimed. The bonus is real money in the user's balance
+      // the moment it unlocks regardless of this window; there's no
+      // locked-balance/ledger concept in this app to safely claw it back
+      // from a wallet that's since mixed with other funds.
+      consumeWithinDays: { type: Number, default: 7 },
     },
     // Paid to a referrer once the person they referred unlocks their own
     // welcomeBonus (never at signup) — see services/growthEngine.js.
@@ -87,6 +105,15 @@ const appSettingsSchema = new mongoose.Schema(
       // instead of auto-paying (services/growthEngine.js) until an admin
       // manually approves/rejects (routes/adminMarketing.js).
       maxAutoPayouts: { type: Number, default: 0 },
+    },
+    // General-purpose admin-authored notice shown as a modal on dashboard
+    // login (components/AnnouncementModal.jsx) — unrelated to the bonus
+    // system, a single on/off switch with freeform title/body. Off by
+    // default with blank copy until an admin writes something.
+    announcement: {
+      enabled: { type: Boolean, default: false },
+      title: { type: String, default: "" },
+      body: { type: String, default: "" },
     },
   },
   { timestamps: true }

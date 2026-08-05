@@ -5,7 +5,7 @@ import { api } from "../api";
 import { formatNaira, formatDate } from "../utils/helpers";
 import { FiCheck, FiCopy, FiGift, FiUsers, FiUserCheck, FiCreditCard, FiShoppingBag } from "react-icons/fi";
 
-const ChecklistItem = ({ done, label, sublabel }) => (
+export const ChecklistItem = ({ done, label, sublabel }) => (
   <div className="flex items-center gap-3 py-3">
     <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${done ? "bg-iris/15 text-iris border border-iris/25" : "bg-surface text-ink/30 border border-line"}`}>
       {done ? <FiCheck size={14} /> : <span className="w-1.5 h-1.5 rounded-full bg-ink/20" />}

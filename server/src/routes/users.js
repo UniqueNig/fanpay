@@ -138,7 +138,14 @@ router.patch(
     if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
 
     try {
-      const user = await User.findOneAndUpdate({ uid: req.uid }, { phone: req.body.phone }, { new: true });
+      const phone = req.body.phone.trim();
+      // Same guard as signup (routes/users.js POST /) — closes the gap where
+      // someone could sign up with a unique/blank phone then update it to
+      // match an already-registered number afterward.
+      const takenByAnother = await User.exists({ phone, uid: { $ne: req.uid } });
+      if (takenByAnother) throw new ApiError(400, "This phone number is already registered to another account.");
+
+      const user = await User.findOneAndUpdate({ uid: req.uid }, { phone }, { new: true });
       if (!user) throw new ApiError(404, "User record not found.");
       res.json({ success: true, phone: user.phone });
     } catch (err) {
