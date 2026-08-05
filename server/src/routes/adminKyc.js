@@ -78,6 +78,19 @@ router.post(
       const submission = await KycSubmission.findOne({ uid: req.params.uid });
       if (!submission) throw new ApiError(404, "This user has no KYC submission.");
 
+      // A real person only has one NIN — if it's already verified on a
+      // different account, this is either a multi-accounting attempt or a
+      // genuine mixup, and either way approving a second account with the
+      // same ID number defeats the point of identity verification. Doesn't
+      // touch pending/rejected duplicates (e.g. a resubmission after a typo),
+      // only blocks the approval transition itself.
+      if (req.body.status === "verified") {
+        const duplicate = await KycSubmission.findOne({
+          idNumber: submission.idNumber, status: "verified", uid: { $ne: submission.uid },
+        });
+        if (duplicate) throw new ApiError(400, `This ID number is already verified on another account (${duplicate.uid}).`);
+      }
+
       submission.status = req.body.status;
       submission.reviewedAt = new Date();
       submission.reviewedBy = req.uid;

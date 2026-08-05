@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import ConfirmModal from "../../components/ConfirmModal";
+import { useToast } from "../../context/ToastContext";
 import { api } from "../../api";
 import { formatDate, formatNaira } from "../../utils/helpers";
-import { FiAlertCircle, FiPlusCircle, FiTag, FiX, FiSend, FiGift, FiUsers } from "react-icons/fi";
+import { FiAlertCircle, FiAlertTriangle, FiPlusCircle, FiTag, FiX, FiSend, FiGift, FiUsers } from "react-icons/fi";
 
 const TABS = ["Coupons & Discounts", "Notifications", "Referral & Rewards"];
 
 const AdminMarketing = () => {
+  const { showToast } = useToast();
   const [tab, setTab] = useState(0);
   const [error, setError] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -35,6 +37,8 @@ const AdminMarketing = () => {
   const [bonusSummary, setBonusSummary] = useState(null);
   const [growthLoading, setGrowthLoading] = useState(true);
   const [growthLoaded, setGrowthLoaded] = useState(false);
+  const [reviewTarget, setReviewTarget] = useState(null); // { id, action: "approve"|"reject" }
+  const [reviewing, setReviewing] = useState(false);
 
   const loadCoupons = async () => {
     setCouponsLoading(true);
@@ -72,6 +76,19 @@ const AdminMarketing = () => {
 
   useEffect(() => { loadCoupons(); loadNotifications(); }, []);
   useEffect(() => { if (tab === 2 && !growthLoaded) loadGrowth(); }, [tab, growthLoaded]);
+
+  const reviewReferral = async () => {
+    setReviewing(true);
+    try {
+      await api.post(`/admin/referrals/${reviewTarget.id}/${reviewTarget.action}`, {});
+      showToast(reviewTarget.action === "approve" ? "Referral reward approved and paid." : "Referral rejected.", "success");
+      setReviewTarget(null);
+      loadGrowth();
+    } catch (err) {
+      showToast(err.message || "Could not update this referral.", "error");
+    }
+    setReviewing(false);
+  };
 
   const createCoupon = async (e) => {
     e.preventDefault();
@@ -252,7 +269,7 @@ const AdminMarketing = () => {
                     <FiUsers size={15} className="text-iris" />
                     <p className="text-ink font-syne font-semibold text-sm">Referrals</p>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="grid grid-cols-4 gap-2 text-center">
                     <div>
                       <p className="text-ink font-syne font-bold text-lg">{referralSummary?.total || 0}</p>
                       <p className="text-ink/35 font-dm text-[11px]">Total</p>
@@ -260,6 +277,10 @@ const AdminMarketing = () => {
                     <div>
                       <p className="text-iris font-syne font-bold text-lg">{referralSummary?.paidCount || 0}</p>
                       <p className="text-ink/35 font-dm text-[11px]">Rewarded</p>
+                    </div>
+                    <div>
+                      <p className="text-gold font-syne font-bold text-lg">{referralSummary?.heldCount || 0}</p>
+                      <p className="text-ink/35 font-dm text-[11px]">Held</p>
                     </div>
                     <div>
                       <p className="text-ink font-syne font-bold text-lg">{formatNaira(referralSummary?.totalPaidOut || 0)}</p>
@@ -277,11 +298,35 @@ const AdminMarketing = () => {
                   <div key={r.id} className={`flex items-center justify-between p-4 gap-3 ${i < referrals.length - 1 ? "border-b border-line" : ""}`}>
                     <div className="min-w-0">
                       <p className="text-ink font-dm text-sm truncate">{r.referrer.fullName || r.referrer.email} → {r.referee.fullName || r.referee.email}</p>
-                      <p className="text-ink/35 font-dm text-xs">{formatDate(r.createdAt)}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-ink/35 font-dm text-xs">{formatDate(r.createdAt)}</p>
+                        {r.sharedIpFlag && (
+                          <span className="flex items-center gap-1 text-yellow-500 font-dm text-[11px]" title="This referrer has another referral whose account was created from the same IP/device">
+                            <FiAlertTriangle size={11} /> Same device as another referral
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <span className={`text-[10px] font-dm px-2 py-0.5 rounded-full border shrink-0 ${r.rewardStatus === "paid" ? "bg-iris/15 text-iris border-iris/25" : "bg-surface text-ink/40 border-line"}`}>
-                      {r.rewardStatus === "paid" ? `Paid ${formatNaira(r.rewardAmount)}` : "Pending"}
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {r.rewardStatus === "held_for_review" ? (
+                        <>
+                          <button onClick={() => setReviewTarget({ id: r.id, action: "reject" })} className="text-[11px] font-dm px-2.5 py-1 rounded-lg border border-line text-ink/50 hover:text-red-400 hover:border-red-400/30">
+                            Reject
+                          </button>
+                          <button onClick={() => setReviewTarget({ id: r.id, action: "approve" })} className="text-[11px] font-dm px-2.5 py-1 rounded-lg border border-iris/30 bg-iris/10 text-iris hover:bg-iris/20">
+                            Approve
+                          </button>
+                        </>
+                      ) : (
+                        <span className={`text-[10px] font-dm px-2 py-0.5 rounded-full border ${
+                          r.rewardStatus === "paid" ? "bg-iris/15 text-iris border-iris/25"
+                          : r.rewardStatus === "rejected" ? "bg-red-500/10 text-red-400 border-red-500/25"
+                          : "bg-surface text-ink/40 border-line"
+                        }`}>
+                          {r.rewardStatus === "paid" ? `Paid ${formatNaira(r.rewardAmount)}` : r.rewardStatus === "rejected" ? "Rejected" : "Pending"}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -321,6 +366,21 @@ const AdminMarketing = () => {
         submitting={deleting}
         onConfirm={deleteCoupon}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      <ConfirmModal
+        open={!!reviewTarget}
+        title={reviewTarget?.action === "approve" ? "Approve this referral reward?" : "Reject this referral?"}
+        message={
+          reviewTarget?.action === "approve"
+            ? "This referrer hit the auto-payout cap, so this reward was held for manual review. Approving pays it out immediately."
+            : "This permanently denies the reward — it can't be re-approved later."
+        }
+        confirmLabel={reviewTarget?.action === "approve" ? "Approve & Pay" : "Reject"}
+        danger={reviewTarget?.action === "reject"}
+        submitting={reviewing}
+        onConfirm={reviewReferral}
+        onCancel={() => setReviewTarget(null)}
       />
     </AdminLayout>
   );

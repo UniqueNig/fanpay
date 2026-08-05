@@ -91,13 +91,27 @@ router.post(
       const existing = await User.findOne({ uid: req.uid });
       if (existing) return res.json({ user: existing });
 
+      const phone = (req.body.phone || "").trim();
+      // App-level check, not a schema unique index — many existing accounts
+      // share phone: "" (Google sign-in doesn't collect one), and a unique
+      // index would treat those empty strings as colliding with each other.
+      // Scoped to signup only; PATCH /me below doesn't re-check this.
+      if (phone && (await User.exists({ phone }))) {
+        throw new ApiError(400, "This phone number is already registered to another account.");
+      }
+
       const user = await User.create({
         uid: req.uid,
         email: req.email,
         fullName: req.body.fullName || "",
-        phone: req.body.phone || "",
+        phone,
         accountNumber: generateAccountNumber(),
         referralCode: await generateReferralCode(),
+        // trust proxy is set (index.js) so req.ip is the real client IP, not
+        // the platform's proxy — used only for the admin referral list's
+        // shared-device flag (adminMarketing.js), never to block signup.
+        signupIp: req.ip || null,
+        signupUserAgent: req.headers["user-agent"] || null,
       });
       // Awaited (unlike sendWelcomeEmail below) — these are cheap local
       // writes, and awaiting them means the frontend's first GET /rewards

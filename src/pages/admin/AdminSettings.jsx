@@ -234,10 +234,21 @@ const AdminSettings = () => {
               </div>
               <Toggle on={referral.enabled} onClick={() => save({ referral: { ...referral, enabled: !referral.enabled } })} />
             </div>
-            <div>
-              <label className="text-ink/60 font-dm text-xs mb-1.5 block">Referral Reward (₦)</label>
-              <input type="number" className="input-field-light" defaultValue={referral.rewardAmount} onBlur={(e) => save({ referral: { ...referral, rewardAmount: Number(e.target.value) } })} />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-ink/60 font-dm text-xs mb-1.5 block">Referral Reward (₦)</label>
+                <input type="number" className="input-field-light" defaultValue={referral.rewardAmount} onBlur={(e) => save({ referral: { ...referral, rewardAmount: Number(e.target.value) } })} />
+              </div>
+              <div>
+                <label className="text-ink/60 font-dm text-xs mb-1.5 block">Max Auto-Approved Referrals per Referrer</label>
+                <input type="number" min="0" className="input-field-light" defaultValue={referral.maxAutoPayouts} onBlur={(e) => save({ referral: { ...referral, maxAutoPayouts: Number(e.target.value) } })} />
+              </div>
             </div>
+            <p className="text-ink/30 font-dm text-xs -mt-2">
+              Once a referrer has this many paid-out referrals, further ones are held for manual review
+              (Marketing → Referral & Rewards) instead of auto-paying — a circuit breaker against
+              multi-account farming. 0 = unlimited.
+            </p>
 
             <p className="text-ink/30 font-dm text-xs">
               Toggling either program off only stops new grants at signup — a bonus or referral already

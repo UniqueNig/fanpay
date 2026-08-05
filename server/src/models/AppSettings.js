@@ -81,6 +81,12 @@ const appSettingsSchema = new mongoose.Schema(
     referral: {
       enabled: { type: Boolean, default: false },
       rewardAmount: { type: Number, default: 200 },
+      // Lifetime cap on auto-paid referrals per referrer — a circuit breaker
+      // against multi-account farming. 0 = unlimited. Once a referrer hits
+      // this many PAID referrals, further ones go to "held_for_review"
+      // instead of auto-paying (services/growthEngine.js) until an admin
+      // manually approves/rejects (routes/adminMarketing.js).
+      maxAutoPayouts: { type: Number, default: 0 },
     },
   },
   { timestamps: true }

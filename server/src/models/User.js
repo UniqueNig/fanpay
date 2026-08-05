@@ -15,6 +15,12 @@ const userSchema = new mongoose.Schema(
     // for the reward-lifecycle record; this is just denormalized for fast reads.
     referralCode: { type: String, unique: true, sparse: true, index: true },
     referredBy: { type: String, default: null, index: true },
+    // Captured once at signup (routes/users.js) — same field shapes as
+    // models/LoginLog.js, but this is the one signup-time snapshot rather
+    // than a per-login record. Used only to flag (never block) a referrer
+    // whose referred accounts share a device — see routes/adminMarketing.js.
+    signupIp: { type: String, default: null },
+    signupUserAgent: { type: String, default: null },
     suspended: { type: Boolean, default: false },
     transactionPinHash: { type: String, default: null },
     pinAttempts: { type: Number, default: 0 },

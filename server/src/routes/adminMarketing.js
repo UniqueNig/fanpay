@@ -7,6 +7,7 @@ import { Notification } from "../models/Notification.js";
 import { Referral } from "../models/Referral.js";
 import { WelcomeBonus } from "../models/WelcomeBonus.js";
 import { User } from "../models/User.js";
+import { creditWallet } from "../services/wallet.js";
 
 // Mounted at the same /api/admin base as routes/admin.js — matches exactly
 // what AdminMarketing.jsx calls: /admin/coupons, /admin/coupons/:id,
@@ -106,18 +107,35 @@ router.get("/referrals", requireAdmin, async (req, res, next) => {
   try {
     const docs = await Referral.find().sort({ createdAt: -1 }).limit(200).lean();
     const uids = [...new Set(docs.flatMap((r) => [r.referrerUid, r.refereeUid]))];
-    const users = await User.find({ uid: { $in: uids } }).select("uid email fullName").lean();
+    const users = await User.find({ uid: { $in: uids } }).select("uid email fullName signupIp").lean();
     const userByUid = Object.fromEntries(users.map((u) => [u.uid, u]));
 
-    const referrals = docs.map((r) => ({
-      id: r._id,
-      referrer: userByUid[r.referrerUid] ? { email: userByUid[r.referrerUid].email, fullName: userByUid[r.referrerUid].fullName } : { email: r.referrerUid },
-      referee: userByUid[r.refereeUid] ? { email: userByUid[r.refereeUid].email, fullName: userByUid[r.refereeUid].fullName } : { email: r.refereeUid },
-      rewardAmount: r.rewardAmount,
-      rewardStatus: r.rewardStatus,
-      rewardedAt: r.rewardedAt,
-      createdAt: r.createdAt,
-    }));
+    // Flag (never block) a referral whose referee shares a signup IP with
+    // another referee of the SAME referrer — a classic multi-account tell,
+    // but shared IPs happen legitimately (same household/office/carrier
+    // NAT), so this is a review signal for the admin list, not an auto-reject.
+    const ipCountByReferrer = new Map();
+    for (const r of docs) {
+      const ip = userByUid[r.refereeUid]?.signupIp;
+      if (!ip) continue;
+      const key = `${r.referrerUid}::${ip}`;
+      ipCountByReferrer.set(key, (ipCountByReferrer.get(key) || 0) + 1);
+    }
+
+    const referrals = docs.map((r) => {
+      const ip = userByUid[r.refereeUid]?.signupIp;
+      const sharedIpFlag = !!ip && (ipCountByReferrer.get(`${r.referrerUid}::${ip}`) || 0) > 1;
+      return {
+        id: r._id,
+        referrer: userByUid[r.referrerUid] ? { email: userByUid[r.referrerUid].email, fullName: userByUid[r.referrerUid].fullName } : { email: r.referrerUid },
+        referee: userByUid[r.refereeUid] ? { email: userByUid[r.refereeUid].email, fullName: userByUid[r.refereeUid].fullName } : { email: r.refereeUid },
+        rewardAmount: r.rewardAmount,
+        rewardStatus: r.rewardStatus,
+        rewardedAt: r.rewardedAt,
+        createdAt: r.createdAt,
+        sharedIpFlag,
+      };
+    });
 
     res.json({
       referrals,
@@ -125,9 +143,45 @@ router.get("/referrals", requireAdmin, async (req, res, next) => {
         total: docs.length,
         paidCount: docs.filter((r) => r.rewardStatus === "paid").length,
         pendingCount: docs.filter((r) => r.rewardStatus === "pending").length,
+        heldCount: docs.filter((r) => r.rewardStatus === "held_for_review").length,
         totalPaidOut: docs.filter((r) => r.rewardStatus === "paid").reduce((sum, r) => sum + r.rewardAmount, 0),
       },
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/referrals/:id/approve", requireAdmin, async (req, res, next) => {
+  try {
+    const referral = await Referral.findById(req.params.id);
+    if (!referral) throw new ApiError(404, "Referral not found.");
+    if (referral.rewardStatus !== "held_for_review") throw new ApiError(400, "This referral isn't awaiting review.");
+
+    await creditWallet(
+      referral.referrerUid, referral.rewardAmount, `REFERRAL-REWARD-${referral._id}`,
+      "Referral Reward", "🤝", { refereeUid: referral.refereeUid, approvedBy: req.uid }
+    );
+    referral.rewardStatus = "paid";
+    referral.rewardedAt = new Date();
+    await referral.save();
+
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/referrals/:id/reject", requireAdmin, async (req, res, next) => {
+  try {
+    const referral = await Referral.findById(req.params.id);
+    if (!referral) throw new ApiError(404, "Referral not found.");
+    if (referral.rewardStatus !== "held_for_review") throw new ApiError(400, "This referral isn't awaiting review.");
+
+    referral.rewardStatus = "rejected";
+    await referral.save();
+
+    res.json({ success: true });
   } catch (err) {
     next(err);
   }

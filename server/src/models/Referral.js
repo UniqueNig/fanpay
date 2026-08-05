@@ -13,7 +13,11 @@ const referralSchema = new mongoose.Schema(
     // Snapshot of settings.referral.rewardAmount at signup time, same reasoning
     // as WelcomeBonus.amount.
     rewardAmount: { type: Number, required: true },
-    rewardStatus: { type: String, enum: ["pending", "paid"], default: "pending" },
+    // "held_for_review": the referee unlocked their own bonus (so this
+    // referral is legitimate on its own terms), but the referrer already hit
+    // settings.referral.maxAutoPayouts — an admin must manually approve or
+    // reject via routes/adminMarketing.js. "rejected" is terminal, no credit.
+    rewardStatus: { type: String, enum: ["pending", "paid", "held_for_review", "rejected"], default: "pending" },
     rewardedAt: { type: Date, default: null },
   },
   { timestamps: true }

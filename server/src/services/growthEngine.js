@@ -133,13 +133,30 @@ export async function checkAndUnlockWelcomeBonus(uid) {
 
   const referral = await Referral.findOne({ refereeUid: uid, rewardStatus: "pending" });
   if (referral) {
-    await creditWallet(
-      referral.referrerUid, referral.rewardAmount, `REFERRAL-REWARD-${referral._id}`,
-      "Referral Reward", "🤝", { refereeUid: uid }
-    );
-    referral.rewardStatus = "paid";
-    referral.rewardedAt = new Date();
-    await referral.save();
+    // Lifetime cap on auto-paid referrals per referrer, a circuit breaker
+    // against multi-account farming (0 = unlimited). The referee's own
+    // bonus above is unaffected either way — this only gates the referrer's
+    // reward. A capped-out referral sits at "held_for_review" until an admin
+    // manually approves/rejects it (routes/adminMarketing.js) — it never
+    // auto-resolves on its own since this function only reaches this point
+    // once, right when the referee's bonus unlocks.
+    const cap = settings.referral?.maxAutoPayouts || 0;
+    const paidCount = cap > 0
+      ? await Referral.countDocuments({ referrerUid: referral.referrerUid, rewardStatus: "paid" })
+      : 0;
+
+    if (cap > 0 && paidCount >= cap) {
+      referral.rewardStatus = "held_for_review";
+      await referral.save();
+    } else {
+      await creditWallet(
+        referral.referrerUid, referral.rewardAmount, `REFERRAL-REWARD-${referral._id}`,
+        "Referral Reward", "🤝", { refereeUid: uid }
+      );
+      referral.rewardStatus = "paid";
+      referral.rewardedAt = new Date();
+      await referral.save();
+    }
   }
 }
 
