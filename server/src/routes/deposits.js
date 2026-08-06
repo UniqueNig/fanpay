@@ -34,6 +34,19 @@ router.get("/virtual-accounts", requireAuth, async (req, res, next) => {
       const lastName = rest.join(" ") || firstName;
       const webhookUrl = `${env.publicApiUrl}/api/webhooks/aspfiy`;
 
+      // Aspfiy is told this URL ONCE, at reservation time, and never asked
+      // again — a wrong value here (PUBLIC_API_URL unset/misconfigured, e.g.
+      // still pointing at localhost) doesn't error, it just silently
+      // registers a permanently-broken account: money arrives, the webhook
+      // has nowhere real to go, and it can never be fixed by us afterward,
+      // only by Aspfiy support or re-reserving a fresh account. Failing
+      // loudly here, before any account is created, is the only way to
+      // catch that class of bug instead of discovering it days later via a
+      // customer's missing deposit.
+      if (!/^https:\/\//.test(webhookUrl)) {
+        throw new ApiError(500, "Funding accounts are temporarily unavailable — PUBLIC_API_URL is misconfigured. Contact support.");
+      }
+
       if (needsPaga) {
         const account = await aspfiyReserveAccount("paga", {
           email: user.email, reference: buildReference(user.uid, "paga"),
