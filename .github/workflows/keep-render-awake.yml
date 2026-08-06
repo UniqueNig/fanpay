@@ -10,7 +10,12 @@ name: Keep Render backend awake
 # server that's already awake.
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    # Offset from the round :00/:10/:20... minutes on purpose — those are the
+    # most common (and therefore most congested) slot every other repo's
+    # "every 10 minutes" cron also uses. Firing a few minutes off that still
+    # pings every 10 minutes, at zero extra cost, just during a quieter
+    # moment in GitHub's scheduler queue.
+    - cron: "3,13,23,33,43,53 * * * *"
   workflow_dispatch: {}
 
 jobs:
