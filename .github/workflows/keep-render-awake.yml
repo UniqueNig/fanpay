@@ -1,0 +1,21 @@
+name: Keep Render backend awake
+
+# Render's free tier spins the backend down after ~15 minutes with no
+# traffic — the next request has to "cold start" it back up, which can take
+# 30-60+ seconds. That's tolerable for a real user's browser (it just waits),
+# but funding webhooks (Aspfiy, Paystack) time out and give up if the server
+# doesn't respond fast enough, so a payment can silently go uncredited if it
+# arrives while the server is asleep. Pinging the health endpoint well under
+# that 15-minute window keeps it warm so incoming webhooks always hit a
+# server that's already awake.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping health endpoint
+        run: curl -fsS --max-time 20 https://fanpay-api-iti0.onrender.com/health
