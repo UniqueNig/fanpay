@@ -18,4 +18,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping health endpoint
-        run: curl -fsS --max-time 20 https://fanpay-api-iti0.onrender.com/health
+        # A cold start can take 30-60+ seconds — give it real room instead of
+        # timing out mid-wakeup and reporting a false failure.
+        run: curl -fsS --max-time 90 https://fanpay-api-iti0.onrender.com/health
