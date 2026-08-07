@@ -51,26 +51,48 @@ const TransactionDetailModal = ({ transaction, onClose }) => {
     return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
   };
 
+  const downloadBlob = (blob) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `fanfi-receipt-${tx.reference}.png`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleShare = async () => {
     setSharing(true);
     setShareError("");
-    try {
-      const blob = await captureReceipt();
-      const file = new File([blob], `fanfi-receipt-${tx.reference}.png`, { type: "image/png" });
 
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: "FanFi Receipt", text: tx.title });
-      } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `fanfi-receipt-${tx.reference}.png`;
-        a.click();
-        URL.revokeObjectURL(url);
-      }
+    let blob;
+    try {
+      blob = await captureReceipt();
     } catch (err) {
-      if (err.name !== "AbortError") setShareError("Could not generate receipt. Try again.");
+      console.error("Receipt image generation failed:", err);
+      setShareError("Could not generate receipt. Try again.");
+      setSharing(false);
+      return;
     }
+
+    const file = new File([blob], `fanfi-receipt-${tx.reference}.png`, { type: "image/png" });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: "FanFi Receipt", text: tx.title });
+        setSharing(false);
+        return;
+      } catch (err) {
+        if (err.name === "AbortError") { setSharing(false); return; } // user cancelled — not a failure
+        // Some browsers (notably iOS Safari) can reject the native share
+        // sheet even after canShare() said yes — e.g. if there's been any
+        // async delay since the tap. The image itself is already generated
+        // fine at this point, so fall back to a direct download rather than
+        // leaving the user with a dead-end error.
+        console.error("navigator.share failed, falling back to download:", err);
+      }
+    }
+
+    downloadBlob(blob);
     setSharing(false);
   };
 
