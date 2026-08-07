@@ -2,19 +2,46 @@
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#181229"/>
-      <stop offset="100%" stop-color="#2a1f47"/>
+      <stop offset="60%" stop-color="#241c3d"/>
+      <stop offset="100%" stop-color="#181229"/>
     </linearGradient>
     <radialGradient id="glow" cx="80%" cy="20%" r="60%">
-      <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.35"/>
+      <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.32"/>
       <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0"/>
     </radialGradient>
+    <linearGradient id="tileGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#221a3a"/>
+      <stop offset="100%" stop-color="#1a1430"/>
+    </linearGradient>
+    <linearGradient id="violetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
   </defs>
   <rect width="1200" height="630" fill="url(#bg)"/>
   <rect width="1200" height="630" fill="url(#glow)"/>
-  <text x="100" y="330" font-family="Arial, sans-serif" font-weight="800" font-size="96" letter-spacing="-2">
+
+  <rect x="96" y="242" width="108" height="108" rx="24" fill="url(#tileGrad)"/>
+  <g transform="translate(120,266) scale(0.6)">
+    <g fill="#f1eefa">
+      <rect x="32" y="14" width="14" height="72" rx="7"/>
+      <rect x="32" y="14" width="40" height="14" rx="7"/>
+      <rect x="32" y="44" width="30" height="13" rx="6.5"/>
+    </g>
+    <g fill="url(#violetGrad)" transform="rotate(180 50 50)">
+      <rect x="32" y="14" width="14" height="72" rx="7"/>
+      <rect x="32" y="14" width="40" height="14" rx="7"/>
+      <rect x="32" y="44" width="30" height="13" rx="6.5"/>
+    </g>
+  </g>
+
+  <text x="230" y="330" font-family="Arial, sans-serif" font-weight="800" font-size="96" letter-spacing="-2">
     <tspan fill="#ffffff">Fan</tspan><tspan fill="#8b5cf6">Fi</tspan>
   </text>
-  <text x="102" y="390" font-family="Arial, sans-serif" font-weight="400" font-size="32" fill="#ffffffb3">
-    Simple, Secure Digital Payments.
+  <text x="98" y="396" font-family="Arial, sans-serif" font-weight="400" font-size="30" fill="#ffffffb8">
+    Fund your wallet, buy airtime and data, and pay your bills — all in one simple app.
+  </text>
+  <text x="98" y="451" font-family="Arial, sans-serif" font-weight="400" font-size="15" letter-spacing="2" fill="#ffffff61">
+    <tspan>AIRTIME</tspan><tspan dx="28">DATA</tspan><tspan dx="28">BILLS</tspan><tspan dx="28">WALLET</tspan>
   </text>
 </svg>

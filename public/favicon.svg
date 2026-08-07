@@ -1,7 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#181229"/>
-  <text font-family="Syne, sans-serif" font-weight="800" font-size="28" letter-spacing="-1">
-    <tspan fill="#ffffff" x="7" y="28">Fan</tspan>
-    <tspan fill="#8b5cf6" x="7" dy="28">Fi</tspan>
-  </text>
+  <defs>
+    <linearGradient id="tileGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#221a3a"/>
+      <stop offset="100%" stop-color="#1a1430"/>
+    </linearGradient>
+    <linearGradient id="violetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#tileGrad)"/>
+  <g transform="translate(14,14) scale(0.358)">
+    <g fill="#f1eefa">
+      <rect x="32" y="14" width="14" height="72" rx="7"/>
+      <rect x="32" y="14" width="40" height="14" rx="7"/>
+      <rect x="32" y="44" width="30" height="13" rx="6.5"/>
+    </g>
+    <g fill="url(#violetGrad)" transform="rotate(180 50 50)">
+      <rect x="32" y="14" width="14" height="72" rx="7"/>
+      <rect x="32" y="14" width="40" height="14" rx="7"/>
+      <rect x="32" y="44" width="30" height="13" rx="6.5"/>
+    </g>
+  </g>
 </svg>
