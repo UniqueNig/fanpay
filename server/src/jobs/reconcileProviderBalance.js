@@ -3,7 +3,9 @@ import { maskawasubBalance } from "../services/maskawasub.js";
 import { ProviderBalanceCheck } from "../models/ProviderBalanceCheck.js";
 import { Transaction } from "../models/Transaction.js";
 import { SystemLog } from "../models/SystemLog.js";
-import { sendBalanceDiscrepancyAlert, resolveAdminAlertEmail } from "../services/email.js";
+import { sendBalanceDiscrepancyAlert, sendReconciliationDigest, resolveAdminAlertEmail } from "../services/email.js";
+
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 // A rogue insider with backend access at a VTU provider doesn't need to
 // crack anyone's password — they can trigger purchases directly against
@@ -66,6 +68,18 @@ async function checkProvider(provider, getBalance) {
       level: "info", source: "balanceReconciliation",
       message: `${provider}: balance ₦${lastBalance}→₦${currentBalance}, recorded spend ₦${expectedSpend} — within tolerance.`,
     }).catch(() => {});
+
+    // Routine "all clear" digest — separate from the alert above, sent at
+    // most once/day so the admin alert address hears from this job even on
+    // days nothing went wrong, not only when something did.
+    const dueForDigest = !existing.lastSummaryEmailAt || (Date.now() - existing.lastSummaryEmailAt.getTime()) >= ONE_DAY_MS;
+    if (dueForDigest) {
+      const to = await resolveAdminAlertEmail();
+      if (to) {
+        await sendReconciliationDigest(to, [{ provider, currentBalance, expectedSpend }]);
+        existing.lastSummaryEmailAt = new Date();
+      }
+    }
   }
 
   existing.lastBalance = currentBalance;

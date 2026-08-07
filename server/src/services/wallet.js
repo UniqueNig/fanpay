@@ -21,6 +21,12 @@ function assertPositiveAmount(amount) {
   if (!(amount > 0)) throw new ApiError(400, "Invalid amount.");
 }
 
+// Returns true if this call actually performed a new credit, false if
+// `reference` was already used (idempotent no-op) — callers that need to
+// fire a ONE-TIME side effect on real credit only (e.g. a confirmation
+// email, where the same deposit can legitimately reach this function twice
+// via two different delivery paths — see routes/webhooks.js) should check
+// this rather than assuming every call means a genuinely new credit.
 export async function creditWallet(uid, amount, reference, title = "Wallet Deposit", category = "💳", meta = {}) {
   assertPositiveAmount(amount);
   const session = await mongoose.startSession();
@@ -37,8 +43,9 @@ export async function creditWallet(uid, amount, reference, title = "Wallet Depos
       user.balance += amount;
       await user.save({ session });
     });
+    return true;
   } catch (err) {
-    if (isDuplicateKeyError(err)) return; // already processed
+    if (isDuplicateKeyError(err)) return false; // already processed
     throw err;
   } finally {
     session.endSession();

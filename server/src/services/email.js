@@ -146,3 +146,62 @@ export function sendBalanceDiscrepancyAlert(to, { provider, lastBalance, current
      <p>— FanFi System</p>`
   );
 }
+
+// Routine "still fine" digest — distinct from sendBalanceDiscrepancyAlert
+// above, which only fires when something's actually wrong. Sent at most
+// once/day by jobs/reconcileProviderBalance.js regardless of outcome, so
+// the admin alert address isn't ONLY ever hearing from FanFi when there's
+// a problem.
+export function sendReconciliationDigest(to, summaries) {
+  const rows = summaries
+    .map((s) => `<li><strong>${s.provider}</strong>: balance ₦${s.currentBalance.toLocaleString()}, recorded spend today ₦${s.expectedSpend.toLocaleString()} — no unexplained gap.</li>`)
+    .join("");
+  return send(
+    to,
+    "FanFi — daily provider balance check",
+    `<p>Hi,</p>
+     <p>Routine check-in — all provider balances reconciled cleanly against FanFi's own records in the last 24 hours:</p>
+     <ul>${rows}</ul>
+     <p>You'll get a separate, immediate alert (not this digest) if a real discrepancy ever shows up.</p>
+     <p>— FanFi System</p>`
+  );
+}
+
+export function sendPinChangedEmail(to, fullName) {
+  const name = escapeHtml(fullName) || "there";
+  return send(
+    to,
+    "Your FanFi PIN was changed",
+    `<p>Hi ${name},</p>
+     <p>Your transaction PIN was just changed. If this was you, no action is needed.</p>
+     <p>If you didn't make this change, contact support immediately — someone else may have access to your account.</p>
+     <p>— The FanFi Team</p>`
+  );
+}
+
+export function sendNewDeviceLoginEmail(to, fullName, { ip, userAgent }) {
+  const name = escapeHtml(fullName) || "there";
+  return send(
+    to,
+    "New sign-in to your FanFi account",
+    `<p>Hi ${name},</p>
+     <p>Your account was just signed into from a device or location we haven't seen before.</p>
+     <ul>
+       <li>IP address: ${escapeHtml(ip) || "unknown"}</li>
+       <li>Device: ${escapeHtml(userAgent) || "unknown"}</li>
+     </ul>
+     <p>If this was you, no action is needed. If it wasn't, change your password and PIN immediately and contact support.</p>
+     <p>— The FanFi Team</p>`
+  );
+}
+
+export function sendDepositConfirmationEmail(to, fullName, amount) {
+  const name = escapeHtml(fullName) || "there";
+  return send(
+    to,
+    "Wallet deposit confirmed",
+    `<p>Hi ${name},</p>
+     <p>₦${Number(amount).toLocaleString()} has been added to your FanFi wallet.</p>
+     <p>— The FanFi Team</p>`
+  );
+}

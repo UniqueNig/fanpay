@@ -6,6 +6,7 @@ import { verifyTransaction } from "../services/paystack.js";
 import { aspfiyReserveAccount, buildReference } from "../services/aspfiy.js";
 import { creditWallet } from "../services/wallet.js";
 import { safeCheckAndUnlock } from "../services/growthEngine.js";
+import { sendDepositConfirmationEmail } from "../services/email.js";
 import { getSettings, assertNotMaintenance, assertServiceEnabled } from "../services/settings.js";
 import { env } from "../config/env.js";
 import { User } from "../models/User.js";
@@ -113,13 +114,17 @@ router.post(
       if (user.email !== tx.customer?.email)
         throw new ApiError(403, "Payment email does not match account.");
 
-      await creditWallet(user.uid, netNaira, reference, "Wallet Deposit", "💳", {
+      const wasNewCredit = await creditWallet(user.uid, netNaira, reference, "Wallet Deposit", "💳", {
         channel: tx.channel,
         paidAt: tx.paid_at,
         grossAmount: grossNaira,
         feePercent,
       });
       await safeCheckAndUnlock(user.uid);
+      // This same deposit can legitimately also reach the platform via the
+      // Paystack webhook (routes/webhooks.js) — only email once, on
+      // whichever path actually performs the real credit first.
+      if (wasNewCredit) sendDepositConfirmationEmail(user.email, user.fullName, netNaira);
 
       res.json({ success: true, amount: netNaira });
     } catch (err) {

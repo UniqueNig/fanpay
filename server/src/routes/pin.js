@@ -3,6 +3,7 @@ import { body, validationResult } from "express-validator";
 import { requireAuth } from "../middleware/auth.js";
 import { User } from "../models/User.js";
 import { setTransactionPin, verifyTransactionPin } from "../services/pin.js";
+import { sendPinChangedEmail } from "../services/email.js";
 
 const router = Router();
 
@@ -25,12 +26,16 @@ router.post(
       const { pin, currentPin } = req.body;
       const user = await User.findOne({ uid: req.uid });
 
-      if (user?.transactionPinHash) {
+      // Only a real change (a PIN already existed) is a security-relevant
+      // event worth emailing — first-time set is just onboarding.
+      const isChange = !!user?.transactionPinHash;
+      if (isChange) {
         if (!currentPin) return res.status(400).json({ error: "Enter your current PIN to change it." });
         await verifyTransactionPin(req.uid, currentPin);
       }
 
       await setTransactionPin(req.uid, pin);
+      if (isChange) sendPinChangedEmail(user.email, user.fullName);
       res.json({ success: true });
     } catch (err) {
       next(err);

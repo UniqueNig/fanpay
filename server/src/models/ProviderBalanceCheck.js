@@ -11,6 +11,11 @@ const providerBalanceCheckSchema = new mongoose.Schema(
     provider: { type: String, required: true, unique: true, index: true },
     lastBalance: { type: Number, required: true },
     lastCheckedAt: { type: Date, required: true },
+    // Separate from lastCheckedAt (which updates every hour) — tracks the
+    // last routine "all clear" digest (services/email.js's
+    // sendReconciliationDigest), sent at most once/day regardless of how
+    // often the hourly check itself runs.
+    lastSummaryEmailAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

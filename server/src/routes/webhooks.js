@@ -6,6 +6,7 @@ import { creditWallet } from "../services/wallet.js";
 import { verifyAspfiyWebhookSignature, parseReference } from "../services/aspfiy.js";
 import { getSettings } from "../services/settings.js";
 import { safeCheckAndUnlock } from "../services/growthEngine.js";
+import { sendDepositConfirmationEmail } from "../services/email.js";
 import { User } from "../models/User.js";
 import { PendingTransfer } from "../models/PendingTransfer.js";
 import { SystemLog } from "../models/SystemLog.js";
@@ -63,13 +64,16 @@ router.post("/paystack", express.raw({ type: "application/json" }), async (req, 
             const feePercent = settings.pricing.paystackDepositFeePercent || 0;
             const grossNaira = tx.amount / 100;
             const netNaira = Math.round((grossNaira / (1 + feePercent / 100)) * 100) / 100;
-            await creditWallet(user.uid, netNaira, tx.reference, "Wallet Deposit", "💳", {
+            const wasNewCredit = await creditWallet(user.uid, netNaira, tx.reference, "Wallet Deposit", "💳", {
               channel: tx.channel,
               paidAt: tx.paid_at,
               grossAmount: grossNaira,
               feePercent,
             });
             await safeCheckAndUnlock(user.uid);
+            // Same deposit can also reach the platform via routes/deposits.js's
+            // /verify — only email once, whichever path credits first.
+            if (wasNewCredit) sendDepositConfirmationEmail(user.email, user.fullName, netNaira);
           }
         }
       }
@@ -159,7 +163,11 @@ router.post("/aspfiy", express.raw({ type: "application/json" }), async (req, re
       const txRef = data.wiaxy_ref || data.transaction_ref;
 
       if (user && txRef && grossAmount > 0) {
-        await creditWallet(user.uid, netAmount, `ASPFIY-${txRef}`, "Wallet Deposit", "💳", {
+        // Aspfiy is known to resend the same webhook (e.g. a manual resend
+        // from their dashboard) — gate the email on a real credit so a
+        // resend that correctly no-ops on the duplicate reference doesn't
+        // also send a second confirmation email for money credited once.
+        const wasNewCredit = await creditWallet(user.uid, netAmount, `ASPFIY-${txRef}`, "Wallet Deposit", "💳", {
           method: `Aspfiy (${parsed.bank})`,
           grossAmount,
           feePercent,
@@ -168,6 +176,7 @@ router.post("/aspfiy", express.raw({ type: "application/json" }), async (req, re
           payerName: data.payer?.account_name || null,
           aspfiyRef: txRef,
         });
+        if (wasNewCredit) sendDepositConfirmationEmail(user.email, user.fullName, netAmount);
         await safeCheckAndUnlock(user.uid);
       } else {
         SystemLog.create({
