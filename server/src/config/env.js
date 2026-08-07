@@ -65,4 +65,10 @@ export const env = {
   // (see config/resend.js), never block signup or an admin's KYC/PIN review.
   resendApiKey: process.env.RESEND_API_KEY,
   resendFromEmail: process.env.RESEND_FROM_EMAIL,
+  // Where the deployed frontend lives — used by services/email.js to build
+  // an absolute logo image URL and "Open FanFi" link (email clients render
+  // their own DOM, not this app's, so relative paths don't work). Same
+  // fallback src/components/SEO.jsx already uses for og:url, so the two
+  // stay in sync without a shared config file.
+  publicAppUrl: (process.env.PUBLIC_APP_URL || "https://fanpay-peach.vercel.app").replace(/\/+$/, ""),
 };
