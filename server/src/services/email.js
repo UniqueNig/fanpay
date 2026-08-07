@@ -20,7 +20,16 @@ function escapeHtml(str) {
 // than checked per-caller. Colors are lifted straight from src/index.css's
 // --fp-* tokens (light theme only — see the color-scheme meta tags below for
 // why this deliberately doesn't attempt email-client dark mode).
-const LOGO_URL = `${env.publicAppUrl}/brand/fanfi-icon.png`;
+//
+// The header uses the full icon+wordmark lockup (public/brand/fanfi-full-logo.png)
+// as ONE pre-rendered image, not an <img> icon next to live HTML text — email
+// clients can't be trusted to have the Syne webfont, so typed-out text would
+// fall back to a generic system font and no longer look like the real FanFi
+// logo. Exported at 3x (738x120 for a 246x40 viewBox) with a transparent
+// background via headless Chrome from the exact same markup as
+// src/components/FanFiLogo.jsx, so it's pixel-identical to the site's own
+// logo, not a re-drawn approximation.
+const LOGO_URL = `${env.publicAppUrl}/brand/fanfi-full-logo.png`;
 const COLOR = {
   surface: "#F6F3FB",
   panel: "#FFFFFF",
@@ -70,15 +79,8 @@ function shell({ heading, bodyHtml, preheader }) {
         <td align="center" style="padding:32px 16px;">
           <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="max-width:480px; width:100%; background-color:${COLOR.panel}; border:1px solid ${COLOR.line}; border-radius:16px;">
             <tr>
-              <td style="padding:26px 32px; border-bottom:1px solid ${COLOR.line};">
-                <table role="presentation" cellpadding="0" cellspacing="0">
-                  <tr>
-                    <td style="padding-right:10px;">
-                      <img src="${LOGO_URL}" width="28" height="28" alt="FanFi" style="display:block; border-radius:7px;" />
-                    </td>
-                    <td style="font-family:${FONT}; font-size:20px; font-weight:800; letter-spacing:0.3px; color:${COLOR.iris};">FanFi</td>
-                  </tr>
-                </table>
+              <td style="padding:22px 32px; border-bottom:1px solid ${COLOR.line};">
+                <img src="${LOGO_URL}" width="166" height="27" alt="FanFi" style="display:block;" />
               </td>
             </tr>
             <tr>
