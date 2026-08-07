@@ -3,7 +3,10 @@ import { useEffect } from "react";
 const SITE_URL = (import.meta.env.VITE_SITE_URL || "https://fanpay-peach.vercel.app").replace(/\/+$/, "");
 const SITE_NAME = "FanFi";
 const DEFAULT_DESCRIPTION = "Fund your wallet, buy airtime and data, and pay electricity and cable TV bills — all in one simple app.";
-const DEFAULT_IMAGE = `${SITE_URL}/og-image.svg`;
+// PNG, not SVG — WhatsApp/Facebook/LinkedIn's link-preview crawlers
+// generally refuse to render SVG as an og:image at all (confirmed live: a
+// shared link showed title/description fine but no image whatsoever).
+const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`;
 
 function setMeta(attr, key, content) {
   if (!content) return;
