@@ -144,21 +144,35 @@ router.post("/aspfiy", express.raw({ type: "application/json" }), async (req, re
       const feePercent = settings.pricing.aspfiyDepositFeePercent || 0;
       const netAmount = Math.round(grossAmount * (1 - feePercent / 100) * 100) / 100;
 
-      if (user && data.reference && grossAmount > 0) {
-        await creditWallet(user.uid, netAmount, data.reference, "Wallet Deposit", "💳", {
+      // `data.reference` is NOT unique per transaction, despite the name —
+      // confirmed live (2026-08-07): two genuinely different deposits to the
+      // same reserved account arrived with the identical `reference` value,
+      // while `wiaxy_ref`/`transaction_ref` correctly differed between them.
+      // It looks tied to the reserved account itself, not the individual
+      // transfer. creditWallet dedupes by whatever reference it's given —
+      // using `data.reference` meant every deposit after the first one to a
+      // given account was silently treated as an already-processed duplicate
+      // and never credited, with nothing logged (that's creditWallet's
+      // idempotency working exactly as designed, just against a value that
+      // wasn't actually unique). `wiaxy_ref`/`transaction_ref` is the field
+      // that's actually proven unique per transaction — use that instead.
+      const txRef = data.wiaxy_ref || data.transaction_ref;
+
+      if (user && txRef && grossAmount > 0) {
+        await creditWallet(user.uid, netAmount, `ASPFIY-${txRef}`, "Wallet Deposit", "💳", {
           method: `Aspfiy (${parsed.bank})`,
           grossAmount,
           feePercent,
           feeDeducted: grossAmount - netAmount,
           payerAccountNumber: data.payer?.account_number,
           payerName: data.payer?.account_name || null,
-          aspfiyRef: data.wiaxy_ref || data.transaction_ref,
+          aspfiyRef: txRef,
         });
         await safeCheckAndUnlock(user.uid);
       } else {
         SystemLog.create({
           level: "warn", source: "aspfiyWebhook",
-          message: `Could not credit — user found: ${!!user}, reference: ${data.reference}, amount: ${data.amount}`,
+          message: `Could not credit — user found: ${!!user}, txRef: ${txRef}, amount: ${data.amount}`,
         }).catch(() => {});
       }
     } else {
