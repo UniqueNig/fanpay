@@ -1,21 +1,20 @@
 name: Keep Render backend awake
 
-# Render's free tier spins the backend down after ~15 minutes with no
-# traffic — the next request has to "cold start" it back up, which can take
-# 30-60+ seconds. That's tolerable for a real user's browser (it just waits),
-# but funding webhooks (Aspfiy, Paystack) time out and give up if the server
-# doesn't respond fast enough, so a payment can silently go uncredited if it
-# arrives while the server is asleep. Pinging the health endpoint well under
-# that 15-minute window keeps it warm so incoming webhooks always hit a
-# server that's already awake.
+# Secondary/backup layer only — UptimeRobot (5-minute checks against
+# /health) is the real defense keeping the backend from cold-sleeping, set
+# up separately outside this repo. This workflow exists purely as free
+# redundancy in case UptimeRobot ever has its own outage.
+#
+# The schedule below is intentionally hourly, not every-10-minutes: GitHub
+# Actions cron is a best-effort CI trigger, not a guaranteed real-time
+# scheduler — a tighter schedule was tried and confirmed (by watching actual
+# run timestamps) to only fire roughly once every 1.5-2.5 hours regardless
+# of what's requested. Asking for hourly here is just honest about what
+# GitHub actually delivers, not a functional change from the tighter
+# schedule it replaces.
 on:
   schedule:
-    # Offset from the round :00/:10/:20... minutes on purpose — those are the
-    # most common (and therefore most congested) slot every other repo's
-    # "every 10 minutes" cron also uses. Firing a few minutes off that still
-    # pings every 10 minutes, at zero extra cost, just during a quieter
-    # moment in GitHub's scheduler queue.
-    - cron: "3,13,23,33,43,53 * * * *"
+    - cron: "17 * * * *"
   workflow_dispatch: {}
 
 jobs:
