@@ -21,12 +21,23 @@ const MiniBarChart = ({ series }) => {
   );
 };
 
+const PL_PERIODS = [
+  { value: "today", label: "Today" },
+  { value: "week", label: "This Week" },
+  { value: "month", label: "This Month" },
+  { value: "year", label: "This Year" },
+  { value: "lifetime", label: "Lifetime" },
+];
+
 const AdminFinance = () => {
   const [tab, setTab] = useState(0);
   const [days, setDays] = useState(30);
+  const [plPeriod, setPlPeriod] = useState("month");
   const [data, setData] = useState(null);
+  const [plData, setPlData] = useState(null);
   const [wallet, setWallet] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [plLoading, setPlLoading] = useState(true);
   const [error, setError] = useState("");
   const [label, setLabel] = useState("");
   const [amount, setAmount] = useState("");
@@ -44,6 +55,22 @@ const AdminFinance = () => {
     setLoading(false);
   };
 
+  // Profit & Loss deliberately fetches independently of Sales Stats' `days`
+  // — they used to silently share one window, so switching tabs could show
+  // a "monthly" P&L number that was actually still set to 7 days from the
+  // other tab. Own state, own dropdown, own request.
+  const loadProfitLoss = async () => {
+    setPlLoading(true);
+    setError("");
+    try {
+      const d = await api.get(`/admin/finance?period=${plPeriod}`);
+      setPlData(d);
+    } catch (err) {
+      setError(err.message || "Failed to load profit & loss data.");
+    }
+    setPlLoading(false);
+  };
+
   const loadWallet = async () => {
     try {
       const w = await api.get("/admin/api-wallet");
@@ -54,6 +81,7 @@ const AdminFinance = () => {
   };
 
   useEffect(() => { loadFinance(); }, [days]);
+  useEffect(() => { loadProfitLoss(); }, [plPeriod]);
   useEffect(() => { if (tab === 2 && !wallet) loadWallet(); }, [tab]);
 
   const logExpense = async (e) => {
@@ -64,7 +92,7 @@ const AdminFinance = () => {
       await api.post("/admin/expenses", { label: label.trim(), amount: Number(amount) });
       setLabel("");
       setAmount("");
-      loadFinance();
+      loadProfitLoss();
     } catch (err) {
       setError(err.message || "Failed to log expense.");
     }
@@ -94,9 +122,10 @@ const AdminFinance = () => {
           </div>
         )}
 
-        {loading ? (
-          <div className="card-flat p-8 text-center text-ink/35 font-dm text-sm">Loading...</div>
-        ) : tab === 0 ? (
+        {tab === 0 ? (
+          loading ? (
+            <div className="card-flat p-8 text-center text-ink/35 font-dm text-sm">Loading...</div>
+          ) : (
           <div className="card-flat p-6">
             <div className="flex items-center justify-between mb-2">
               <p className="text-ink/50 font-dm text-sm">Transaction volume — last {days} days</p>
@@ -113,25 +142,39 @@ const AdminFinance = () => {
             </div>
             <MiniBarChart series={data.series} />
           </div>
+          )
         ) : tab === 1 ? (
+          plLoading || !plData ? (
+            <div className="card-flat p-8 text-center text-ink/35 font-dm text-sm">Loading...</div>
+          ) : (
           <>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-ink/50 font-dm text-sm">
+                {PL_PERIODS.find((p) => p.value === plPeriod)?.label}
+              </p>
+              <select value={plPeriod} onChange={(e) => setPlPeriod(e.target.value)} className="bg-surface border border-line rounded-lg text-ink/70 font-dm text-xs px-2 py-1">
+                {PL_PERIODS.map((p) => (
+                  <option key={p.value} value={p.value} style={{ backgroundColor: "rgb(var(--fp-panel))", color: "rgb(var(--fp-ink))" }}>{p.label}</option>
+                ))}
+              </select>
+            </div>
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="card-flat p-4">
                 <div className="flex items-center gap-1.5 text-iris mb-1"><FiTrendingUp size={13} /><p className="font-dm text-[11px] uppercase">Revenue</p></div>
-                <p className="text-ink font-syne font-bold text-sm">{formatNaira(data.totals.totalCreditVolume)}</p>
+                <p className="text-ink font-syne font-bold text-sm">{formatNaira(plData.totals.totalCreditVolume)}</p>
               </div>
               <div className="card-flat p-4">
                 <div className="flex items-center gap-1.5 text-red-400 mb-1"><FiTrendingDown size={13} /><p className="font-dm text-[11px] uppercase">Expenses</p></div>
-                <p className="text-ink font-syne font-bold text-sm">{formatNaira(data.totals.totalExpenses)}</p>
+                <p className="text-ink font-syne font-bold text-sm">{formatNaira(plData.totals.totalExpenses)}</p>
               </div>
               <div className="card-flat p-4">
                 <p className="text-ink/35 font-dm text-[11px] uppercase mb-1">Net (est.)</p>
-                <p className={`font-syne font-bold text-sm ${data.totals.netProfit >= 0 ? "text-iris" : "text-red-400"}`}>{formatNaira(data.totals.netProfit)}</p>
+                <p className={`font-syne font-bold text-sm ${plData.totals.netProfit >= 0 ? "text-iris" : "text-red-400"}`}>{formatNaira(plData.totals.netProfit)}</p>
               </div>
             </div>
             <div className="card-flat p-4 mb-4">
-              <p className="text-ink/35 font-dm text-[11px] uppercase mb-1">Real Margin</p>
-              <p className={`font-syne font-bold text-lg ${data.totals.totalMargin >= 0 ? "text-iris" : "text-red-400"}`}>{formatNaira(data.totals.totalMargin)}</p>
+              <p className="text-ink/35 font-dm text-[11px] uppercase mb-1">Real Margin — {PL_PERIODS.find((p) => p.value === plPeriod)?.label}</p>
+              <p className={`font-syne font-bold text-lg ${plData.totals.totalMargin >= 0 ? "text-iris" : "text-red-400"}`}>{formatNaira(plData.totals.totalMargin)}</p>
               <p className="text-ink/30 font-dm text-[11px] mt-1">
                 Sum of actual recorded profit per transaction (Pricing Catalog margin on airtime/data/cable,
                 fee minus coupon discount on transfers/bills), minus expenses. More accurate than "Net
@@ -141,7 +184,8 @@ const AdminFinance = () => {
             </div>
             <p className="text-ink/30 font-dm text-xs mb-4">
               "Net (est.)" is a rough estimate (transaction volume minus logged expenses), not real
-              accounting — treat it directionally, "Real Margin" above is the accurate figure.
+              accounting — treat it directionally, "Real Margin" above is the accurate figure. "Today"
+              resets at midnight; every other period is a rolling window ending now.
             </p>
             <div className="card-flat p-5 mb-6">
               <p className="text-ink font-syne font-semibold text-sm mb-3">Log an expense</p>
@@ -154,11 +198,11 @@ const AdminFinance = () => {
               </form>
             </div>
             <div className="card-flat overflow-hidden">
-              {data.expenses.length === 0 ? (
+              {plData.expenses.length === 0 ? (
                 <div className="p-8 text-center text-ink/35 font-dm text-sm">No expenses logged in this window.</div>
               ) : (
-                data.expenses.map((ex, i) => (
-                  <div key={ex.id} className={`flex items-center justify-between p-4 ${i < data.expenses.length - 1 ? "border-b border-line" : ""}`}>
+                plData.expenses.map((ex, i) => (
+                  <div key={ex.id} className={`flex items-center justify-between p-4 ${i < plData.expenses.length - 1 ? "border-b border-line" : ""}`}>
                     <div>
                       <p className="text-ink font-dm text-sm">{ex.label}</p>
                       <p className="text-ink/35 font-dm text-xs">{formatDate(ex.date)}</p>
@@ -169,6 +213,7 @@ const AdminFinance = () => {
               )}
             </div>
           </>
+          )
         ) : (
           <div className="card-flat p-6">
             {!wallet ? (

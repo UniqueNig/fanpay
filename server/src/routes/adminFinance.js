@@ -12,13 +12,25 @@ import { getPaystackBalance } from "../services/paystack.js";
 // other, matching exactly what AdminFinance.jsx calls.
 const router = Router();
 
+// Sales Stats' bar chart still uses `?days=N` (capped at 90 — one bar per
+// day, so a chart beyond that is just noise). Profit & Loss uses the newer
+// `?period=` instead, since "how much did I make this year/lifetime" is a
+// totals-only question with no sane per-day chart to draw — `lifetime` in
+// particular has no windowStart at all. `period` wins if both are present.
+const PERIOD_DAYS = { today: 1, week: 7, month: 30, year: 365 };
+
 router.get("/finance", requireAdmin, async (req, res, next) => {
   try {
-    const days = Math.min(Number(req.query.days) || 30, 90);
+    const period = req.query.period;
+    const days = period && period !== "lifetime"
+      ? (PERIOD_DAYS[period] || 30)
+      : Math.min(Number(req.query.days) || 30, 90);
+
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
-    const windowStart = new Date(startOfToday);
-    windowStart.setDate(windowStart.getDate() - (days - 1));
+    // Lifetime = no lower bound at all — matches every transaction ever.
+    const windowStart = period === "lifetime" ? new Date(0) : new Date(startOfToday);
+    if (period !== "lifetime") windowStart.setDate(windowStart.getDate() - (days - 1));
 
     const [creditAgg] = await Transaction.aggregate([
       { $match: { type: "credit", createdAt: { $gte: windowStart } } },
@@ -29,26 +41,34 @@ router.get("/finance", requireAdmin, async (req, res, next) => {
       { $group: { _id: null, total: { $sum: "$amount" }, count: { $sum: 1 } } },
     ]);
 
-    const dailySeries = await Transaction.aggregate([
-      { $match: { createdAt: { $gte: windowStart } } },
-      {
-        $group: {
-          _id: { date: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, type: "$type" },
-          total: { $sum: "$amount" },
+    // A one-bar-per-day chart stops being legible (or even sane to build —
+    // `lifetime` has no fixed day count at all) past ~90 days. Sales Stats
+    // never asks for more than that; Profit & Loss's year/lifetime periods
+    // don't need a chart, so skip this work entirely for those instead of
+    // building a 365+ point array nothing renders.
+    let series = [];
+    if (period !== "year" && period !== "lifetime") {
+      const dailySeries = await Transaction.aggregate([
+        { $match: { createdAt: { $gte: windowStart } } },
+        {
+          $group: {
+            _id: { date: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, type: "$type" },
+            total: { $sum: "$amount" },
+          },
         },
-      },
-    ]);
-    const byDate = {};
-    dailySeries.forEach((d) => {
-      byDate[d._id.date] = byDate[d._id.date] || { credit: 0, debit: 0 };
-      byDate[d._id.date][d._id.type] = d.total;
-    });
-    const series = [...Array(days)].map((_, i) => {
-      const d = new Date(windowStart);
-      d.setDate(d.getDate() + i);
-      const key = d.toISOString().slice(0, 10);
-      return { date: key, credit: byDate[key]?.credit || 0, debit: byDate[key]?.debit || 0 };
-    });
+      ]);
+      const byDate = {};
+      dailySeries.forEach((d) => {
+        byDate[d._id.date] = byDate[d._id.date] || { credit: 0, debit: 0 };
+        byDate[d._id.date][d._id.type] = d.total;
+      });
+      series = [...Array(days)].map((_, i) => {
+        const d = new Date(windowStart);
+        d.setDate(d.getDate() + i);
+        const key = d.toISOString().slice(0, 10);
+        return { date: key, credit: byDate[key]?.credit || 0, debit: byDate[key]?.debit || 0 };
+      });
+    }
 
     const expenseDocs = await Expense.find({ createdAt: { $gte: windowStart } }).sort({ createdAt: -1 }).lean();
     const totalExpenses = expenseDocs.reduce((sum, e) => sum + e.amount, 0);
