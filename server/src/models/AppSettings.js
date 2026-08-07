@@ -10,6 +10,15 @@ const appSettingsSchema = new mongoose.Schema(
       supportPhone: { type: String, default: "" },
       minTransfer: { type: Number, default: 100 },
       maxTransfer: { type: Number, default: 1000000 },
+      // Where security/fraud alerts (e.g. provider-balance reconciliation
+      // mismatches) get sent — falls back to supportEmail if left blank,
+      // see services/email.js's resolveAdminAlertEmail.
+      adminAlertEmail: { type: String, default: "" },
+      // Safety margin under Resend's free-tier 100/day hard cap — every real
+      // send attempt (welcome, KYC, broadcast, alerts, ...) counts against
+      // this via models/EmailQuota.js, refused once the day's count exceeds
+      // it rather than silently hitting Resend's own limit unpredictably.
+      dailyEmailCap: { type: Number, default: 90 },
     },
     servicesEnabled: {
       deposits: { type: Boolean, default: true },

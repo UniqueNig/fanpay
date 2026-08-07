@@ -41,14 +41,14 @@ router.post(
       if (channel === "email") {
         try {
           const users = await User.find({ suspended: { $ne: true } }).select("email").lean();
-          const { sent, failed } = await sendBroadcastEmail(
+          const { sent, failed, quotaStopped } = await sendBroadcastEmail(
             users.map((u) => u.email),
             subject || "Update from FanFi",
             `<p>${message.replace(/\n/g, "<br/>")}</p><p>— The FanFi Team</p>`
           );
           campaign.status = sent > 0 ? "sent" : "failed";
           await campaign.save();
-          return res.status(201).json({ success: true, campaign, sent, failed });
+          return res.status(201).json({ success: true, campaign, sent, failed, quotaStopped });
         } catch (err) {
           campaign.status = "failed";
           await campaign.save();

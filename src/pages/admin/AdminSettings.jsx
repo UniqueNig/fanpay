@@ -112,6 +112,16 @@ const AdminSettings = () => {
               <label className="text-ink/60 font-dm text-xs mb-1.5 block">Support Phone</label>
               <input className="input-field-light" defaultValue={general.supportPhone} onBlur={(e) => save({ general: { ...general, supportPhone: e.target.value } })} placeholder="+234..." />
             </div>
+            <div>
+              <label className="text-ink/60 font-dm text-xs mb-1.5 block">Security Alert Email</label>
+              <input className="input-field-light" defaultValue={general.adminAlertEmail} onBlur={(e) => save({ general: { ...general, adminAlertEmail: e.target.value } })} placeholder="Falls back to Support Email if blank" />
+              <p className="text-ink/30 font-dm text-xs mt-1">Where provider-balance discrepancy alerts get sent — see Finance → API Wallet for context.</p>
+            </div>
+            <div>
+              <label className="text-ink/60 font-dm text-xs mb-1.5 block">Daily Email Cap</label>
+              <input type="number" min="0" className="input-field-light" defaultValue={general.dailyEmailCap} onBlur={(e) => save({ general: { ...general, dailyEmailCap: Number(e.target.value) } })} />
+              <p className="text-ink/30 font-dm text-xs mt-1">Safety margin under Resend's free-tier 100/day limit — every real send counts against this.</p>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-ink/60 font-dm text-xs mb-1.5 block">Min Transfer (₦)</label>
