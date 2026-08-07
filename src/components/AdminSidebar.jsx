@@ -44,7 +44,7 @@ const AdminSidebar = ({ mobileOpen, setMobileOpen }) => {
       {/* Logo */}
       <div className="flex items-center justify-between px-5 h-16 border-b border-line">
         <div className="flex items-center gap-2">
-          <FanFiLogo className="h-7 w-auto" />
+          <FanFiLogo className="h-6 w-auto" />
           <span className="bg-iris/15 border border-iris/25 text-iris text-[10px] font-syne font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
             Admin
           </span>

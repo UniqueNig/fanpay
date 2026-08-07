@@ -39,7 +39,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="flex items-center justify-between px-5 h-16 border-b border-line">
-        <FanFiLogo className="h-8 w-auto" />
+        <FanFiLogo className="h-7 w-auto" />
         {mobileOpen !== undefined && (
           <button onClick={() => setMobileOpen(false)} className="lg:hidden text-ink/50 hover:text-ink">
             <FiX size={18} />

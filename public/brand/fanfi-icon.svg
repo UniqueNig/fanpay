@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="tileGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#221a3a"/>
+      <stop offset="100%" stop-color="#1a1430"/>
+    </linearGradient>
+    <linearGradient id="violetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#tileGrad)"/>
+  <g transform="translate(112,112) scale(2.87)">
+    <g fill="#f1eefa">
+      <rect x="32" y="14" width="14" height="72" rx="7"/>
+      <rect x="32" y="14" width="40" height="14" rx="7"/>
+      <rect x="32" y="44" width="30" height="13" rx="6.5"/>
+    </g>
+    <g fill="url(#violetGrad)" transform="rotate(180 50 50)">
+      <rect x="32" y="14" width="14" height="72" rx="7"/>
+      <rect x="32" y="14" width="40" height="14" rx="7"/>
+      <rect x="32" y="44" width="30" height="13" rx="6.5"/>
+    </g>
+  </g>
+</svg>
