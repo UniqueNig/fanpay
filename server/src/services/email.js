@@ -18,19 +18,18 @@ function escapeHtml(str) {
 // palette, footer) lives in exactly one place instead of being copy-pasted
 // per email — same reasoning as withinDailyQuota() being centralized rather
 // than checked per-caller. Colors are lifted straight from src/index.css's
-// --fp-* tokens (light theme only — see the color-scheme meta tags below for
-// why this deliberately doesn't attempt email-client dark mode).
+// --fp-* tokens, light AND dark, mirrored below as LIGHT/DARK.
 //
-// The header uses the full icon+wordmark lockup (public/brand/fanfi-full-logo.png)
-// as ONE pre-rendered image, not an <img> icon next to live HTML text — email
-// clients can't be trusted to have the Syne webfont, so typed-out text would
-// fall back to a generic system font and no longer look like the real FanFi
-// logo. Exported at 3x (738x120 for a 246x40 viewBox) with a transparent
-// background via headless Chrome from the exact same markup as
-// src/components/FanFiLogo.jsx, so it's pixel-identical to the site's own
-// logo, not a re-drawn approximation.
-const LOGO_URL = `${env.publicAppUrl}/brand/fanfi-full-logo.png`;
-const COLOR = {
+// The header swaps between two pre-rendered logo images (not an <img> icon
+// next to live HTML text) — email clients can't be trusted to have the Syne
+// webfont, so typed-out text would fall back to a generic system font and no
+// longer look like the real FanFi logo. Both are exported at 3x (738x120 for
+// a 246x40 viewBox) with a transparent background via headless Chrome, from
+// the same markup as src/components/FanFiLogo.jsx (light and dark theme
+// colors respectively), so they're pixel-identical to the site's own logo.
+const LOGO_LIGHT_URL = `${env.publicAppUrl}/brand/fanfi-full-logo-light.png`;
+const LOGO_DARK_URL = `${env.publicAppUrl}/brand/fanfi-full-logo-dark.png`;
+const LIGHT = {
   surface: "#F6F3FB",
   panel: "#FFFFFF",
   ink: "#17111F",
@@ -39,57 +38,98 @@ const COLOR = {
   iris: "#6E64A6",
   irisSoft: "#EDEAF7",
 };
+const DARK = {
+  surface: "#120E1C",
+  panel: "#1C1629",
+  ink: "#F1EEFA",
+  muted: "#A79FC0",
+  line: "#2C2440",
+  iris: "#897FBD",
+  irisSoft: "#2C244A",
+};
 // Google Fonts (Syne/DM Sans, used on the actual site) can't be trusted to
 // load in email clients — Gmail and Outlook both strip <link>/@font-face in
 // varying ways. A bold system-font stack gets close to Syne's geometric
 // weight for the wordmark without depending on a webfont fetch succeeding.
 const FONT = "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif";
 
+// Inline style is the light-theme fallback for clients that ignore the
+// <style> block entirely (older Outlook); the `efi-text` class is what
+// actually flips color in dark mode — see shell()'s <style> block.
 function p(html) {
-  return `<p style="margin:0 0 14px; font-family:${FONT}; font-size:15px; line-height:1.65; color:${COLOR.ink};">${html}</p>`;
+  return `<p class="efi-text" style="margin:0 0 14px; font-family:${FONT}; font-size:15px; line-height:1.65; color:${LIGHT.ink};">${html}</p>`;
 }
 
 function ul(items) {
-  return `<ul style="margin:0 0 14px; padding-left:20px; font-family:${FONT}; font-size:15px; line-height:1.65; color:${COLOR.ink};">${items
+  return `<ul class="efi-text" style="margin:0 0 14px; padding-left:20px; font-family:${FONT}; font-size:15px; line-height:1.65; color:${LIGHT.ink};">${items
     .map((i) => `<li style="margin-bottom:6px;">${i}</li>`)
     .join("")}</ul>`;
 }
 
 // `heading` is the bold line under the logo (kept short — this isn't the
 // email subject, just an in-body echo of it); `bodyHtml` is pre-built via
-// p()/ul() above. Explicitly declares light-only color-scheme rather than
-// attempting a dark-mode variant — an auto-inverted table-based layout in
-// Gmail/Apple Mail's dark mode tends to look worse than a clearly-declared
-// light email, and this is a 480px card, not a full page.
+// p()/ul() above.
+//
+// Dark mode showed up looking broken (screenshot: 2026-08-08) not because it
+// was unsupported, but because it was HALF-supported — declaring only
+// `color-scheme: light` tells Gmail's app "I've got styling covered, don't
+// touch it," but Gmail's Android/iOS "adaptive" dark mode applies its own
+// heuristic re-coloring to a preview/summary render regardless, stamping
+// `data-ogsc`/`data-ogsb` on the elements it overrode, while the actual
+// expanded body — a separate render pass — stayed untouched. Two different
+// passes, two different results, in the same thread. The fix isn't to
+// suppress dark mode harder, it's to actually author one: `color-scheme:
+// light dark` + a real @media (prefers-color-scheme: dark) palette (mirrors
+// site's dark --fp-* tokens) covers standards-following clients (Apple Mail,
+// modern Gmail web), and the same overrides repeated under `[data-ogsc]`
+// catch Gmail's adaptive pass specifically, so both render paths agree.
 function shell({ heading, bodyHtml, preheader }) {
   const preview = escapeHtml(preheader || heading || "FanFi");
+  const darkOverrides = (scope) => `
+    ${scope} .efi-bg { background-color: ${DARK.surface} !important; }
+    ${scope} .efi-card { background-color: ${DARK.panel} !important; border-color: ${DARK.line} !important; }
+    ${scope} .efi-border-b { border-bottom-color: ${DARK.line} !important; }
+    ${scope} .efi-heading { color: ${DARK.ink} !important; }
+    ${scope} .efi-text { color: ${DARK.ink} !important; }
+    ${scope} .efi-footer { background-color: ${DARK.irisSoft} !important; }
+    ${scope} .efi-footer-text { color: ${DARK.muted} !important; }
+    ${scope} .efi-logo-light { display: none !important; }
+    ${scope} .efi-logo-dark { display: block !important; }`;
   return `<!doctype html>
 <html>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="color-scheme" content="light" />
-    <meta name="supported-color-schemes" content="light" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="supported-color-schemes" content="light dark" />
     <title>FanFi</title>
+    <style>
+      .efi-logo-dark { display: none; }
+      @media (prefers-color-scheme: dark) {
+        ${darkOverrides("")}
+      }
+      ${darkOverrides("[data-ogsc]")}
+    </style>
   </head>
-  <body style="margin:0; padding:0; background-color:${COLOR.surface}; font-family:${FONT};">
+  <body class="efi-bg" style="margin:0; padding:0; background-color:${LIGHT.surface}; font-family:${FONT};">
     <span style="display:none; max-height:0; overflow:hidden; opacity:0;">${preview}</span>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${COLOR.surface};">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="efi-bg" style="background-color:${LIGHT.surface};">
       <tr>
         <td align="center" style="padding:32px 16px;">
-          <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="max-width:480px; width:100%; background-color:${COLOR.panel}; border:1px solid ${COLOR.line}; border-radius:16px;">
+          <table role="presentation" width="480" cellpadding="0" cellspacing="0" class="efi-card" style="max-width:480px; width:100%; background-color:${LIGHT.panel}; border:1px solid ${LIGHT.line}; border-radius:16px;">
             <tr>
-              <td style="padding:22px 32px; border-bottom:1px solid ${COLOR.line};">
-                <img src="${LOGO_URL}" width="166" height="27" alt="FanFi" style="display:block;" />
+              <td class="efi-border-b" style="padding:22px 32px; border-bottom:1px solid ${LIGHT.line};">
+                <img src="${LOGO_LIGHT_URL}" width="166" height="27" alt="FanFi" class="efi-logo-light" style="display:block;" />
+                <img src="${LOGO_DARK_URL}" width="166" height="27" alt="FanFi" class="efi-logo-dark" style="display:none;" />
               </td>
             </tr>
             <tr>
               <td style="padding:32px;">
-                ${heading ? `<div style="font-family:${FONT}; font-size:18px; font-weight:700; color:${COLOR.ink}; margin-bottom:16px;">${heading}</div>` : ""}
+                ${heading ? `<div class="efi-heading" style="font-family:${FONT}; font-size:18px; font-weight:700; color:${LIGHT.ink}; margin-bottom:16px;">${heading}</div>` : ""}
                 ${bodyHtml}
                 <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:20px;">
                   <tr>
-                    <td style="background-color:${COLOR.iris}; border-radius:10px;">
+                    <td style="background-color:${LIGHT.iris}; border-radius:10px;">
                       <a href="${env.publicAppUrl}" style="display:inline-block; padding:11px 22px; font-family:${FONT}; font-size:14px; font-weight:600; color:#FFFFFF; text-decoration:none;">Open FanFi &rarr;</a>
                     </td>
                   </tr>
@@ -97,8 +137,8 @@ function shell({ heading, bodyHtml, preheader }) {
               </td>
             </tr>
             <tr>
-              <td style="padding:18px 32px; background-color:${COLOR.irisSoft}; text-align:center; border-radius:0 0 16px 16px;">
-                <div style="font-family:${FONT}; font-size:12px; color:${COLOR.muted};">FanFi &mdash; fund your wallet, pay bills, and send money, all in one place.</div>
+              <td class="efi-footer" style="padding:18px 32px; background-color:${LIGHT.irisSoft}; text-align:center; border-radius:0 0 16px 16px;">
+                <div class="efi-footer-text" style="font-family:${FONT}; font-size:12px; color:${LIGHT.muted};">FanFi &mdash; fund your wallet, pay bills, and send money, all in one place.</div>
               </td>
             </tr>
           </table>
